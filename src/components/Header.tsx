@@ -1,0 +1,238 @@
+import React from 'react';
+import { CategoryType } from '../types';
+import { RefreshCw, Bookmark, Globe, Wifi, WifiOff, Search, X, Moon, Sun } from 'lucide-react';
+
+interface HeaderProps {
+  date: string;
+  isOnline: boolean;
+  isRefreshing: boolean;
+  onRefresh: () => void;
+  savedCount: number;
+  showOfflineOnly: boolean;
+  onToggleOfflineOnly: () => void;
+  autoTranslate: boolean;
+  onToggleAutoTranslate: () => void;
+  isDarkMode: boolean;
+  onToggleDarkMode: () => void;
+  activeCategory: CategoryType;
+  onSelectCategory: (category: CategoryType) => void;
+  searchQuery: string;
+  onSearchChange: (query: string) => void;
+}
+
+const CATEGORIES: { id: CategoryType; label: string }[] = [
+  { id: 'all', label: 'Todas as Áreas' },
+  { id: 'education', label: 'Educação & PISA' },
+  { id: 'biography', label: 'Grandes Nomes & Biografias' },
+  { id: 'science', label: 'Ciência Geral' },
+  { id: 'tech', label: 'Tecnologia' },
+  { id: 'ai', label: 'Inteligência Artificial' },
+  { id: 'physics', label: 'Física & CERN' },
+  { id: 'space', label: 'Espaço & NASA' },
+  { id: 'health', label: 'Biotecnologia & Saúde' },
+];
+
+export const Header: React.FC<HeaderProps> = ({
+  date,
+  isOnline,
+  isRefreshing,
+  onRefresh,
+  savedCount,
+  showOfflineOnly,
+  onToggleOfflineOnly,
+  autoTranslate,
+  onToggleAutoTranslate,
+  isDarkMode,
+  onToggleDarkMode,
+  activeCategory,
+  onSelectCategory,
+  searchQuery,
+  onSearchChange,
+}) => {
+  return (
+    <header className="border-b border-stone-300 dark:border-stone-800 bg-[#FCFCFB] dark:bg-[#151515] sticky top-0 z-40 shadow-[0_1px_3px_rgba(0,0,0,0.03)] dark:shadow-none transition-colors">
+      {/* 1. Top Informative Bar (Date, Status, Academic Journals Index) */}
+      <div className="border-b border-stone-200 dark:border-stone-800/80 bg-[#F7F7F5] dark:bg-[#111111] px-4 sm:px-8 py-1.5 text-[11px] font-mono-subtle text-stone-500 dark:text-stone-400 transition-colors">
+        <div className="max-w-6xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-2 sm:gap-3 truncate">
+            <span className="flex items-center gap-1.5 font-semibold text-stone-800 dark:text-stone-200">
+              {isOnline ? (
+                <>
+                  <span className="inline-block w-2 h-2 rounded-full bg-emerald-600 dark:bg-emerald-400"></span>
+                  <span>ONLINE</span>
+                </>
+              ) : (
+                <>
+                  <WifiOff className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                  <span className="text-amber-800 dark:text-amber-300">MODO OFFLINE</span>
+                </>
+              )}
+            </span>
+            <span className="text-stone-300 dark:text-stone-700">•</span>
+            <span className="text-stone-600 dark:text-stone-300">{date}</span>
+            <span className="hidden lg:inline text-stone-300 dark:text-stone-700">•</span>
+            <span className="hidden lg:inline text-stone-500 dark:text-stone-400">
+              Fontes: Nature, Science, CERN, Harvard, Cambridge, Oxford, Bolonha, MIT, USP, UNICAMP, ONU, PISA, NASA
+            </span>
+          </div>
+
+          <div className="flex items-center gap-3 shrink-0">
+            <span className="hidden sm:inline text-stone-400 dark:text-stone-500">Rastreamento Multidisciplinar</span>
+            {savedCount > 0 && (
+              <span className="bg-stone-200/80 dark:bg-stone-800 text-stone-800 dark:text-stone-200 px-2 py-0.5 rounded text-[10px] font-semibold">
+                {savedCount} {savedCount === 1 ? 'artigo salvo' : 'artigos salvos'}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* 2. Main Title Masthead */}
+      <div className="border-b border-stone-200 dark:border-stone-800 transition-colors">
+        <div className="max-w-6xl mx-auto px-4 sm:px-8 py-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-baseline gap-2">
+              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-stone-950 dark:text-stone-100 font-serif">
+                RADAR AUTÔNOMO DE CIÊNCIAS E TECNOLOGIA
+              </h1>
+              <span className="text-sm font-semibold tracking-wider font-mono-subtle text-stone-500 dark:text-stone-400">
+                (RACT)
+              </span>
+            </div>
+            <p className="text-xs text-stone-600 dark:text-stone-400 mt-0.5 tracking-normal">
+              Agregador e analisador autônomo dos principais periódicos científicos mundiais com tradução instantânea e leitura offline.
+            </p>
+          </div>
+
+          {/* Quick Utility Controls */}
+          <div className="flex items-center gap-2 self-start md:self-auto shrink-0 flex-wrap">
+            {/* Dark Mode Toggle */}
+            <button
+              onClick={onToggleDarkMode}
+              id="btn-toggle-dark-mode"
+              title={isDarkMode ? 'Alternar para Modo Claro' : 'Alternar para Modo Escuro'}
+              aria-label={isDarkMode ? 'Alternar para Modo Claro' : 'Alternar para Modo Escuro'}
+              className={`px-3 py-1.5 rounded text-xs font-medium border flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs ${
+                isDarkMode
+                  ? 'bg-stone-850 text-amber-300 border-stone-700 hover:bg-stone-800'
+                  : 'bg-white text-stone-700 border-stone-300 hover:bg-stone-100 hover:text-stone-900'
+              }`}
+            >
+              {isDarkMode ? (
+                <>
+                  <Sun className="w-3.5 h-3.5 text-amber-300" />
+                  <span>Modo Claro</span>
+                </>
+              ) : (
+                <>
+                  <Moon className="w-3.5 h-3.5 text-stone-700" />
+                  <span>Modo Escuro</span>
+                </>
+              )}
+            </button>
+
+            {/* Automatic Translation Toggle */}
+            <button
+              onClick={onToggleAutoTranslate}
+              id="toggle-auto-translate"
+              title="Alternar entre tradução técnica em Português e o idioma original do periódico"
+              className={`px-3 py-1.5 rounded text-xs font-medium border flex items-center gap-1.5 transition-colors cursor-pointer ${
+                autoTranslate
+                  ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 border-stone-900 dark:border-stone-100 shadow-2xs'
+                  : 'bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-200 border-stone-300 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-700'
+              }`}
+            >
+              <Globe className="w-3.5 h-3.5" />
+              <span>Tradução:</span>
+              <span className="font-mono-subtle font-bold">
+                {autoTranslate ? 'PT-BR' : 'EN (Original)'}
+              </span>
+            </button>
+
+            {/* Offline Saved Articles Filter */}
+            <button
+              onClick={onToggleOfflineOnly}
+              id="btn-filter-offline"
+              title="Exibir apenas os artigos gravados para leitura offline"
+              className={`px-3 py-1.5 rounded text-xs font-medium border flex items-center gap-1.5 transition-colors cursor-pointer ${
+                showOfflineOnly
+                  ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 border-stone-900 dark:border-stone-100 shadow-2xs'
+                  : 'bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-200 border-stone-300 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-700'
+              }`}
+            >
+              <Bookmark className={`w-3.5 h-3.5 ${showOfflineOnly ? 'fill-current' : ''}`} />
+              <span>Leitura Offline</span>
+              {savedCount > 0 && (
+                <span
+                  className={`text-[10px] px-1.5 py-0.2 rounded font-mono-subtle font-semibold ${
+                    showOfflineOnly
+                      ? 'bg-stone-800 dark:bg-stone-300 text-stone-100 dark:text-stone-900'
+                      : 'bg-stone-200 dark:bg-stone-700 text-stone-800 dark:text-stone-200'
+                  }`}
+                >
+                  {savedCount}
+                </span>
+              )}
+            </button>
+
+            {/* Refresh / Sync */}
+            <button
+              onClick={onRefresh}
+              disabled={isRefreshing || !isOnline}
+              id="btn-sync-feeds"
+              title={isOnline ? 'Sincronizar com os periódicos agora' : 'Offline - conecte-se para sincronizar'}
+              className="p-1.5 rounded text-stone-700 dark:text-stone-300 hover:text-stone-950 dark:hover:text-white border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-800 hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors disabled:opacity-40 cursor-pointer"
+            >
+              <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* 3. Scientific Journal Academic Menu Bar (Positioned Right Below the Title Masthead) */}
+      <div className="bg-[#FAF9F7] dark:bg-[#1A1A1A] px-4 sm:px-8 transition-colors">
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-2.5 py-2">
+          {/* Main Navigation Tabs */}
+          <nav className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5 text-xs">
+            {CATEGORIES.map((cat) => {
+              const isActive = activeCategory === cat.id && !showOfflineOnly;
+              return (
+                <button
+                  key={cat.id}
+                  onClick={() => onSelectCategory(cat.id)}
+                  className={`px-3 py-1.5 rounded text-xs transition-colors whitespace-nowrap cursor-pointer ${
+                    isActive
+                      ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 font-semibold shadow-2xs'
+                      : 'text-stone-700 dark:text-stone-300 hover:text-stone-950 dark:hover:text-white hover:bg-stone-200/70 dark:hover:bg-stone-800 font-medium'
+                  }`}
+                >
+                  {cat.label}
+                </button>
+              );
+            })}
+          </nav>
+
+          {/* Integrated Search Box */}
+          <div className="relative w-full md:w-64 shrink-0">
+            <Search className="w-3.5 h-3.5 text-stone-400 dark:text-stone-500 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => onSearchChange(e.target.value)}
+              placeholder="Buscar tema, autor ou periódico..."
+              className="w-full pl-8 pr-7 py-1 text-xs bg-white dark:bg-[#222222] text-stone-900 dark:text-stone-100 border border-stone-300 dark:border-stone-700 rounded focus:outline-none focus:border-stone-900 dark:focus:border-stone-400 transition-colors placeholder:text-stone-400 dark:placeholder:text-stone-500"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => onSearchChange('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 p-0.5 cursor-pointer"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </header>
+  );
+};

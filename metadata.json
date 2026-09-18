@@ -1,0 +1,6 @@
+{
+  "name": "RADAR AUTÔNOMO DE CIÊNCIAS E TECNOLOGIA (RACT)",
+  "description": "Feed diário autônomo com as principais publicações de periódicos científicos e portais de tecnologia mundiais. Tradução automática e leitura offline sem configuração.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
