@@ -8,6 +8,7 @@ import { Header } from './components/Header';
 import { DailyBriefingCard } from './components/DailyBriefingCard';
 import { ArticleCard } from './components/ArticleCard';
 import { ArticleDetailModal } from './components/ArticleDetailModal';
+import { UniversitiesView } from './components/UniversitiesView';
 import { NewsArticle, DailyBriefing, CategoryType } from './types';
 import {
   getOfflineArticles,
@@ -272,103 +273,106 @@ export default function App() {
           </div>
         )}
 
-        {/* Current Category / Section Indicator */}
-        <div className="mb-4 flex items-center justify-between text-xs font-mono-subtle text-stone-500 dark:text-stone-400 border-b border-stone-200 dark:border-stone-800 pb-2">
-          <div className="flex items-center gap-2">
-            <span className="uppercase tracking-wider font-semibold text-stone-800 dark:text-stone-200">
-              {showOfflineOnly
-                ? 'Artigos Salvos Offline'
-                : activeCategory === 'all'
-                ? 'Publicações Recentes dos Periódicos'
-                : activeCategory === 'education'
-                ? 'Educação, PISA & Universidades'
-                : activeCategory === 'biography'
-                ? 'Grandes Nomes & Biografias da Ciência'
-                : activeCategory === 'science'
-                ? 'Ciência Geral & Pesquisa'
-                : activeCategory === 'tech'
-                ? 'Tecnologia & Computação'
-                : activeCategory === 'ai'
-                ? 'Inteligência Artificial & Algoritmos'
-                : activeCategory === 'physics'
-                ? 'Física, Quântica & CERN'
-                : activeCategory === 'space'
-                ? 'Espaço, Astrofísica & NASA'
-                : 'Biotecnologia, Medicina & Saúde'}
-            </span>
-            <span>•</span>
-            <span>{filteredArticles.length} {filteredArticles.length === 1 ? 'publicação' : 'publicações'}</span>
-          </div>
-
-          {searchQuery && (
-            <span className="text-stone-600 dark:text-stone-400">
-              Filtro ativo: "{searchQuery}"
-            </span>
-          )}
-        </div>
-
-        {/* Articles Grid or Loading */}
-        {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div
-                key={i}
-                className="border border-stone-200 dark:border-stone-800 bg-white dark:bg-[#181818] rounded-lg p-5 animate-pulse h-56 flex flex-col justify-between"
-              >
-                <div>
-                  <div className="h-3 bg-stone-200 dark:bg-stone-800 rounded w-1/4 mb-3"></div>
-                  <div className="h-5 bg-stone-200 dark:bg-stone-800 rounded w-4/5 mb-2"></div>
-                  <div className="h-5 bg-stone-200 dark:bg-stone-800 rounded w-2/3 mb-4"></div>
-                  <div className="h-3 bg-stone-100 dark:bg-stone-850 rounded w-full mb-1"></div>
-                  <div className="h-3 bg-stone-100 dark:bg-stone-850 rounded w-5/6"></div>
-                </div>
-                <div className="h-4 bg-stone-200 dark:bg-stone-800 rounded w-1/3 mt-4"></div>
-              </div>
-            ))}
-          </div>
-        ) : filteredArticles.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {filteredArticles.map((article) => (
-              <ArticleCard
-                key={article.id}
-                article={article}
-                autoTranslate={autoTranslate}
-                isSavedOffline={savedIdsSet.has(article.id)}
-                onToggleSaveOffline={handleToggleSaveOffline}
-                onOpenArticle={setSelectedArticle}
-              />
-            ))}
-          </div>
+        {/* Universities Special Directory Section */}
+        {!showOfflineOnly && activeCategory === 'universities' ? (
+          <UniversitiesView />
         ) : (
-          /* Empty State */
-          <div className="border border-stone-200 dark:border-stone-800 bg-white dark:bg-[#181818] rounded-lg p-10 text-center max-w-md mx-auto my-12">
-            <BookOpen className="w-8 h-8 text-stone-400 dark:text-stone-600 mx-auto mb-3" />
-            <h3 className="font-editorial text-lg font-bold text-stone-900 dark:text-stone-100 mb-1">
-              {showOfflineOnly
-                ? 'Nenhum artigo salvo para leitura offline'
-                : 'Nenhuma publicação encontrada'}
-            </h3>
-            <p className="text-stone-500 dark:text-stone-400 text-xs mb-4 leading-relaxed">
-              {showOfflineOnly
-                ? 'Clique no botão "Salvar Offline" em qualquer artigo do feed para lê-lo a qualquer momento, mesmo sem internet.'
-                : 'Ajuste os filtros de categoria ou altere o termo de busca pesquisado.'}
-            </p>
-            {showOfflineOnly ? (
-              <button
-                onClick={() => setShowOfflineOnly(false)}
-                className="px-3.5 py-1.5 rounded text-xs font-medium bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors cursor-pointer"
-              >
-                Ver feed com todos os artigos
-              </button>
-            ) : searchQuery ? (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="px-3.5 py-1.5 rounded text-xs font-medium bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors cursor-pointer"
-              >
-                Limpar Busca
-              </button>
-            ) : null}
-          </div>
+          <>
+            {/* Current Category / Section Indicator */}
+            <div className="mb-4 flex items-center justify-between text-xs font-mono-subtle text-stone-500 dark:text-stone-400 border-b border-stone-200 dark:border-stone-800 pb-2">
+              <div className="flex items-center gap-2">
+                <span className="uppercase tracking-wider font-semibold text-stone-800 dark:text-stone-200">
+                  {showOfflineOnly
+                    ? 'Artigos Salvos Offline'
+                    : activeCategory === 'all'
+                    ? 'Todas as Publicações Científicas'
+                    : activeCategory === 'education'
+                    ? 'Educação & Pedagogia'
+                    : activeCategory === 'health'
+                    ? 'Biotecnologia & Saúde'
+                    : activeCategory === 'physics'
+                    ? 'Física & Astrofísica'
+                    : activeCategory === 'math'
+                    ? 'Matemática Pura & Aplicada'
+                    : 'Tecnologia & Computação'}
+                </span>
+                <span>•</span>
+                <span>{filteredArticles.length} {filteredArticles.length === 1 ? 'publicação disponível' : 'publicações disponíveis'}</span>
+              </div>
+
+              {searchQuery && (
+                <span className="text-stone-600 dark:text-stone-400">
+                  Filtro ativo: "{searchQuery}"
+                </span>
+              )}
+            </div>
+
+            {/* Articles Grid or Loading */}
+            {loading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <div
+                    key={i}
+                    className="border border-stone-200 dark:border-stone-800 bg-white dark:bg-[#181818] rounded-lg p-5 animate-pulse h-56 flex flex-col justify-between"
+                  >
+                    <div>
+                      <div className="h-3 bg-stone-200 dark:bg-stone-800 rounded w-1/4 mb-3"></div>
+                      <div className="h-5 bg-stone-200 dark:bg-stone-800 rounded w-4/5 mb-2"></div>
+                      <div className="h-5 bg-stone-200 dark:bg-stone-800 rounded w-2/3 mb-4"></div>
+                      <div className="h-3 bg-stone-100 dark:bg-stone-850 rounded w-full mb-1"></div>
+                      <div className="h-3 bg-stone-100 dark:bg-stone-850 rounded w-5/6"></div>
+                    </div>
+                    <div className="h-4 bg-stone-200 dark:bg-stone-800 rounded w-1/3 mt-4"></div>
+                  </div>
+                ))}
+              </div>
+            ) : filteredArticles.length > 0 ? (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {filteredArticles.map((article) => (
+                    <ArticleCard
+                      key={article.id}
+                      article={article}
+                      autoTranslate={autoTranslate}
+                      isSavedOffline={savedIdsSet.has(article.id)}
+                      onToggleSaveOffline={handleToggleSaveOffline}
+                      onOpenArticle={setSelectedArticle}
+                    />
+                  ))}
+                </div>
+              </div>
+            ) : (
+              /* Empty State */
+              <div className="border border-stone-200 dark:border-stone-800 bg-white dark:bg-[#181818] rounded-lg p-10 text-center max-w-md mx-auto my-12">
+                <BookOpen className="w-8 h-8 text-stone-400 dark:text-stone-600 mx-auto mb-3" />
+                <h3 className="font-editorial text-lg font-bold text-stone-900 dark:text-stone-100 mb-1">
+                  {showOfflineOnly
+                    ? 'Nenhum artigo salvo para leitura offline'
+                    : 'Nenhuma publicação encontrada nesta área'}
+                </h3>
+                <p className="text-stone-500 dark:text-stone-400 text-xs mb-4 leading-relaxed">
+                  {showOfflineOnly
+                    ? 'Clique no botão "Salvar Offline" em qualquer artigo do feed para lê-lo a qualquer momento, mesmo sem internet.'
+                    : 'Ajuste os filtros de categoria ou altere o termo de busca pesquisado.'}
+                </p>
+                {showOfflineOnly ? (
+                  <button
+                    onClick={() => setShowOfflineOnly(false)}
+                    className="px-3.5 py-1.5 rounded text-xs font-medium bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors cursor-pointer"
+                  >
+                    Ver feed com todos os artigos
+                  </button>
+                ) : searchQuery ? (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="px-3.5 py-1.5 rounded text-xs font-medium bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors cursor-pointer"
+                  >
+                    Limpar Busca
+                  </button>
+                ) : null}
+              </div>
+            )}
+          </>
         )}
       </main>
 

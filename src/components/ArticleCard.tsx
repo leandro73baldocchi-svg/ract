@@ -33,19 +33,15 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
               <span className="text-[10px] px-1.5 py-0.5 bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 rounded border border-stone-200 dark:border-stone-700 shrink-0 capitalize">
                 {article.sourceCategory === 'education'
                   ? 'Educação'
-                  : article.sourceCategory === 'biography'
-                  ? 'Biografia'
-                  : article.sourceCategory === 'ai'
-                  ? 'IA'
+                  : article.sourceCategory === 'health'
+                  ? 'Saúde & Bio'
                   : article.sourceCategory === 'physics'
                   ? 'Física'
-                  : article.sourceCategory === 'space'
-                  ? 'Espaço'
-                  : article.sourceCategory === 'health'
-                  ? 'Saúde'
-                  : article.sourceCategory === 'tech'
-                  ? 'Tecnologia'
-                  : 'Ciência'}
+                  : article.sourceCategory === 'math'
+                  ? 'Matemática'
+                  : article.sourceCategory === 'universities'
+                  ? 'Universidades'
+                  : 'Tecnologia'}
               </span>
             )}
             {article.isPeerReviewed && (

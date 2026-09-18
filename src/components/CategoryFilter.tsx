@@ -11,12 +11,12 @@ interface CategoryFilterProps {
 
 const CATEGORIES: { id: CategoryType; label: string }[] = [
   { id: 'all', label: 'Todas as Áreas' },
-  { id: 'science', label: 'Ciência Geral' },
-  { id: 'tech', label: 'Tecnologia' },
-  { id: 'ai', label: 'Inteligência Artificial' },
-  { id: 'physics', label: 'Física & Quântica' },
-  { id: 'space', label: 'Espaço & Astrofísica' },
+  { id: 'education', label: 'Educação' },
   { id: 'health', label: 'Biotecnologia & Saúde' },
+  { id: 'physics', label: 'Física' },
+  { id: 'math', label: 'Matemática' },
+  { id: 'tech', label: 'Tecnologia' },
+  { id: 'universities', label: 'Universidades' },
 ];
 
 export const CategoryFilter: React.FC<CategoryFilterProps> = ({

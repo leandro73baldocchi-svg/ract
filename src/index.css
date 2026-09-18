@@ -9,9 +9,47 @@
 }
 
 .font-editorial {
-  font-family: 'Newsreader', Georgia, serif;
+  font-family: 'Newsreader', Georgia, 'Times New Roman', serif;
 }
 
 .font-mono-subtle {
   font-family: 'JetBrains Mono', monospace;
+}
+
+/* Academic print layout */
+@media print {
+  body {
+    background-color: #ffffff !important;
+    color: #111111 !important;
+    font-size: 11pt !important;
+    line-height: 1.6 !important;
+  }
+  
+  header, footer, nav, .no-print, button, #btn-toggle-dark-mode, #toggle-auto-translate {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  /* Force modal to occupy natural flow without fixed backdrops during print */
+  .fixed {
+    position: static !important;
+    background: transparent !important;
+    padding: 0 !important;
+  }
+
+  .printable-article {
+    border: none !important;
+    box-shadow: none !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .print-page-break {
+    page-break-inside: avoid;
+  }
 }

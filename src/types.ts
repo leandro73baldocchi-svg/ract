@@ -1,4 +1,29 @@
-export type CategoryType = 'all' | 'education' | 'science' | 'tech' | 'ai' | 'space' | 'health' | 'physics' | 'biography';
+export type CategoryType =
+  | 'all'
+  | 'education'
+  | 'health'
+  | 'physics'
+  | 'math'
+  | 'tech'
+  | 'universities';
+
+export interface FullArticleContent {
+  abstract: string;
+  abstractPt: string;
+  introduction: string;
+  introductionPt: string;
+  methodology: string;
+  methodologyPt: string;
+  results: string;
+  resultsPt: string;
+  discussion: string;
+  discussionPt: string;
+  conclusion: string;
+  conclusionPt: string;
+  citationAbnt?: string;
+  citationApa?: string;
+  references?: string[];
+}
 
 export interface NewsArticle {
   id: string;
@@ -20,6 +45,7 @@ export interface NewsArticle {
   isPeerReviewed?: boolean;
   tags: string[];
   savedAt?: number;
+  fullArticle?: FullArticleContent;
   cachedDeepDive?: ArticleDeepDive;
 }
 
