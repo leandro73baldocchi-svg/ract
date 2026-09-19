@@ -116,7 +116,7 @@ export const Header: React.FC<HeaderProps> = ({
             
             {/* NOVO: Botão de Apoio Financeiro (Monetização) */}
             <a
-              href="https://livepix.gg/"
+              href="https://livepix.gg/leandrosarno"
               target="_blank"
               rel="noreferrer"
               className="px-3 py-1.5 rounded text-[11px] sm:text-xs font-bold border flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-600 hover:text-white dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800 dark:hover:bg-emerald-600 dark:hover:text-white"
