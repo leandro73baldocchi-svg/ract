@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { CategoryType, CustomCategory } from '../types';
-import { RefreshCw, Bookmark, Globe, Wifi, WifiOff, Search, X, Moon, Sun, Lock } from 'lucide-react';
+import { RefreshCw, Bookmark, Globe, Wifi, WifiOff, Search, X, Moon, Sun, Lock, Sparkles } from 'lucide-react';
 
 interface HeaderProps {
   date: string;
@@ -14,6 +14,8 @@ interface HeaderProps {
   onToggleAutoTranslate: () => void;
   isDarkMode: boolean;
   onToggleDarkMode: () => void;
+  showRadarBriefing: boolean;
+  onToggleRadarBriefing: () => void;
   activeCategory: CategoryType;
   onSelectCategory: (category: CategoryType) => void;
   searchQuery: string;
@@ -33,6 +35,8 @@ export const Header: React.FC<HeaderProps> = ({
   onToggleAutoTranslate,
   isDarkMode,
   onToggleDarkMode,
+  showRadarBriefing,
+  onToggleRadarBriefing,
   activeCategory,
   onSelectCategory,
   searchQuery,
@@ -137,6 +141,21 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="font-mono-subtle font-bold">
                 {autoTranslate ? 'PT-BR' : 'EN (Original)'}
               </span>
+            </button>
+
+            {/* Radar Briefing Toggle */}
+            <button
+              onClick={onToggleRadarBriefing}
+              id="btn-toggle-radar"
+              title={showRadarBriefing ? 'Ocultar Síntese do Radar da página inicial' : 'Exibir Síntese do Radar'}
+              className={`px-3 py-1.5 rounded text-xs font-medium border flex items-center gap-1.5 transition-colors cursor-pointer ${
+                showRadarBriefing
+                  ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 border-stone-900 dark:border-stone-100 shadow-2xs'
+                  : 'bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-200 border-stone-300 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-700'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Síntese do Radar</span>
             </button>
 
             {/* Offline Saved Articles Filter */}

@@ -1,15 +1,18 @@
 import React from 'react';
 import { DailyBriefing } from '../types';
+import { X } from 'lucide-react';
 
 interface DailyBriefingCardProps {
   briefing: DailyBriefing | null;
   isLoading: boolean;
   autoTranslate: boolean;
+  onClose?: () => void;
 }
 
 export const DailyBriefingCard: React.FC<DailyBriefingCardProps> = ({
   briefing,
   isLoading,
+  onClose,
 }) => {
   if (isLoading) {
     return (
@@ -39,7 +42,18 @@ export const DailyBriefingCard: React.FC<DailyBriefingCardProps> = ({
           <span>•</span>
           <span>{briefing.edition}</span>
         </div>
-        <span className="text-stone-400 dark:text-stone-500">Atualizado {briefing.lastSync}</span>
+        <div className="flex items-center gap-3">
+          <span className="text-stone-400 dark:text-stone-500">Atualizado {briefing.lastSync}</span>
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="p-1 rounded text-stone-400 hover:text-stone-800 dark:hover:text-stone-100 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors cursor-pointer"
+              title="Ocultar Síntese do Radar da página inicial"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Main Headline & Summary */}

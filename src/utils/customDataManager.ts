@@ -244,6 +244,26 @@ export function saveCustomRssFeeds(feeds: CustomRssFeed[]): void {
   }
 }
 
+const SHOW_RADAR_BRIEFING_KEY = 'ract_show_radar_briefing_v1';
+
+export function getShowRadarBriefingPreference(): boolean {
+  try {
+    const val = localStorage.getItem(SHOW_RADAR_BRIEFING_KEY);
+    if (val === null) return false; // Default to false (hidden) as requested by user
+    return val === 'true';
+  } catch (e) {
+    return false;
+  }
+}
+
+export function setShowRadarBriefingPreference(show: boolean): void {
+  try {
+    localStorage.setItem(SHOW_RADAR_BRIEFING_KEY, show ? 'true' : 'false');
+  } catch (e) {
+    console.warn('Erro ao salvar preferência de radar:', e);
+  }
+}
+
 export function checkAdminPassword(input: string): boolean {
   const stored = localStorage.getItem(ADMIN_PASSWORD_KEY) || 'admin2026';
   return input.trim() === stored || input.trim() === 'admin2026' || input.trim() === 'ciencia123';

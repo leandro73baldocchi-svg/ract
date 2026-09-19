@@ -16,6 +16,9 @@ import {
   DEFAULT_BASE_CATEGORIES,
   getCustomCategories,
   getAllManagedArticles,
+  getDeletedArticleIds,
+  getShowRadarBriefingPreference,
+  setShowRadarBriefingPreference,
 } from './utils/customDataManager';
 import {
   getOfflineArticles,
@@ -63,6 +66,17 @@ export default function App() {
 
   // Dark mode state
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => getDarkModePreference());
+
+  // Show / Hide Radar Briefing card (Defaults to false/hidden so articles appear immediately)
+  const [showRadarBriefing, setShowRadarBriefing] = useState<boolean>(() => getShowRadarBriefingPreference());
+
+  const handleToggleRadarBriefing = () => {
+    setShowRadarBriefing((prev) => {
+      const next = !prev;
+      setShowRadarBriefingPreference(next);
+      return next;
+    });
+  };
 
   // Custom Categories & Managed Articles (Secret Admin Panel)
   const [customCategories, setCustomCategories] = useState<CustomCategory[]>(() => getCustomCategories());
@@ -264,13 +278,27 @@ export default function App() {
     return new Set(offlineArticles.map((a) => a.id));
   }, [offlineArticles]);
 
-  // Current dataset to display (uses managedArticles which contains all articles, edited texts, and new additions)
+  // Current dataset to display:
+  // Merges user managed articles (custom edits/additions) with live aggregated articles from RSS feeds
   const displaySource = useMemo(() => {
     if (showOfflineOnly || (!isOnline && managedArticles.length === 0)) {
       return offlineArticles;
     }
-    return managedArticles;
-  }, [showOfflineOnly, isOnline, managedArticles, offlineArticles]);
+    
+    // Start with managed articles (which contains local edits, deletions, custom articles)
+    const combined = [...managedArticles];
+    const existingIds = new Set(managedArticles.map((a) => a.id));
+    const deletedIds = getDeletedArticleIds();
+
+    // If live RSS feeds were fetched from /api/news, include those that aren't duplicated or deleted
+    for (const art of articles) {
+      if (!existingIds.has(art.id) && !deletedIds.has(art.id)) {
+        combined.push(art);
+      }
+    }
+
+    return combined;
+  }, [showOfflineOnly, isOnline, managedArticles, articles, offlineArticles]);
 
   // Filtered articles
   const filteredArticles = useMemo(() => {
@@ -324,6 +352,8 @@ export default function App() {
         onToggleAutoTranslate={handleToggleAutoTranslate}
         isDarkMode={isDarkMode}
         onToggleDarkMode={handleToggleDarkMode}
+        showRadarBriefing={showRadarBriefing}
+        onToggleRadarBriefing={handleToggleRadarBriefing}
         activeCategory={activeCategory}
         onSelectCategory={(cat) => {
           setActiveCategory(cat);
@@ -365,12 +395,13 @@ export default function App() {
           </div>
         )}
 
-        {/* Top Autonomous Executive Daily Briefing (Shown when in all or without offline filter) */}
-        {!showOfflineOnly && activeCategory === 'all' && (
+        {/* Top Autonomous Executive Daily Briefing (Shown only if enabled and in all category) */}
+        {!showOfflineOnly && activeCategory === 'all' && showRadarBriefing && (
           <DailyBriefingCard
             briefing={briefing}
             isLoading={loading}
             autoTranslate={autoTranslate}
+            onClose={() => handleToggleRadarBriefing()}
           />
         )}
 
