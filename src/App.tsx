@@ -208,12 +208,14 @@ export default function App() {
     };
   }, []);
 
-  // Sincronização e Polling em tempo real a cada 3 segundos + foco da tela:
-  // Garante que o que for criado/editado em um celular apareça imediatamente no outro
+  // Sincronização segura com o servidor na inicialização e atualização periódica suave
   useEffect(() => {
     let isMounted = true;
+    let isSyncing = false;
 
     const pullServerUpdates = async () => {
+      if (isSyncing || document.visibilityState !== 'visible') return;
+      isSyncing = true;
       try {
         const synced = await syncPortalWithServer();
         if (synced && isMounted) {
@@ -234,29 +236,21 @@ export default function App() {
           });
         }
       } catch (e) {
-        // Silencioso em caso de offline
+        // Silencioso em caso de conexão instável
+      } finally {
+        isSyncing = false;
       }
     };
 
     pullServerUpdates();
     loadNewsFeed(false);
 
-    const intervalId = setInterval(pullServerUpdates, 3000);
-    const handleFocus = () => pullServerUpdates();
-    const handleVisibility = () => {
-      if (document.visibilityState === 'visible') {
-        pullServerUpdates();
-      }
-    };
-
-    window.addEventListener('focus', handleFocus);
-    window.addEventListener('visibilitychange', handleVisibility);
+    // Verificação periódica a cada 20 segundos em segundo plano, apenas com tela visível
+    const intervalId = setInterval(pullServerUpdates, 20000);
 
     return () => {
       isMounted = false;
       clearInterval(intervalId);
-      window.removeEventListener('focus', handleFocus);
-      window.removeEventListener('visibilitychange', handleVisibility);
     };
   }, []);
 

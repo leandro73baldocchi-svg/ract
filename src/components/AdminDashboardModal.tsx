@@ -240,7 +240,17 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     e.preventDefault();
     if (!newCatLabel.trim()) return;
 
-    const id = (newCatId.trim() || newCatLabel.toLowerCase().replace(/[^a-z0-9]/g, '-')).toLowerCase();
+    const cleanId = (
+      newCatId.trim() ||
+      newCatLabel
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '')
+    ) || `cat-${Date.now()}`;
+    const id = cleanId.toLowerCase();
+
     const allExisting = [...DEFAULT_BASE_CATEGORIES, ...customCategories];
     if (allExisting.some((c) => c.id === id)) {
       alert('Essa categoria ou identificador já existe!');

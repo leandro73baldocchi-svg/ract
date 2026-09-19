@@ -236,6 +236,9 @@ async function fetchFeed(source: FeedSource): Promise<any[]> {
   }
 }
 
+let cachedRssNews: any[] = [];
+let lastRssFetch = 0;
+
 async function getAggregatedNews(force = false, extraFeeds: FeedSource[] = []) {
   const allSources = [...SOURCES];
 
@@ -263,24 +266,29 @@ async function getAggregatedNews(force = false, extraFeeds: FeedSource[] = []) {
     }
   }
 
-  if (!force && cachedNews.length > 0 && Date.now() - lastNewsFetch < 1000 * 60 * 15 && extraFeeds.length === 0) {
-    return cachedNews;
+  const shouldFetchRss =
+    force ||
+    cachedRssNews.length === 0 ||
+    Date.now() - lastRssFetch >= 1000 * 60 * 15 ||
+    extraFeeds.length > 0;
+
+  if (shouldFetchRss) {
+    try {
+      const allFeeds = await Promise.all(allSources.map(fetchFeed));
+      cachedRssNews = allFeeds.flat();
+      lastRssFetch = Date.now();
+    } catch (e) {
+      console.warn('Erro ao atualizar feeds RSS:', (e as Error).message);
+    }
   }
-  const allFeeds = await Promise.all(allSources.map(fetchFeed));
-  let combined = allFeeds.flat();
-  
+
   // Utiliza os artigos cadastrados e gerenciados no portal (excluindo os deletados)
   const deletedSet = new Set(portalStore.deletedArticleIds || []);
   const activeManagedArticles = (portalStore.managedArticles || []).filter(
     (a: any) => !deletedSet.has(a.id)
   );
 
-  const merged = [...activeManagedArticles, ...combined];
-  if (extraFeeds.length === 0) {
-    cachedNews = merged;
-    lastNewsFetch = Date.now();
-  }
-  return merged;
+  return [...activeManagedArticles, ...cachedRssNews];
 }
 
 // ============================================================================
@@ -320,10 +328,6 @@ app.post('/api/portal/article', (req: Request, res: Response) => {
   portalStore.deletedArticleIds = portalStore.deletedArticleIds.filter((id: string) => id !== article.id);
   savePortalStore();
 
-  // Invalida cache de notícias para refletir de imediato
-  cachedNews = [];
-  lastNewsFetch = 0;
-
   res.json({ success: true, article });
 });
 
@@ -335,9 +339,6 @@ app.delete('/api/portal/article/:id', (req: Request, res: Response) => {
     portalStore.deletedArticleIds.push(id);
   }
   savePortalStore();
-
-  cachedNews = [];
-  lastNewsFetch = 0;
 
   res.json({ success: true, deletedId: id });
 });
@@ -358,8 +359,7 @@ app.post('/api/portal/feeds', (req: Request, res: Response) => {
   if (Array.isArray(feeds)) {
     portalStore.customRssFeeds = feeds;
     savePortalStore();
-    cachedNews = [];
-    lastNewsFetch = 0;
+    lastRssFetch = 0; // Atualiza feeds apenas se as fontes RSS mudarem
   }
   res.json({ success: true, feeds: portalStore.customRssFeeds });
 });
