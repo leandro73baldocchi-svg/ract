@@ -37,7 +37,7 @@ import {
   AlertCircle,
   Rss,
   Search,
-  RotateCcw,
+  RotateCcw
 } from 'lucide-react';
 
 interface AdminDashboardModalProps {
@@ -68,7 +68,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   const [customCategories, setCustomCategories] = useState<CustomCategory[]>(() => getCustomCategories());
   const [newCatId, setNewCatId] = useState<string>('');
   const [newCatLabel, setNewCatLabel] = useState<string>('');
-  const [newCatOrder, setNewCatOrder] = useState<string>('99'); // NOVO CAMPO DE ORDEM
+  const [newCatOrder, setNewCatOrder] = useState<string>('99'); 
   const [catSuccessMsg, setCatSuccessMsg] = useState<string | null>(null);
 
   // RSS
