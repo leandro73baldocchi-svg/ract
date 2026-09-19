@@ -8,6 +8,7 @@ const ALL_ARTICLES_KEY = 'ract_all_managed_articles_v3';
 const CUSTOM_FEEDS_KEY = 'ract_custom_rss_feeds_v1';
 const ADMIN_PASSWORD_KEY = 'ract_admin_password_hash_v1';
 const SHOW_RADAR_BRIEFING_KEY = 'ract_show_radar_briefing_v1';
+const AFFILIATE_LINKS_KEY = 'ract_affiliates_v1';
 
 export interface CustomRssFeed {
   id: string;
@@ -15,6 +16,12 @@ export interface CustomRssFeed {
   url: string;
   category: string;
   enabled: boolean;
+}
+
+export interface AffiliateLink {
+  id: string; 
+  title: string;
+  url: string;
 }
 
 export const DEFAULT_BASE_CATEGORIES: CustomCategory[] = [
@@ -140,6 +147,28 @@ export async function deleteCategoryFromServer(categoryId: string): Promise<Cust
   return await fetchServerCategories();
 }
 
+export async function fetchServerAffiliates(): Promise<AffiliateLink[]> {
+  try {
+    const querySnapshot = await getDocs(collection(db, "affiliates"));
+    const links: AffiliateLink[] = [];
+    querySnapshot.forEach((docSnap) => {
+      links.push(docSnap.data() as AffiliateLink);
+    });
+    if (links.length > 0) {
+      saveAffiliateLinks(links);
+      return links;
+    }
+    return [];
+  } catch (err) {
+    return getAffiliateLinks();
+  }
+}
+
+export async function saveAffiliateToServer(link: AffiliateLink): Promise<AffiliateLink[]> {
+  await setDoc(doc(db, "affiliates", link.id), link);
+  return await fetchServerAffiliates();
+}
+
 // -------------------------------------------------------------
 // RSS FEEDS (O Tradutor Automático)
 // -------------------------------------------------------------
@@ -231,6 +260,17 @@ export function getCustomRssFeeds(): CustomRssFeed[] {
 
 export function saveCustomRssFeeds(feeds: CustomRssFeed[]): void {
   localStorage.setItem(CUSTOM_FEEDS_KEY, JSON.stringify(feeds));
+}
+
+export function getAffiliateLinks(): AffiliateLink[] {
+  try {
+    const raw = localStorage.getItem(AFFILIATE_LINKS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
+export function saveAffiliateLinks(links: AffiliateLink[]): void {
+  localStorage.setItem(AFFILIATE_LINKS_KEY, JSON.stringify(links));
 }
 
 export function getShowRadarBriefingPreference(): boolean {
