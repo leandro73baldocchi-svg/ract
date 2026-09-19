@@ -1,0 +1,15 @@
+[
+  { "id": "all", "label": "Todas as Áreas" },
+  { "id": "biography", "label": "Biografias" },
+  { "id": "education", "label": "Educação" },
+  { "id": "biotech", "label": "Biotecnologia" },
+  { "id": "health", "label": "Saúde" },
+  { "id": "physics", "label": "Física" },
+  { "id": "math", "label": "Matemática" },
+  { "id": "astronomy", "label": "Astronomia" },
+  { "id": "geology", "label": "Geologia" },
+  { "id": "tech", "label": "Tecnologia" },
+  { "id": "ai", "label": "Inteligência Artificial" },
+  { "id": "psychology", "label": "Psicologia" },
+  { "id": "universities", "label": "Universidades (Brasil & Mundo)" }
+]

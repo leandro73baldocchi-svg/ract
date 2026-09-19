@@ -10,13 +10,13 @@ import { ArticleCard } from './components/ArticleCard';
 import { ArticleDetailModal } from './components/ArticleDetailModal';
 import { UniversitiesView } from './components/UniversitiesView';
 import { NewsArticle, DailyBriefing, CategoryType, CustomCategory } from './types';
-import { ACADEMIC_ARTICLES } from './data/academicArticles';
 import { AdminDashboardModal } from './components/AdminDashboardModal';
 import {
   DEFAULT_BASE_CATEGORIES,
   getCustomCategories,
   getAllManagedArticles,
-  getDeletedArticleIds,
+  fetchServerArticles,
+  fetchServerCategories,
   getShowRadarBriefingPreference,
   setShowRadarBriefingPreference,
 } from './utils/customDataManager';
@@ -32,7 +32,7 @@ import {
 import { BookOpen, AlertCircle, WifiOff } from 'lucide-react';
 
 export default function App() {
-  const [articles, setArticles] = useState<NewsArticle[]>(() => ACADEMIC_ARTICLES);
+  const [articles, setArticles] = useState<NewsArticle[]>(() => getAllManagedArticles());
   const [briefing, setBriefing] = useState<DailyBriefing | null>(() => ({
     date: new Date().toLocaleDateString('pt-BR'),
     edition: "Edição Global Acadêmica",
@@ -78,9 +78,8 @@ export default function App() {
     });
   };
 
-  // Custom Categories & Managed Articles (Secret Admin Panel)
+  // Custom Categories & Articles (Synced directly with server)
   const [customCategories, setCustomCategories] = useState<CustomCategory[]>(() => getCustomCategories());
-  const [managedArticles, setManagedArticles] = useState<NewsArticle[]>(() => getAllManagedArticles());
   const [isAdminOpen, setIsAdminOpen] = useState<boolean>(false);
 
   // Check URL parameter or hash: ONLY opens if explicitly typed in the browser's address bar
@@ -133,13 +132,20 @@ export default function App() {
     }
   };
 
-  const handleDataUpdated = () => {
-    setCustomCategories(getCustomCategories());
-    setManagedArticles(getAllManagedArticles());
+  const handleDataUpdated = async () => {
+    const [arts, cats] = await Promise.all([
+      fetchServerArticles(),
+      fetchServerCategories(),
+    ]);
+    setArticles(arts);
+    setCustomCategories(cats);
   };
 
   const allCategoriesList = useMemo(() => {
-    return [...DEFAULT_BASE_CATEGORIES, ...customCategories];
+    if (customCategories && customCategories.length > 0) {
+      return customCategories;
+    }
+    return DEFAULT_BASE_CATEGORIES;
   }, [customCategories]);
 
   // Offline saved articles state
@@ -192,9 +198,24 @@ export default function App() {
     };
   }, []);
 
-  // Initial load
+  // Initial load and periodic auto-sync across all connected devices
   useEffect(() => {
     loadNewsFeed(false);
+
+    const onFocus = () => {
+      loadNewsFeed(false);
+    };
+    window.addEventListener('focus', onFocus);
+
+    // Sincronização em segundo plano a cada 20s para atualizar novos artigos/áreas criados em outros aparelhos
+    const interval = setInterval(() => {
+      loadNewsFeed(false);
+    }, 20000);
+
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      clearInterval(interval);
+    };
   }, []);
 
   const loadNewsFeed = async (force: boolean = false) => {
@@ -209,16 +230,18 @@ export default function App() {
     }
 
     try {
-      const [newsRes, briefingRes] = await Promise.allSettled([
-        fetch(`/api/news${force ? '?force=true' : ''}`).then((r) => r.json()),
+      const [articlesData, categoriesData, briefingRes] = await Promise.allSettled([
+        fetchServerArticles(),
+        fetchServerCategories(),
         fetch(`/api/daily-briefing${force ? '?force=true' : ''}`).then((r) => r.json()),
       ]);
 
-      if (newsRes.status === 'fulfilled' && newsRes.value?.success && Array.isArray(newsRes.value.articles) && newsRes.value.articles.length > 0) {
-        setArticles(newsRes.value.articles);
-      } else {
-        // Client-side fallback: direct academic articles catalog
-        setArticles(ACADEMIC_ARTICLES);
+      if (articlesData.status === 'fulfilled' && Array.isArray(articlesData.value)) {
+        setArticles(articlesData.value);
+      }
+
+      if (categoriesData.status === 'fulfilled' && Array.isArray(categoriesData.value)) {
+        setCustomCategories(categoriesData.value);
       }
 
       if (briefingRes.status === 'fulfilled' && briefingRes.value?.success) {
@@ -249,8 +272,7 @@ export default function App() {
         });
       }
     } catch (err) {
-      console.warn('Network sync notice, activating direct client dataset:', err);
-      setArticles(ACADEMIC_ARTICLES);
+      console.warn('Erro na sincronização com o servidor:', err);
     } finally {
       setLoading(false);
       setIsRefreshing(false);
@@ -278,27 +300,13 @@ export default function App() {
     return new Set(offlineArticles.map((a) => a.id));
   }, [offlineArticles]);
 
-  // Current dataset to display:
-  // Merges user managed articles (custom edits/additions) with live aggregated articles from RSS feeds
+  // Current dataset to display (direct from centralized server)
   const displaySource = useMemo(() => {
-    if (showOfflineOnly || (!isOnline && managedArticles.length === 0)) {
+    if (showOfflineOnly || (!isOnline && articles.length === 0)) {
       return offlineArticles;
     }
-    
-    // Start with managed articles (which contains local edits, deletions, custom articles)
-    const combined = [...managedArticles];
-    const existingIds = new Set(managedArticles.map((a) => a.id));
-    const deletedIds = getDeletedArticleIds();
-
-    // If live RSS feeds were fetched from /api/news, include those that aren't duplicated or deleted
-    for (const art of articles) {
-      if (!existingIds.has(art.id) && !deletedIds.has(art.id)) {
-        combined.push(art);
-      }
-    }
-
-    return combined;
-  }, [showOfflineOnly, isOnline, managedArticles, articles, offlineArticles]);
+    return articles;
+  }, [showOfflineOnly, isOnline, articles, offlineArticles]);
 
   // Filtered articles
   const filteredArticles = useMemo(() => {

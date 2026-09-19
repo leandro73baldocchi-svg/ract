@@ -14,6 +14,10 @@ import {
   CustomRssFeed,
   checkAdminPassword,
   setAdminPassword,
+  saveCategoryToServer,
+  deleteCategoryFromServer,
+  fetchServerArticles,
+  fetchServerCategories,
 } from '../utils/customDataManager';
 import {
   X,
@@ -108,9 +112,11 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
   if (!isOpen) return null;
 
-  const refreshArticles = () => {
-    const list = getAllManagedArticles();
+  const refreshArticles = async () => {
+    const list = await fetchServerArticles();
     setArticlesList(list);
+    const cats = await fetchServerCategories();
+    setCustomCategories(cats);
   };
 
   const handleLogin = (e: React.FormEvent) => {
@@ -163,7 +169,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     });
   };
 
-  const handleSaveArticle = (e: React.FormEvent) => {
+  const handleSaveArticle = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!articleForm.titlePt.trim() || !articleForm.summaryPt.trim()) {
       alert('Preencha pelo menos o Título em Português e o Resumo!');
@@ -190,48 +196,48 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
         .filter(Boolean),
     };
 
-    saveOrUpdateArticle(articleToSave);
-    refreshArticles();
+    const updated = await saveOrUpdateArticle(articleToSave);
+    setArticlesList(updated);
     handleCancelEdit();
 
     setArtSuccessMsg(
       isEditingId
-        ? 'Artigo atualizado com sucesso no portal!'
-        : 'Novo artigo publicado e incluído no acervo com sucesso!'
+        ? 'Artigo atualizado com sucesso no servidor e em todos os dispositivos!'
+        : 'Novo artigo publicado no servidor e visível em todos os aparelhos conectados!'
     );
     setTimeout(() => setArtSuccessMsg(null), 4000);
     onDataUpdated();
   };
 
-  const handleDeleteArticle = (articleId: string, title: string) => {
-    if (confirm(`Deseja realmente EXCLUIR do portal o artigo:\n"${title}"?`)) {
-      deleteManagedArticle(articleId);
-      refreshArticles();
+  const handleDeleteArticle = async (articleId: string, title: string) => {
+    if (confirm(`Deseja realmente EXCLUIR do servidor o artigo:\n"${title}"?`)) {
+      const updated = await deleteManagedArticle(articleId);
+      setArticlesList(updated);
       if (isEditingId === articleId) handleCancelEdit();
       onDataUpdated();
     }
   };
 
-  const handleResetFactory = () => {
+  const handleResetFactory = async () => {
     if (
       confirm(
-        'Tem certeza que deseja restaurar todo o acervo original de fábrica? Isso recarregará os artigos padrão.'
+        'Tem certeza que deseja restaurar o acervo com os 41 artigos originais no servidor?'
       )
     ) {
-      resetToFactoryArticles();
-      refreshArticles();
+      const defaultArts = await resetToFactoryArticles();
+      setArticlesList(defaultArts);
       onDataUpdated();
-      alert('Acervo restaurado com sucesso!');
+      alert('Acervo restaurado com os 41 artigos no servidor com sucesso!');
     }
   };
 
   // Categories Handlers
-  const handleAddCategory = (e: React.FormEvent) => {
+  const handleAddCategory = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCatLabel.trim()) return;
 
     const id = (newCatId.trim() || newCatLabel.toLowerCase().replace(/[^a-z0-9]/g, '-')).toLowerCase();
-    const allExisting = [...DEFAULT_BASE_CATEGORIES, ...customCategories];
+    const allExisting = customCategories;
     if (allExisting.some((c) => c.id === id)) {
       alert('Essa categoria ou identificador já existe!');
       return;
@@ -243,21 +249,19 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
       isCustom: true,
     };
 
-    const updated = [...customCategories, newCat];
+    const updated = await saveCategoryToServer(newCat);
     setCustomCategories(updated);
-    saveCustomCategories(updated);
     setNewCatId('');
     setNewCatLabel('');
-    setCatSuccessMsg(`Área "${newCat.label}" adicionada com sucesso ao menu principal!`);
+    setCatSuccessMsg(`Área "${newCat.label}" cadastrada no servidor e ativa em todos os dispositivos!`);
     setTimeout(() => setCatSuccessMsg(null), 4000);
     onDataUpdated();
   };
 
-  const handleDeleteCategory = (catId: string) => {
-    if (confirm(`Tem certeza que deseja remover esta área do menu?`)) {
-      const updated = customCategories.filter((c) => c.id !== catId);
+  const handleDeleteCategory = async (catId: string) => {
+    if (confirm(`Tem certeza que deseja remover esta área do servidor?`)) {
+      const updated = await deleteCategoryFromServer(catId);
       setCustomCategories(updated);
-      saveCustomCategories(updated);
       onDataUpdated();
     }
   };
