@@ -1,4 +1,5 @@
 import { CustomCategory, NewsArticle } from '../types';
+import { ACADEMIC_ARTICLES } from '../data/academicArticles';
 
 const CUSTOM_CATEGORIES_KEY = 'ract_custom_categories_v2';
 const ALL_ARTICLES_KEY = 'ract_all_managed_articles_v3';
@@ -248,12 +249,12 @@ export function saveCustomCategories(categories: CustomCategory[]): void {
 export function getAllManagedArticles(): NewsArticle[] {
   try {
     const raw = localStorage.getItem(ALL_ARTICLES_KEY);
-    if (!raw) return [];
+    if (!raw) return ACADEMIC_ARTICLES;
     const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed)) return parsed;
-    return [];
+    if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    return ACADEMIC_ARTICLES;
   } catch (e) {
-    return [];
+    return ACADEMIC_ARTICLES;
   }
 }
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CustomCategory, NewsArticle, CategoryType } from '../types';
 import {
   DEFAULT_BASE_CATEGORIES,
@@ -110,7 +110,13 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   const [newPassInput, setNewPassInput] = useState<string>('');
   const [passSuccessMsg, setPassSuccessMsg] = useState<string | null>(null);
 
-  if (!isOpen) return null;
+  // Auto refresh data from server whenever admin modal opens or is authenticated
+  useEffect(() => {
+    if (isOpen) {
+      fetchServerArticles().then(setArticlesList);
+      fetchServerCategories().then(setCustomCategories);
+    }
+  }, [isOpen]);
 
   const refreshArticles = async () => {
     const list = await fetchServerArticles();
@@ -118,6 +124,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     const cats = await fetchServerCategories();
     setCustomCategories(cats);
   };
+
+  if (!isOpen) return null;
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -358,7 +366,10 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     setTimeout(() => setPassSuccessMsg(null), 4000);
   };
 
-  const allAvailableCategories = [...DEFAULT_BASE_CATEGORIES, ...customCategories];
+  // Active categories list from server: contains default + custom, or user-modified categories
+  const allAvailableCategories = customCategories && customCategories.length > 0
+    ? customCategories
+    : DEFAULT_BASE_CATEGORIES;
 
   // Filtered articles list for admin table
   const displayedArticles = articlesList.filter((art) => {
@@ -1033,17 +1044,17 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                             </span>
                           </div>
 
-                          {c.isCustom ? (
+                          {c.id !== 'all' ? (
                             <button
                               onClick={() => handleDeleteCategory(c.id)}
-                              className="p-1 rounded text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors cursor-pointer"
-                              title="Remover área"
+                              className="p-1.5 rounded text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors cursor-pointer"
+                              title={`Remover área "${c.label}"`}
                             >
-                              <Trash2 className="w-3.5 h-3.5" />
+                              <Trash2 className="w-4 h-4" />
                             </button>
                           ) : (
                             <span className="text-[10px] text-stone-400 uppercase tracking-wider font-semibold">
-                              Padrão
+                              Principal
                             </span>
                           )}
                         </div>

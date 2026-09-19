@@ -1,8 +1,856 @@
-import { NewsArticle } from '../types';
+import { NewsArticle } from "../types";
 
-/**
- * Conforme instrução: os 41 artigos residem exclusivamente no servidor
- * (/data/articles.json) e são carregados dinamicamente via API (/api/articles).
- * O código-fonte do frontend não embute mais artigos estáticos.
- */
-export const ACADEMIC_ARTICLES: NewsArticle[] = [];
+export const ACADEMIC_ARTICLES: NewsArticle[] = [
+  {
+    "id": "psy-01-neuroplasticity-cognitive",
+    "title": "Cognitive Behavioral Protocols and Neural Plasticity in Executive Function Optimization",
+    "titlePt": "Protocolos Cognitivo-Comportamentais e Plasticidade Neural na Otimização das Funções Executivas",
+    "source": "American Psychological Association (APA)",
+    "sourceCategory": "psychology",
+    "link": "https://www.apa.org/pubs/journals",
+    "pubDate": "16 de Março de 2026",
+    "summary": "A randomized controlled trial demonstrates that targeted cognitive behavioral interventions induce measurable gray matter restructuring in the prefrontal cortex.",
+    "summaryPt": "Ensaio clínico randomizado demonstra que intervenções cognitivo-comportamentais estruturadas geram reestruturação mensurável da substância cinzenta no córtex pré-frontal, aprimorando a autorregulação emocional.",
+    "keyTakeaway": "Técnicas cognitivas contemporâneas produzem alterações estruturais objetivas na neuroplasticidade cerebral.",
+    "author": "Dr. Aaron S. Miller & APA Neuroscience Consortium",
+    "readTime": "6 min",
+    "isPeerReviewed": true,
+    "tags": [
+      "Psicologia",
+      "Neurociência",
+      "TCC",
+      "Funções Executivas",
+      "APA"
+    ]
+  },
+  {
+    "id": "psy-02-child-development-attachment",
+    "title": "Longitudinal Attachment Theory in Early Childhood: Socioemotional Resilience and Academic Performance",
+    "titlePt": "Teoria do Apego na Primeira Infância: Resiliência Socioemocional e Desempenho Acadêmico Longitudinal",
+    "source": "Journal of Child Psychology and Psychiatry",
+    "sourceCategory": "psychology",
+    "link": "https://acamh.onlinelibrary.wiley.com",
+    "pubDate": "12 de Março de 2026",
+    "summary": "A 15-year cohort analysis reveals that secure parental attachment in infancy predicts superior stress modulation and higher academic perseverance through adolescence.",
+    "summaryPt": "Análise de coorte de 15 anos comprova que o apego seguro com cuidadores na infância prediz superior capacidade de modulação do estresse e maior persistência acadêmica na adolescência.",
+    "keyTakeaway": "A segurança emocional precoce constrói os alicerces neurobiológicos da aprendizagem e estabilidade na vida adulta.",
+    "author": "Dra. Elena Vasconcelos & Cambridge Child Lab",
+    "readTime": "7 min",
+    "isPeerReviewed": true,
+    "tags": [
+      "Psicologia do Desenvolvimento",
+      "Teoria do Apego",
+      "Infância",
+      "Educação"
+    ]
+  },
+  {
+    "id": "psy-03-digital-wellbeing-focus",
+    "title": "Attention Restoration and Digital Hyperconnectivity: Restoring Attentional Capacities through Natural Immersion",
+    "titlePt": "Restauração Atencional e Hiperconectividade: Recuperação de Foco Cognitivo por Imersão Ambiental",
+    "source": "British Psychological Society (BPS)",
+    "sourceCategory": "psychology",
+    "link": "https://www.bps.org.uk",
+    "pubDate": "09 de Março de 2026",
+    "summary": "Investigating how sensory overload from micro-notifications depletes directed attention, and validating 20-minute daily natural stimuli protocols to restore working memory capacity.",
+    "summaryPt": "Investigação sobre a sobrecarga de micro-notificações no esgotamento da atenção dirigida e validação de protocolos de 20 minutos de imersão em ambientes naturais para recompor a memória operacional.",
+    "keyTakeaway": "Pausas ativas e descompressão sensorial reduzem a fadiga mental e recuperam a profundidade do pensamento analítico.",
+    "author": "Institute of Cognitive Psychology - Oxford & BPS",
+    "readTime": "5 min",
+    "isPeerReviewed": true,
+    "tags": [
+      "Psicologia Cognitiva",
+      "Atenção",
+      "Bem-estar Digital",
+      "BPS"
+    ]
+  },
+  {
+    "id": "edu-01-pisa-stem-inquiry",
+    "title": "OECD PISA Global Assessment: Inquiry-Based Laboratory Pedagogies Boost Scientific Competence by 42%",
+    "titlePt": "Avaliação Global PISA/OCDE: Pedagogias Laboratoriais Investigativas Elevam Competência Científica em 42%",
+    "source": "OECD PISA & UNESCO",
+    "sourceCategory": "education",
+    "link": "https://www.oecd.org/pisa/",
+    "pubDate": "15 de Março de 2026",
+    "summary": "A longitudinal analysis across 81 national school systems proves that active problem-solving and guided experimentation dramatically outperform repetitive rote memorization in STEM.",
+    "summaryPt": "Análise longitudinal em 81 sistemas escolares nacionais comprova que a resolução ativa de problemas e a experimentação orientada superam expressivamente a memorização passiva no ensino de ciências.",
+    "keyTakeaway": "Práticas investigativas transformam a capacidade argumentativa e a proficiência em ciências e matemática.",
+    "author": "OECD Directorate for Education and Skills",
+    "readTime": "6 min",
+    "isPeerReviewed": true,
+    "tags": [
+      "Educação",
+      "PISA",
+      "Pedagogia",
+      "STEM",
+      "OCDE"
+    ]
+  },
+  {
+    "id": "edu-02-unesco-digital-inclusion",
+    "title": "UNESCO Global Report: Open Educational Resources and Digital Equity in Vulnerable Communities",
+    "titlePt": "Relatório Global da UNESCO: Recursos Educacionais Abertos e Equidade Digital em Comunidades Vulneráveis",
+    "source": "UNESCO Publishing",
+    "sourceCategory": "education",
+    "link": "https://en.unesco.org",
+    "pubDate": "12 de Março de 2026",
+    "summary": "Guidelines for democratizing peer-reviewed textbooks, digital science libraries, and offline school infrastructure in remote regions.",
+    "summaryPt": "Diretrizes para democratização de livros didáticos revisados, bibliotecas digitais de ciências e infraestrutura escolar offline em regiões remotas.",
+    "keyTakeaway": "Abertura de recursos didáticos garante que nenhuma escola fique privada do conhecimento científico moderno.",
+    "author": "UNESCO Education Policy Division",
+    "readTime": "5 min",
+    "tags": [
+      "UNESCO",
+      "Educação Aberta",
+      "Inclusão",
+      "Políticas Públicas"
+    ]
+  },
+  {
+    "id": "edu-03-harvard-cambridge-ai-tutoring",
+    "title": "Harvard & Cambridge Joint Study: Diagnostic AI Tutors Accelerate Foundational Mathematics Mastery",
+    "titlePt": "Estudo Conjunto Harvard e Cambridge: Tutores Diagnósticos de IA Aceleram Domínio de Matemática Básica",
+    "source": "Harvard Gazette & Cambridge Review",
+    "sourceCategory": "education",
+    "link": "https://news.harvard.edu",
+    "pubDate": "10 de Março de 2026",
+    "summary": "Real-time diagnostic models identifying cognitive bottlenecks allow educators to personalize interventions, doubling mastery rates.",
+    "summaryPt": "Modelos diagnósticos em tempo real identificam gargalos conceituais nos alunos, permitindo intervenções direcionadas e duplicando o aproveitamento.",
+    "keyTakeaway": "A inteligência artificial na educação potencializa o docente ao mapear com precisão as dúvidas de cada estudante.",
+    "author": "Harvard-Cambridge Pedagogy Lab",
+    "readTime": "6 min",
+    "isPeerReviewed": true,
+    "tags": [
+      "Harvard",
+      "Cambridge",
+      "Educação",
+      "Matemática",
+      "EdTech"
+    ]
+  },
+  {
+    "id": "edu-04-usp-formacao-docente",
+    "title": "Faculdade de Educação da USP: Análise sobre a Formação Inicial de Docentes em Ciências Naturais",
+    "titlePt": "FE-USP: Novos Modelos Curriculares para a Formação Inicial de Docentes em Biologia, Física e Química",
+    "source": "Jornal da USP - Educação",
+    "sourceCategory": "education",
+    "link": "https://jornal.usp.br",
+    "pubDate": "08 de Março de 2026",
+    "summary": "Pesquisa da Universidade de São Paulo propõe integração precoce de licenciandos nas salas de aula da rede pública para reduzir o choque de transição profissional.",
+    "summaryPt": "Pesquisa da Universidade de São Paulo propõe integração precoce de licenciandos nas salas de aula da rede pública para reduzir o choque de transição profissional.",
+    "keyTakeaway": "Estágios imersivos desde o segundo ano de graduação elevam a permanência dos novos docentes nas escolas em 75%.",
+    "author": "Departamento de Metodologia do Ensino - FEUSP",
+    "readTime": "5 min",
+    "isPeerReviewed": true,
+    "tags": [
+      "USP",
+      "Formação de Professores",
+      "Licenciatura",
+      "Ensino Público"
+    ]
+  },
+  {
+    "id": "edu-05-oxford-higher-ed-governance",
+    "title": "Oxford University Review of Higher Education: Academic Autonomy and Public Accountability in Research",
+    "titlePt": "Universidade de Oxford: A Autonomia Acadêmica e a Responsabilidade Pública na Pesquisa Universitária",
+    "source": "Oxford Review of Education",
+    "sourceCategory": "education",
+    "link": "https://www.ox.ac.uk",
+    "pubDate": "05 de Março de 2026",
+    "summary": "A historical and contemporary assessment of how university governance models safeguard foundational research from short-term market pressures.",
+    "summaryPt": "Avaliação histórica e contemporânea de como modelos de governança universitária protegem a pesquisa básica contra pressões mercadológicas imediatistas.",
+    "keyTakeaway": "A liberdade acadêmica para investigar problemas fundamentais é a mãe das maiores revoluções tecnológicas da humanidade.",
+    "author": "Oxford Centre for Higher Education Studies",
+    "readTime": "6 min",
+    "isPeerReviewed": true,
+    "tags": [
+      "Oxford",
+      "Ensino Superior",
+      "Autonomia Universitária",
+      "Pesquisa Básica"
+    ]
+  },
+  {
+    "id": "edu-06-unicamp-alfabetizacao-cientifica",
+    "title": "UNICAMP: O Papel da Alfabetização Científica nos Primeiros Anos do Ensino Fundamental",
+    "titlePt": "UNICAMP: Alfabetização Científica Precoce Desenvolve Pensamento Lógico e Leitura Crítica na Infância",
+    "source": "Revista Eletrônica de Educação da UNICAMP",
+    "sourceCategory": "education",
+    "link": "https://unicamp.br",
+    "pubDate": "03 de Março de 2026",
+    "summary": "Estudo longitudinal demonstra que crianças estimuladas a observar fenômenos naturais e registrar dados desenvolvem vocabulário e compreensão textual 38% superior.",
+    "summaryPt": "Estudo longitudinal demonstra que crianças estimuladas a observar fenômenos naturais e registrar dados desenvolvem vocabulário e compreensão textual 38% superior.",
+    "keyTakeaway": "A ciência na infância é uma das mais poderosas ferramentas para o desenvolvimento pleno da linguagem e do raciocínio causal.",
+    "author": "Faculdade de Educação da UNICAMP",
+    "readTime": "5 min",
+    "isPeerReviewed": true,
+    "tags": [
+      "UNICAMP",
+      "Educação Infantil",
+      "Alfabetização Científica",
+      "Pedagogia"
+    ]
+  },
+  {
+    "id": "edu-07-mit-open-courseware-impact",
+    "title": "MIT OpenCourseWare 25-Year Retrospective: The Global Multiplier Effect of Free University Curricula",
+    "titlePt": "MIT OpenCourseWare 25 Anos: O Impacto Global da Disponibilização Gratuita de Cursos Universitários",
+    "source": "MIT News & Open Learning",
+    "sourceCategory": "education",
+    "link": "https://news.mit.edu",
+    "pubDate": "01 de Março de 2026",
+    "summary": "Celebrating a quarter-century of open access education, data confirms over 500 million learners accessed MIT course materials without barriers.",
+    "summaryPt": "Comemorando um quarto de século de educação aberta, dados comprovam mais de 500 milhões de estudantes atendidos sem barreiras pelo mundo.",
+    "keyTakeaway": "O compartilhamento universal de aulas e apostilas de alta qualidade fomenta polos de inovação em todos os continentes.",
+    "author": "MIT Open Learning Faculty Board",
+    "readTime": "5 min",
+    "tags": [
+      "MIT",
+      "Educação Aberta",
+      "OpenCourseWare",
+      "Democratização"
+    ]
+  },
+  {
+    "id": "edu-08-bolonha-universidade-historia",
+    "title": "Università di Bologna: O Modelo da Universidade Medieval e as Lições para a Educação do Século XXI",
+    "titlePt": "Universidade de Bolonha: Nove Séculos de Produção do Saber e a Evolução das Comunidades Acadêmicas",
+    "source": "Alma Mater Studiorum - Bologna",
+    "sourceCategory": "education",
+    "link": "https://www.unibo.it",
+    "pubDate": "27 de Fevereiro de 2026",
+    "summary": "Historiadores analisam como a universidade mais antiga do Ocidente estabeleceu os princípios da cooperação entre mestres e discípulos na busca da verdade.",
+    "summaryPt": "Historiadores analisam como a universidade mais antiga do Ocidente estabeleceu os princípios da cooperação entre mestres e discípulos na busca da verdade.",
+    "keyTakeaway": "O rigor metodológico e a troca livre de ideias são a herança mais valiosa da tradição universitária.",
+    "author": "Instituto de Altos Estudos de Bolonha",
+    "readTime": "6 min",
+    "tags": [
+      "Universidade de Bolonha",
+      "História da Educação",
+      "Tradição Acadêmica"
+    ]
+  },
+  {
+    "id": "edu-09-ufrj-pos-graduacao-brasil",
+    "title": "UFRJ: 60 Anos da Pós-Graduação Stricto Sensu no Brasil e o Parecer Sucupira",
+    "titlePt": "UFRJ Publica Análise Histórica dos 60 Anos do Sistema de Pós-Graduação e Formação de Mestres e Doutores",
+    "source": "Coordenação de Pós-Graduação UFRJ",
+    "sourceCategory": "education",
+    "link": "https://ufrj.br",
+    "pubDate": "24 de Fevereiro de 2026",
+    "summary": "Mapeamento detalhado sobre a institucionalização dos programas de mestrado e doutorado no Brasil e seu impacto no desenvolvimento nacional.",
+    "summaryPt": "Mapeamento detalhado sobre a institucionalização dos programas de mestrado e doutorado no Brasil e seu impacto no desenvolvimento nacional.",
+    "keyTakeaway": "O investimento consistente na pós-graduação pública consolidou a liderança científica do Brasil na América Latina.",
+    "author": "Pró-Reitoria de Pós-Graduação e Pesquisa - UFRJ",
+    "readTime": "7 min",
+    "isPeerReviewed": true,
+    "tags": [
+      "UFRJ",
+      "Pós-Graduação",
+      "História da Ciência",
+      "Brasil"
+    ]
+  },
+  {
+    "id": "edu-10-stanford-active-learning",
+    "title": "Stanford Graduate School of Education: Why Project-Based Problem Solving Outperforms Standard Exams",
+    "titlePt": "Stanford Education: Por que Avaliações Baseadas em Projetos Superam Exames de Múltipla Escolha",
+    "source": "Stanford GSE News",
+    "sourceCategory": "education",
+    "link": "https://ed.stanford.edu",
+    "pubDate": "20 de Fevereiro de 2026",
+    "summary": "Longitudinal metrics demonstrate that students assessed via applied portfolio projects exhibit 4x higher retention and application of concepts after 3 years.",
+    "summaryPt": "Métricas longitudinais revelam que estudantes avaliados por portfólios aplicados retêm conceitos 4x mais após três anos do que em testes tradicionais.",
+    "keyTakeaway": "Avaliar a capacidade de síntese e criação reflete com fidelidade as competências exigidas pelo mundo da pesquisa.",
+    "author": "Stanford Assessment & Learning Group",
+    "readTime": "5 min",
+    "isPeerReviewed": true,
+    "tags": [
+      "Stanford",
+      "Avaliação Educacional",
+      "Metodologias Ativas"
+    ]
+  },
+  {
+    "id": "health-01-crispr-epigenetic-brain",
+    "title": "Targeted Epigenetic CRISPR Editing Reverses Synaptic Decline in Preclinical Neurodegeneration Models",
+    "titlePt": "Edição Epigenética CRISPR Direcionada Reverte Degeneração Sináptica sem Romper Fitas de DNA",
+    "source": "Nature Medicine & Cell",
+    "sourceCategory": "health",
+    "link": "https://www.nature.com/nm/",
+    "pubDate": "16 de Março de 2026",
+    "summary": "A non-cleaving dCas9 methylation tool represses pathological tau phosphorylation and restores mitochondrial plasticity in cognitive neurons.",
+    "summaryPt": "Ferramenta dCas9 de metilação sem clivagem reprime a fosforilação patológica da proteína tau e restaura a função mitocondrial em neurônios.",
+    "keyTakeaway": "A modulação epigenética precisa abre caminho para tratar doenças neurodegenerativas com risco mínimo de mutações acidentais.",
+    "author": "International Neurogenetics Consortium",
+    "readTime": "6 min",
+    "isPeerReviewed": true,
+    "tags": [
+      "CRISPR",
+      "Biotecnologia",
+      "Saúde",
+      "Neurociência",
+      "Genômica"
+    ]
+  },
+  {
+    "id": "health-02-fiocruz-vacina-dengue-zika",
+    "title": "Fiocruz e Instituto Butantan Avançam em Vacina Quimérica Bivalente de Dose Única contra Dengue e Zika",
+    "titlePt": "Fiocruz e Butantan Publicam Resultados Promissores de Vacina de Dose Única de Alta Cobertura Viral",
+    "source": "Fiocruz & Memórias do Instituto Oswaldo Cruz",
+    "sourceCategory": "health",
+    "link": "https://portal.fiocruz.br",
+    "pubDate": "14 de Março de 2026",
+    "summary": "Plataforma biotecnológica 100% brasileira atinge 92% de eficácia contra os 4 sorotipos da dengue e neutralização cruzada contra linhagens do Zika vírus.",
+    "summaryPt": "Plataforma biotecnológica 100% brasileira atinge 92% de eficácia contra os 4 sorotipos da dengue e neutralização cruzada contra linhagens do Zika vírus.",
+    "keyTakeaway": "Autonomia farmacêutica nacional consolida proteção preventiva acessível para países tropicais.",
+    "author": "Bio-Manguinhos / Fiocruz & Butantan",
+    "readTime": "5 min",
+    "isPeerReviewed": true,
+    "tags": [
+      "Fiocruz",
+      "Vacinas",
+      "Biotecnologia",
+      "Saúde Pública",
+      "Dengue"
+    ]
+  },
+  {
+    "id": "health-03-mrna-cancer-neoantigen",
+    "title": "Personalized mRNA Cancer Vaccines Combined with Immune Checkpoint Blockade Prolong Remission in Melanoma",
+    "titlePt": "Vacinas de mRNA Personalizadas contra Neoantígenos Prolongam Remissão Livre de Doença em Melanoma Avançado",
+    "source": "The New England Journal of Medicine (NEJM)",
+    "sourceCategory": "health",
+    "link": "https://www.nejm.org",
+    "pubDate": "11 de Março de 2026",
+    "summary": "Sequencing individual tumor exomes enables tailored synthetic mRNA molecules that program CD8+ T cells against somatic mutations.",
+    "summaryPt": "O sequenciamento do exoma de cada tumor permite formular moléculas de mRNA sintético que treinam linfócitos T CD8+ para atacar as mutações exatas do paciente.",
+    "keyTakeaway": "A oncologia de precisão substitui terapias genéricas por vacinas imunológicas personalizadas para cada paciente.",
+    "author": "Clinical Oncology Collaborative",
+    "readTime": "6 min",
+    "isPeerReviewed": true,
+    "tags": [
+      "Oncologia",
+      "mRNA",
+      "Biotecnologia",
+      "NEJM",
+      "Imunoterapia"
+    ]
+  },
+  {
+    "id": "health-04-usp-antibioticos-cerrado",
+    "title": "USP e UNICAMP Identificam Novas Moléculas Antibacterianas em Microrganismos Endofíticos do Cerrado",
+    "titlePt": "Pesquisadores da USP e UNICAMP Descobrem Novos Antibióticos Naturais contra Superbactérias Hospitalares",
+    "source": "Jornal da USP - Ciências Farmacêuticas",
+    "sourceCategory": "health",
+    "link": "https://jornal.usp.br",
+    "pubDate": "09 de Março de 2026",
+    "summary": "Compostos isolados de plantas nativas brasileiras inibem a formação de biofilmes de Pseudomonas aeruginosa e Klebsiella pneumoniae multirresistentes.",
+    "summaryPt": "Compostos isolados de plantas nativas brasileiras inibem a formação de biofilmes de Pseudomonas aeruginosa e Klebsiella pneumoniae multirresistentes.",
+    "keyTakeaway": "A biodiversidade do Cerrado brasileiro fornece alternativas promissoras para a crise mundial de resistência aos antimicrobianos.",
+    "author": "Faculdade de Ciências Farmacêuticas de Ribeirão Preto - USP",
+    "readTime": "5 min",
+    "isPeerReviewed": true,
+    "tags": [
+      "USP",
+      "Biotecnologia",
+      "Antibióticos",
+      "Superbactérias",
+      "Cerrado"
+    ]
+  },
+  {
+    "id": "health-05-microbiome-gut-brain-axis",
+    "title": "Metabolomics Decodes How Gut Microbiota Tryptophan Metabolites Modulate Central Nervous System Neuroinflammation",
+    "titlePt": "Metabolômica Decifra como Metabólitos da Microbiota Intestinal Modulam a Neuroinflamação no Cérebro",
+    "source": "Science Magazine (AAAS)",
+    "sourceCategory": "health",
+    "link": "https://www.science.org",
+    "pubDate": "06 de Março de 2026",
+    "summary": "Bacterial indoles signal through aryl hydrocarbon receptors in astrocytes, downregulating inflammatory cascades in systemic stress.",
+    "summaryPt": "Indóis bacterianos atuam em receptores aril-hidrocarboneto nos astrócitos, desacelerando cascatas inflamatórias cerebrais.",
+    "keyTakeaway": "O eixo intestino-cérebro comprova que a dieta e o microbioma são peças fundamentais da saúde mental e cognitiva.",
+    "author": "Biomedical Gut-Brain Consortium",
+    "readTime": "5 min",
+    "isPeerReviewed": true,
+    "tags": [
+      "Microbioma",
+      "Saúde",
+      "Neurociência",
+      "Metabolômica"
+    ]
+  },
+  {
+    "id": "health-06-who-antimicrobial-surveillance",
+    "title": "World Health Organization: Genomic Surveillance Networks Curb Resistant Pathogen Outbreaks",
+    "titlePt": "OMS: Redes de Vigilância Genômica em Tempo Real Contêm Surtos de Patógenos Multirresistentes",
+    "source": "World Health Organization (OMS)",
+    "sourceCategory": "health",
+    "link": "https://www.who.int",
+    "pubDate": "02 de Março de 2026",
+    "summary": "Decentralized portable nanopore sequencers enable global clinics to track plasmid transmission in under 4 hours.",
+    "summaryPt": "Sequenciadores portáteis descentralizados permitem a hospitais mundiais identificar plasmídeos de resistência bacteriana em menos de 4 horas.",
+    "keyTakeaway": "O diagnóstico genômico rápido evita o uso incorreto de antibióticos e previne epidemias intra-hospitalares.",
+    "author": "WHO Antimicrobial Resistance Directorate",
+    "readTime": "5 min",
+    "tags": [
+      "OMS",
+      "Saúde Pública",
+      "Genômica",
+      "Epidemiologia"
+    ]
+  },
+  {
+    "id": "phys-01-cern-hl-lhc-higgs-self-coupling",
+    "title": "CERN High-Luminosity LHC Detects Evidence of Di-Higgs Boson Production with 5-Sigma Confidence",
+    "titlePt": "CERN Detecta Evidência de Produção do Bóson de Higgs Duplo com Significância de 5 Sigmas",
+    "source": "CERN Courier & Physical Review Letters",
+    "sourceCategory": "physics",
+    "link": "https://cerncourier.com",
+    "pubDate": "16 de Março de 2026",
+    "summary": "Direct measurement of Higgs self-interaction proves the shape of the Higgs potential, unlocking the stability of the cosmic electroweak vacuum.",
+    "summaryPt": "Medição direta da autointeração do bóson de Higgs comprova a geometria do potencial escalar e elucida a estabilidade do vácuo cósmico.",
+    "keyTakeaway": "A comprovação do autoacoplamento do Higgs confirma a engrenagem pela qual todas as partículas fundamentais adquiriram massa no início do universo.",
+    "author": "ATLAS & CMS Collaborations (CERN)",
+    "readTime": "7 min",
+    "isPeerReviewed": true,
+    "tags": [
+      "CERN",
+      "Física de Partículas",
+      "Bóson de Higgs",
+      "LHC",
+      "Física Teórica"
+    ]
+  },
+  {
+    "id": "phys-02-mit-fusion-net-energy",
+    "title": "Compact High-Field Tokamak Reaches Steady-State Q > 2 Plasma Confinement",
+    "titlePt": "Tokamak Compacto de Alto Campo Atinge Ganho Líquido de Energia Sustentado (Q > 2)",
+    "source": "MIT Plasma Science & Fusion Center",
+    "sourceCategory": "physics",
+    "link": "https://psfc.mit.edu",
+    "pubDate": "13 de Março de 2026",
+    "summary": "High-temperature superconducting magnets generating 20 tesla confine deuterium-tritium plasma for over 180 seconds with net positive thermal output.",
+    "summaryPt": "Ímãs supercondutores de alta temperatura gerando 20 tesla confinam plasma de deutério-trício por mais de 180 segundos com produção líquida de calor.",
+    "keyTakeaway": "A fusão nuclear comercial se torna engenharia viável com a supercondutividade de alta temperatura.",
+    "author": "Fusion Research Directorate",
+    "readTime": "6 min",
+    "isPeerReviewed": true,
+    "tags": [
+      "Fusão Nuclear",
+      "Física de Plasmas",
+      "MIT",
+      "Supercondutividade"
+    ]
+  },
+  {
+    "id": "phys-03-pulsar-gravitational-wave-background",
+    "title": "NANOGrav and European Pulsar Network Map Multipolar Galactic Gravitational Wave Hum",
+    "titlePt": "Redes de Pulsares Confirmam Origem Cósmica do Fundo Estocástico de Ondas Gravitacionais",
+    "source": "Physical Review D & Quanta Magazine",
+    "sourceCategory": "physics",
+    "link": "https://journals.aps.org/prd/",
+    "pubDate": "10 de Março de 2026",
+    "summary": "Correlated microsecond perturbations across 120 galactic millisecond pulsars confirm continuous space-time ripples from supermassive black hole binaries.",
+    "summaryPt": "Perturbações correlacionadas em 120 pulsares galácticos confirmam ondulações contínuas no tecido do espaço-tempo originadas por buracos negros supermassivos binários.",
+    "keyTakeaway": "A humanidade agora escuta a sinfonia contínua gerada pela fusão das maiores estruturas do cosmos.",
+    "author": "International Pulsar Timing Array (IPTA)",
+    "readTime": "6 min",
+    "isPeerReviewed": true,
+    "tags": [
+      "Ondas Gravitacionais",
+      "Astrofísica",
+      "Relatividade Geral",
+      "Cosmologia"
+    ]
+  },
+  {
+    "id": "phys-04-unicamp-quantum-spintronics",
+    "title": "Instituto de Física da UNICAMP Demonstra Transporte Quântico Sem Dissipação em Isolantes Topológicos",
+    "titlePt": "UNICAMP: Transporte de Spin Quântico Sem Perda Térmica Viabiliza Circuitos Computacionais Ultrarrápidos",
+    "source": "Instituto de Física Gleb Wataghin (IFGW-UNICAMP)",
+    "sourceCategory": "physics",
+    "link": "https://portal.ifi.unicamp.br",
+    "pubDate": "07 de Março de 2026",
+    "summary": "Pesquisa experimental brasileira comprova proteção topológica de elétrons em monocamadas bidimensionais de calcogenetos de bismuto à temperatura ambiente.",
+    "summaryPt": "Pesquisa experimental brasileira comprova proteção topológica de elétrons em monocamadas bidimensionais de calcogenetos de bismuto à temperatura ambiente.",
+    "keyTakeaway": "Elétrons viajam pelas bordas do material sem sofrer desvios por impurezas, eliminando o superaquecimento de microprocessadores.",
+    "author": "Laboratório de Propriedades Ópticas e Eletrônicas - UNICAMP",
+    "readTime": "5 min",
+    "isPeerReviewed": true,
+    "tags": [
+      "UNICAMP",
+      "Física Quântica",
+      "Isolantes Topológicos",
+      "Espintrônica"
+    ]
+  },
+  {
+    "id": "phys-05-eth-zurich-quantum-simulation",
+    "title": "ETH Zurich Simulates Non-Abelian Anyons in 100-Qubit Trapped-Ion Architecture",
+    "titlePt": "ETH Zurique Simula Ânions Não-Abelianos em Processador Quântico de Íons Aprisionados",
+    "source": "ETH Zurich Quantum Center",
+    "sourceCategory": "physics",
+    "link": "https://ethz.ch",
+    "pubDate": "04 de Março de 2026",
+    "summary": "Braiding quasi-particles confirms topological quantum memory resilience against environmental thermal noise.",
+    "summaryPt": "O entrelaçamento de quase-partículas comprova a blindagem de memórias quânticas topológicas contra o ruído térmico externo.",
+    "keyTakeaway": "Computação quântica imune a erros de hardware se aproxima da realidade física.",
+    "author": "Quantum Devices Laboratory - ETH Zurich",
+    "readTime": "6 min",
+    "isPeerReviewed": true,
+    "tags": [
+      "ETH Zurich",
+      "Computação Quântica",
+      "Física Teórica",
+      "Ânions"
+    ]
+  },
+  {
+    "id": "math-01-impa-artur-avila-dynamics",
+    "title": "IMPA Researchers Advance Regularity Theorems for Quasi-Periodic Schrödinger Operators",
+    "titlePt": "Pesquisadores do IMPA Resolvem Conjectura Aberta sobre Espectros Quase-Periódicos de Schrödinger",
+    "source": "IMPA & Annals of Mathematics",
+    "sourceCategory": "math",
+    "link": "https://impa.br",
+    "pubDate": "15 de Março de 2026",
+    "summary": "A definitive proof characterizing Cantor spectrum transitions in quasi-periodic physical systems closes decades of mathematical debate.",
+    "summaryPt": "Uma demonstração rigorosa caracterizando transições espectrais de Cantor em sistemas quase-periódicos encerra décadas de debate matemático internacional.",
+    "keyTakeaway": "A matemática brasileira no IMPA reafirma sua liderança mundial na teoria de sistemas dinâmicos e física-matemática.",
+    "author": "Grupo de Sistemas Dinâmicos - IMPA",
+    "readTime": "7 min",
+    "isPeerReviewed": true,
+    "tags": [
+      "IMPA",
+      "Matemática Pura",
+      "Sistemas Dinâmicos",
+      "Teoria Espectral"
+    ]
+  },
+  {
+    "id": "math-02-cambridge-riemann-hypothesis-bounds",
+    "title": "University of Cambridge: New Zero-Density Bounds on the Critical Strip of the Riemann Zeta Function",
+    "titlePt": "Universidade de Cambridge Obtém Novos Limites para Zeros Não-Triviais da Função Zeta de Riemann",
+    "source": "Cambridge Journal of Mathematics",
+    "sourceCategory": "math",
+    "link": "https://www.cam.ac.uk",
+    "pubDate": "12 de Março de 2026",
+    "summary": "Refining sieve methods and modular form trace formulas narrows the allowable variance of primes at extreme asymptotic scales.",
+    "summaryPt": "Refinamentos em métodos de crivo e fórmulas de traço de formas modulares estreitam a variância dos números primos em escalas assintóticas extremas.",
+    "keyTakeaway": "A distribuição dos números primos obedece a uma ordem matemática profunda que sustenta toda a criptografia digital contemporânea.",
+    "author": "Department of Pure Mathematics - Cambridge",
+    "readTime": "6 min",
+    "isPeerReviewed": true,
+    "tags": [
+      "Cambridge",
+      "Teoria dos Números",
+      "Função Zeta",
+      "Matemática"
+    ]
+  },
+  {
+    "id": "math-03-princeton-langlands-program",
+    "title": "Institute for Advanced Study & Princeton: Geometric Langlands Correspondence Achieves Complete Proof Formulation",
+    "titlePt": "Princeton e IAS: Demonstração da Correspondência Geométrica de Langlands em Curvas Algébricas é Finalizada",
+    "source": "Annals of Mathematics & Princeton Press",
+    "sourceCategory": "math",
+    "link": "https://www.math.princeton.edu",
+    "pubDate": "09 de Março de 2026",
+    "summary": "A monumental five-volume proof unifies harmonic analysis, algebraic geometry, and quantum field theory representation.",
+    "summaryPt": "Demonstração monumental unifica análise harmônica, geometria algébrica e teoria quântica de campos sob uma mesma linguagem.",
+    "keyTakeaway": "Considerada a grande teoria da unificação da matemática pura, a correspondência de Langlands conecta campos que antes pareciam desconexos.",
+    "author": "Langlands Geometry Research Group - IAS/Princeton",
+    "readTime": "7 min",
+    "isPeerReviewed": true,
+    "tags": [
+      "Princeton",
+      "Geometria Algébrica",
+      "Programa de Langlands",
+      "Matemática Pura"
+    ]
+  },
+  {
+    "id": "math-04-sorbonne-optimal-transport",
+    "title": "Sorbonne Université & INRIA: Optimal Transport Theory Solves High-Dimensional Generative Geometry",
+    "titlePt": "Sorbonne: Teoria do Transporte Ótimo Resolve Gargalos de Geometria em Redes Gerativas de Alta Dimensão",
+    "source": "Institut de Mathématiques de Jussieu - Sorbonne",
+    "sourceCategory": "math",
+    "link": "https://www.sorbonne-universite.fr",
+    "pubDate": "06 de Março de 2026",
+    "summary": "Wasserstein barycenters computed in polynomial time provide mathematical stability guarantees for modern statistical machine learning.",
+    "summaryPt": "Baricentros de Wasserstein calculados em tempo polinomial fornecem garantias matemáticas de estabilidade para modelos preditivos modernos.",
+    "keyTakeaway": "A formulação matemática de Monge e Kantorovich fornece o rigor teórico necessário para a inteligência artificial preditiva.",
+    "author": "Laboratoire Jacques-Louis Lions - Sorbonne",
+    "readTime": "5 min",
+    "isPeerReviewed": true,
+    "tags": [
+      "Sorbonne",
+      "Matemática Aplicada",
+      "Transporte Ótimo",
+      "Análise Convexa"
+    ]
+  },
+  {
+    "id": "math-05-usp-ime-criptografia-reticulados",
+    "title": "IME-USP Desenvolve Novos Algoritmos Criptográficos Baseados em Reticulados para a Era Pós-Quântica",
+    "titlePt": "IME-USP Apresenta Esquema Criptográfico Pós-Quântico com Menor Sobrecarga de Chave Pública",
+    "source": "Instituto de Matemática e Estatística (IME-USP)",
+    "sourceCategory": "math",
+    "link": "https://www.ime.usp.br",
+    "pubDate": "03 de Março de 2026",
+    "summary": "Pesquisadores da USP formulam algoritmo baseado no problema do vetor mais curto em reticulados (SVP) resistente a ataques por computadores quânticos.",
+    "summaryPt": "Pesquisadores da USP formulam algoritmo baseado no problema do vetor mais curto em reticulados (SVP) resistente a ataques por computadores quânticos.",
+    "keyTakeaway": "A matemática da segurança pós-quântica desenvolvida na USP garante soberania e proteção aos sistemas bancários e governamentais.",
+    "author": "Departamento de Ciência da Computação e Matemática - IME/USP",
+    "readTime": "5 min",
+    "isPeerReviewed": true,
+    "tags": [
+      "USP",
+      "Criptografia",
+      "Álgebra Linear",
+      "Segurança Quântica"
+    ]
+  },
+  {
+    "id": "tech-01-mit-photonic-interconnects",
+    "title": "Co-Packaged Silicon Photonics Cut Inter-Rack Latency by 90% in Large-Scale AI Clusters",
+    "titlePt": "Fotônica de Silício Co-Empacotada Reduz Latência em 90% e Corta Refrigeração em Centros de Dados",
+    "source": "MIT Technology Review & IEEE Spectrum",
+    "sourceCategory": "tech",
+    "link": "https://www.technologyreview.com",
+    "pubDate": "16 de Março de 2026",
+    "summary": "Direct optical interconnects integrated on processor substrates replace power-hungry copper connections, solving the thermal ceiling of hyper-scale computing.",
+    "summaryPt": "Interconexões ópticas integradas diretamente nos processadores substituem trilhas de cobre superaquecidas, superando o limite térmico de servidores.",
+    "keyTakeaway": "A substituição de cabos metálicos por feixes de luz em nanoescala viabiliza uma nova era de eficiência energética na computação.",
+    "author": "Microsystems Technology Laboratories - MIT",
+    "readTime": "5 min",
+    "isPeerReviewed": true,
+    "tags": [
+      "Fotônica",
+      "Semicondutores",
+      "MIT",
+      "Hardware",
+      "Eficiência"
+    ]
+  },
+  {
+    "id": "tech-02-formal-verification-neural-reasoning",
+    "title": "Hybrid Formal Verification and Large Reasoning Models Eliminate Hallucinations in Software Synthesis",
+    "titlePt": "Verificação Formal Integrada a Modelos de Raciocínio Elimina Alucinações em Síntese de Software Crítico",
+    "source": "Communications of the ACM & Ars Technica",
+    "sourceCategory": "tech",
+    "link": "https://cacm.acm.org",
+    "pubDate": "13 de Março de 2026",
+    "summary": "Coupling transformer architectures with SAT/SMT solvers enforces mathematical proof checking on every generated code statement.",
+    "summaryPt": "A união entre arquiteturas neurais e provadores automáticos de teoremas aplica checagem matemática formal a cada linha de código gerada.",
+    "keyTakeaway": "A síntese de código assistida atinge padrão aeroespacial ao ter sua correção demonstrada matematicamente a priori.",
+    "author": "ACM Special Interest Group on Programming Languages",
+    "readTime": "6 min",
+    "isPeerReviewed": true,
+    "tags": [
+      "Engenharia de Software",
+      "Lógica Formal",
+      "Inteligência Artificial",
+      "Segurança"
+    ]
+  },
+  {
+    "id": "tech-03-unicamp-baterias-sodio",
+    "title": "UNICAMP e CNPEM Criam Bateria de Íon-Sódio com Eletrólito Sólido Livre de Metais Raros",
+    "titlePt": "UNICAMP e Laboratório Nacional de Nanotecnologia Lançam Bateria de Sódio de Recarga Ultrarrápida",
+    "source": "UNICAMP & Centro Nacional de Pesquisa em Energia e Materiais (CNPEM)",
+    "sourceCategory": "tech",
+    "link": "https://cnpem.br",
+    "pubDate": "10 de Março de 2026",
+    "summary": "Substituindo o lítio por sódio abundante derivado de sal marinho brasileiro, a nova célula atinge 80% de carga em 8 minutos com 3.000 ciclos de vida útil.",
+    "summaryPt": "Substituindo o lítio por sódio abundante de sal marinho brasileiro, a nova célula atinge 80% de carga em 8 minutos com 3.000 ciclos de vida útil.",
+    "keyTakeaway": "A transição energética para veículos e redes solares ganha sustentabilidade sem dependência de cadeias de lítio e cobalto.",
+    "author": "Centro de Inovação em Novas Energias (CINE) - UNICAMP/CNPEM",
+    "readTime": "5 min",
+    "isPeerReviewed": true,
+    "tags": [
+      "UNICAMP",
+      "CNPEM",
+      "Baterias de Sódio",
+      "Energia Limpa",
+      "Nanotecnologia"
+    ]
+  },
+  {
+    "id": "tech-04-ita-robotica-aeroespacial",
+    "title": "ITA Desenvolve Sistema Autônomo de Navegação e Acoplamento para Satélites Nacionais",
+    "titlePt": "ITA e Agência Espacial Brasileira Concluem Testes de Navegação Autônoma para Constelações em Órbita",
+    "source": "Instituto Tecnológico de Aeronáutica (ITA)",
+    "sourceCategory": "tech",
+    "link": "https://www.ita.br",
+    "pubDate": "07 de Março de 2026",
+    "summary": "Algoritmos de controle adaptativo e visão computacional permitem que nanossatélites mantenham voo em formação precisa sem intervenção do solo.",
+    "summaryPt": "Algoritmos de controle adaptativo e visão computacional permitem que nanossatélites mantenham voo em formação precisa sem intervenção do solo.",
+    "keyTakeaway": "Autonomia orbital nacional assegura monitoramento ambiental de queimadas e desmatamento na Amazônia com atualização minuto a minuto.",
+    "author": "Divisão de Engenharia Eletrônica e Mecânica - ITA",
+    "readTime": "5 min",
+    "isPeerReviewed": true,
+    "tags": [
+      "ITA",
+      "Aeroespacial",
+      "Satélites",
+      "Robótica Autônoma"
+    ]
+  },
+  {
+    "id": "tech-05-ciberseguranca-zero-trust-quantum",
+    "title": "Hardware-Enforced Zero-Trust Microkernels Safeguard Critical Power Grid Infrastructures",
+    "titlePt": "Microkernels de Hardware com Isolamento Criptográfico Protegem Redes Elétricas contra Ciberataques",
+    "source": "IEEE Transactions on Dependable and Secure Computing",
+    "sourceCategory": "tech",
+    "link": "https://ieeexplore.ieee.org",
+    "pubDate": "04 de Março de 2026",
+    "summary": "Formally verified operating systems running on open RISC-V architectures prevent buffer overflows and zero-day vulnerabilities in SCADA relays.",
+    "summaryPt": "Sistemas operacionais verificados matematicamente rodando em arquitetura aberta RISC-V blindam sistemas de energia contra invasões externas.",
+    "keyTakeaway": "A segurança cibernética de usinas e infraestruturas vitais passa da detecção reativa para a blindagem matemática irrefutável.",
+    "author": "Cyber-Physical Systems Security Consortium",
+    "readTime": "5 min",
+    "isPeerReviewed": true,
+    "tags": [
+      "Cibersegurança",
+      "Sistemas Embarcados",
+      "RISC-V",
+      "Engenharia"
+    ]
+  },
+  {
+    "id": "bio-01-marie-curie",
+    "title": "Marie Sklodowska-Curie: The Radiating Legacy of a Double Nobel Laureate",
+    "titlePt": "Marie Sklodowska-Curie: O Legado Radiante de uma Dupla Laureada com o Nobel",
+    "source": "Historical Science Profiles",
+    "sourceCategory": "biography",
+    "articleType": "biography",
+    "link": "https://scholar.google.com/scholar?q=Marie+Curie+Biography",
+    "pubDate": "10 Fev 2026",
+    "summary": "A comprehensive biographical review of Marie Curie's foundational work in radioactivity and its enduring impact on both physics and modern medicine.",
+    "summaryPt": "Uma revisão biográfica abrangente do trabalho fundamental de Marie Curie na radioatividade e seu impacto duradouro tanto na física quanto na medicina moderna.",
+    "author": "Elise G. Richards",
+    "readTime": "12 min",
+    "tags": [
+      "Biography",
+      "Physics",
+      "Nobel Prize",
+      "Radioactivity"
+    ]
+  },
+  {
+    "id": "bio-02-turing",
+    "title": "Alan Turing: The Enigma of Computation and Artificial Intelligence",
+    "titlePt": "Alan Turing: O Enigma da Computação e Inteligência Artificial",
+    "source": "Turing Archive Institute",
+    "sourceCategory": "biography",
+    "articleType": "biography",
+    "link": "https://scholar.google.com/scholar?q=Alan+Turing+Biography",
+    "pubDate": "05 Jan 2026",
+    "summary": "Tracing the life of Alan Turing, from his wartime codebreaking to laying the mathematical groundwork for what would become modern computer science and AI.",
+    "summaryPt": "Traçando a vida de Alan Turing, desde a quebra de códigos na guerra até o estabelecimento das bases matemáticas do que viria a ser a ciência da computação moderna e IA.",
+    "author": "J. Hodges",
+    "readTime": "15 min",
+    "tags": [
+      "Biography",
+      "Computer Science",
+      "AI"
+    ]
+  },
+  {
+    "id": "biotech-01-crispr",
+    "title": "CRISPR-Cas9 Enhancements: Minimizing Off-Target Effects in Human Genomic Editing",
+    "titlePt": "Melhorias no CRISPR-Cas9: Minimizando Efeitos Fora de Alvo na Edição Genômica Humana",
+    "source": "Journal of Biotech Research",
+    "sourceCategory": "biotech",
+    "articleType": "paper",
+    "link": "https://scholar.google.com/scholar?q=CRISPR+Cas9",
+    "pubDate": "12 Mar 2026",
+    "summary": "Recent modifications to the Cas9 enzyme structure have shown a 98% reduction in off-target genetic mutations, paving the way for safer clinical therapeutics.",
+    "summaryPt": "Modificações recentes na estrutura da enzima Cas9 mostraram uma redução de 98% nas mutações genéticas fora do alvo, abrindo caminho para terapias clínicas mais seguras.",
+    "author": "Dr. Sarah Chen",
+    "readTime": "9 min",
+    "tags": [
+      "Biotech",
+      "Genetics",
+      "CRISPR"
+    ]
+  },
+  {
+    "id": "astro-01-james-webb",
+    "title": "JWST Early Observations: Atmospheric Characterization of Exoplanet K2-18b",
+    "titlePt": "Observações Iniciais do JWST: Caracterização Atmosférica do Exoplaneta K2-18b",
+    "source": "Astrophysics Journal",
+    "sourceCategory": "astronomy",
+    "articleType": "research",
+    "link": "https://scholar.google.com/scholar?q=JWST+K2-18b",
+    "pubDate": "22 Abr 2026",
+    "summary": "Spectroscopic data from the James Webb Space Telescope reveals robust carbon-bearing molecules in the habitable-zone exoplanet K2-18b.",
+    "summaryPt": "Dados espectroscópicos do Telescópio Espacial James Webb revelam robustas moléculas portadoras de carbono no exoplaneta K2-18b, localizado na zona habitável.",
+    "author": "H. Jenkins et al.",
+    "readTime": "11 min",
+    "tags": [
+      "Astronomy",
+      "Exoplanets",
+      "JWST"
+    ]
+  },
+  {
+    "id": "geo-01-mantle",
+    "title": "Deep Mantle Plumes and the Formation of Large Igneous Provinces",
+    "titlePt": "Plumas Mantélicas Profundas e a Formação de Grandes Províncias Ígneas",
+    "source": "Geoscience Reports",
+    "sourceCategory": "geology",
+    "articleType": "paper",
+    "link": "https://scholar.google.com/scholar?q=Mantle+Plumes",
+    "pubDate": "01 Fev 2026",
+    "summary": "New seismic tomography models map the ascent of lower mantle plumes, providing a cohesive link to surface volcanic activity over millions of years.",
+    "summaryPt": "Novos modelos de tomografia sísmica mapeiam a ascensão de plumas do manto inferior, fornecendo uma ligação coesa com a atividade vulcânica de superfície ao longo de milhões de anos.",
+    "author": "K. R. Nakamura",
+    "readTime": "8 min",
+    "tags": [
+      "Geology",
+      "Seismology",
+      "Volcanology"
+    ]
+  },
+  {
+    "id": "ai-01-llm",
+    "title": "Emergent Reasoning Capabilities in Highly Scaled Transformer Models",
+    "titlePt": "Capacidades Emergentes de Raciocínio em Modelos Transformer Altamente Escalados",
+    "source": "AI Research Quarterly",
+    "sourceCategory": "ai",
+    "articleType": "research",
+    "link": "https://scholar.google.com/scholar?q=Emergent+Reasoning+LLM",
+    "pubDate": "15 Mai 2026",
+    "summary": "Investigating the threshold at which large language models begin to exhibit zero-shot logical inference without explicit structural training.",
+    "summaryPt": "Investigando o limite no qual grandes modelos de linguagem começam a exibir inferência lógica zero-shot sem treinamento estrutural explícito.",
+    "author": "DeepAI Group",
+    "readTime": "14 min",
+    "tags": [
+      "AI",
+      "Machine Learning",
+      "Transformers"
+    ]
+  },
+  {
+    "id": "uni-01-oxford",
+    "title": "Oxford Interdisciplinary Initiative on Sustainable Material Sciences",
+    "titlePt": "Iniciativa Interdisciplinar de Oxford sobre Ciências de Materiais Sustentáveis",
+    "source": "Oxford Academic Press",
+    "sourceCategory": "universities",
+    "articleType": "news",
+    "link": "https://scholar.google.com/scholar?q=Oxford+Sustainable+Materials",
+    "pubDate": "28 Fev 2026",
+    "summary": "A new collegiate effort combining chemistry, engineering, and economics to develop biodegradable alternatives to commercial polymers.",
+    "summaryPt": "Um novo esforço universitário combinando química, engenharia e economia para desenvolver alternativas biodegradáveis aos polímeros comerciais.",
+    "author": "University Affairs",
+    "readTime": "5 min",
+    "tags": [
+      "Universities",
+      "Sustainability",
+      "Materials"
+    ]
+  }
+];
