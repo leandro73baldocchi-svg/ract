@@ -88,9 +88,6 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Logo and Titles Wrapper (OPÇÃO 1) */}
           <div className="flex items-center gap-4">
             
-            {/* Logo: Substitua este SVG pela sua tag <img /> quando tiver uma imagem */}
-          <div className="flex items-center gap-4">
-            
             {/* O seu Logotipo Oficial */}
             <div className="shrink-0 flex items-center justify-center w-14 h-14 bg-white dark:bg-stone-900 rounded-xl shadow-sm overflow-hidden border border-stone-200 dark:border-stone-800">
               <img 
