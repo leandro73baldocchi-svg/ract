@@ -83,6 +83,7 @@ export const INITIAL_PSYCHOLOGY_ARTICLES: NewsArticle[] = [
 ];
 
 export const DEFAULT_RSS_FEEDS: CustomRssFeed[] = [
+  { id: 'f-sciencedaily-society', name: 'ScienceDaily (Society & Psychology)', url: 'https://www.sciencedaily.com/rss/top/society.xml', category: 'psychology', enabled: true },
   { id: 'f-nature', name: 'Nature Journal', url: 'https://www.nature.com/nature.rss', category: 'biotech', enabled: true },
   { id: 'f-science', name: 'Science Magazine', url: 'https://www.science.org/rss/news_current.xml', category: 'health', enabled: true },
   { id: 'f-harvard', name: 'Harvard Gazette', url: 'https://news.harvard.edu/gazette/feed/', category: 'education', enabled: true },
@@ -230,7 +231,20 @@ export function getCustomRssFeeds(): CustomRssFeed[] {
       saveCustomRssFeeds(DEFAULT_RSS_FEEDS);
       return DEFAULT_RSS_FEEDS;
     }
-    return JSON.parse(raw);
+    const parsed: CustomRssFeed[] = JSON.parse(raw);
+    // Ensure all default feeds exist in the list
+    let updated = false;
+    const result = [...parsed];
+    for (const def of DEFAULT_RSS_FEEDS) {
+      if (!result.some((f) => f.url === def.url || f.id === def.id)) {
+        result.unshift(def);
+        updated = true;
+      }
+    }
+    if (updated) {
+      saveCustomRssFeeds(result);
+    }
+    return result;
   } catch (e) {
     return DEFAULT_RSS_FEEDS;
   }

@@ -54,6 +54,9 @@ interface FeedSource {
 }
 
 const SOURCES: FeedSource[] = [
+  // Psicologia, Sociedade & Comportamento Humano
+  { name: 'ScienceDaily (Society & Psychology)', url: 'https://www.sciencedaily.com/rss/top/society.xml', category: 'psychology' },
+
   // Geral e Ciência
   { name: 'Nature Journal', url: 'https://www.nature.com/nature.rss', category: 'biotech' },
   { name: 'Science Magazine', url: 'https://www.science.org/rss/news_current.xml', category: 'health' },
@@ -160,23 +163,40 @@ async function fetchFeed(source: FeedSource): Promise<any[]> {
   }
 }
 
-async function getAggregatedNews(force = false) {
-  if (!force && cachedNews.length > 0 && Date.now() - lastNewsFetch < 1000 * 60 * 15) {
+async function getAggregatedNews(force = false, extraFeeds: FeedSource[] = []) {
+  const allSources = [...SOURCES];
+  if (Array.isArray(extraFeeds)) {
+    for (const ef of extraFeeds) {
+      if (ef.url && !allSources.some((s) => s.url === ef.url)) {
+        allSources.push({
+          name: ef.name || 'Agência RSS',
+          url: ef.url,
+          category: ef.category || 'tech',
+        });
+      }
+    }
+  }
+
+  if (!force && cachedNews.length > 0 && Date.now() - lastNewsFetch < 1000 * 60 * 15 && extraFeeds.length === 0) {
     return cachedNews;
   }
-  const allFeeds = await Promise.all(SOURCES.map(fetchFeed));
+  const allFeeds = await Promise.all(allSources.map(fetchFeed));
   let combined = allFeeds.flat();
   
   const staticNews = ACADEMIC_ARTICLES;
-  cachedNews = [...staticNews, ...combined];
-  lastNewsFetch = Date.now();
-  return cachedNews;
+  const merged = [...staticNews, ...combined];
+  if (extraFeeds.length === 0) {
+    cachedNews = merged;
+    lastNewsFetch = Date.now();
+  }
+  return merged;
 }
 
-app.get('/api/news', async (req: Request, res: Response) => {
+app.all(['/api/news'], async (req: Request, res: Response) => {
   try {
-    const force = req.query.force === 'true';
-    const news = await getAggregatedNews(force);
+    const force = req.query.force === 'true' || req.body?.force === true;
+    const extraFeeds = Array.isArray(req.body?.customFeeds) ? req.body.customFeeds : [];
+    const news = await getAggregatedNews(force, extraFeeds);
     res.json({
       success: true,
       articles: news,

@@ -282,12 +282,14 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     setFeedUrl('');
     setFeedSuccessMsg(`Fonte RSS / Agência "${newFeed.name}" adicionada com sucesso!`);
     setTimeout(() => setFeedSuccessMsg(null), 4000);
+    onDataUpdated();
   };
 
   const handleToggleFeed = (id: string) => {
     const updated = rssFeeds.map((f) => (f.id === id ? { ...f, enabled: !f.enabled } : f));
     setRssFeeds(updated);
     saveCustomRssFeeds(updated);
+    onDataUpdated();
   };
 
   const handleDeleteFeed = (id: string) => {
@@ -295,6 +297,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
       const updated = rssFeeds.filter((f) => f.id !== id);
       setRssFeeds(updated);
       saveCustomRssFeeds(updated);
+      onDataUpdated();
     }
   };
 

@@ -9,6 +9,7 @@ import { DailyBriefingCard } from './components/DailyBriefingCard';
 import { ArticleCard } from './components/ArticleCard';
 import { ArticleDetailModal } from './components/ArticleDetailModal';
 import { UniversitiesView } from './components/UniversitiesView';
+import { PublicRssFeedsModal } from './components/PublicRssFeedsModal';
 import { NewsArticle, DailyBriefing, CategoryType, CustomCategory } from './types';
 import { ACADEMIC_ARTICLES } from './data/academicArticles';
 import { AdminDashboardModal } from './components/AdminDashboardModal';
@@ -17,6 +18,8 @@ import {
   getCustomCategories,
   getAllManagedArticles,
   getDeletedArticleIds,
+  getCustomRssFeeds,
+  CustomRssFeed,
   getShowRadarBriefingPreference,
   setShowRadarBriefingPreference,
 } from './utils/customDataManager';
@@ -29,7 +32,7 @@ import {
   getDarkModePreference,
   setDarkModePreference,
 } from './utils/offlineStorage';
-import { BookOpen, AlertCircle, WifiOff } from 'lucide-react';
+import { BookOpen, AlertCircle, WifiOff, Rss } from 'lucide-react';
 
 export default function App() {
   const [articles, setArticles] = useState<NewsArticle[]>(() => ACADEMIC_ARTICLES);
@@ -63,6 +66,10 @@ export default function App() {
   const [showOfflineOnly, setShowOfflineOnly] = useState<boolean>(false);
   const [selectedArticle, setSelectedArticle] = useState<NewsArticle | null>(null);
   const [errorNotice, setErrorNotice] = useState<string | null>(null);
+
+  // RSS Feeds State & Modal
+  const [rssFeeds, setRssFeeds] = useState<CustomRssFeed[]>(() => getCustomRssFeeds());
+  const [isRssModalOpen, setIsRssModalOpen] = useState<boolean>(false);
 
   // Dark mode state
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => getDarkModePreference());
@@ -136,6 +143,7 @@ export default function App() {
   const handleDataUpdated = () => {
     setCustomCategories(getCustomCategories());
     setManagedArticles(getAllManagedArticles());
+    setRssFeeds(getCustomRssFeeds());
   };
 
   const allCategoriesList = useMemo(() => {
@@ -209,8 +217,13 @@ export default function App() {
     }
 
     try {
+      const activeFeeds = getCustomRssFeeds().filter((f) => f.enabled !== false);
       const [newsRes, briefingRes] = await Promise.allSettled([
-        fetch(`/api/news${force ? '?force=true' : ''}`).then((r) => r.json()),
+        fetch(`/api/news${force ? '?force=true' : ''}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ force, customFeeds: activeFeeds }),
+        }).then((r) => r.json()),
         fetch(`/api/daily-briefing${force ? '?force=true' : ''}`).then((r) => r.json()),
       ]);
 
@@ -362,6 +375,8 @@ export default function App() {
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         categoriesList={allCategoriesList}
+        onOpenRssModal={() => setIsRssModalOpen(true)}
+        rssFeedsCount={rssFeeds.length}
       />
 
       {/* Main Workspace */}
@@ -546,11 +561,34 @@ export default function App() {
             <span className="hidden sm:inline mx-2">•</span>
             <span className="block sm:inline mt-0.5 sm:mt-0">Leitura offline & Tradução contínua</span>
           </div>
-          <div className="text-stone-400 dark:text-stone-500 text-[11px]">
-            Fontes: Nature • Science • CERN • Harvard • Cambridge • Oxford • Bolonha • MIT • USP • UNICAMP • ONU • PISA • NASA • Wired
+          <div className="flex items-center gap-3 text-[11px] flex-wrap justify-center sm:justify-end">
+            <span className="text-stone-400 dark:text-stone-500">
+              Nature • Science • CERN • Harvard • Cambridge • MIT • NASA • ScienceDaily • Wired
+            </span>
+            <button
+              onClick={() => setIsRssModalOpen(true)}
+              className="inline-flex items-center gap-1 text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 underline font-medium cursor-pointer"
+            >
+              <Rss className="w-3 h-3" />
+              <span>Ver Todos os Feeds RSS ({rssFeeds.length})</span>
+            </button>
           </div>
         </div>
       </footer>
+
+      {/* Public RSS Feeds Directory Modal */}
+      <PublicRssFeedsModal
+        isOpen={isRssModalOpen}
+        onClose={() => setIsRssModalOpen(false)}
+        feeds={rssFeeds}
+        activeCategory={activeCategory}
+        onSelectCategoryFeed={(cat) => {
+          setActiveCategory(cat);
+          if (showOfflineOnly) setShowOfflineOnly(false);
+        }}
+        onRefreshFeeds={() => loadNewsFeed(true)}
+        isRefreshing={isRefreshing}
+      />
 
       {/* Article Reader Modal */}
       <ArticleDetailModal
