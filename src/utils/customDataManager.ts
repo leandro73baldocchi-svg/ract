@@ -51,53 +51,62 @@ export async function fetchServerArticles(): Promise<NewsArticle[]> {
     });
 
     if (articles.length > 0) {
-      saveAllManagedArticles(articles);
-      return articles;
-    } else {
-      // Se o banco estiver vazio, carrega os originais e salva no Firebase
-      for (const art of ACADEMIC_ARTICLES) {
-        await setDoc(doc(db, "articles", art.id), art);
-      }
-      saveAllManagedArticles(ACADEMIC_ARTICLES);
-      return ACADEMIC_ARTICLES;
-    }
-  } catch (err) {
-    console.warn('Erro ao acessar Firebase, usando cache local:', err);
-    return getAllManagedArticles();
-  }
-}
-
-export async function fetchServerArticles(): Promise<NewsArticle[]> {
-  try {
-    const querySnapshot = await getDocs(collection(db, "articles"));
-    const articles: NewsArticle[] = [];
-    querySnapshot.forEach((docSnap) => {
-      articles.push(docSnap.data() as NewsArticle);
-    });
-
-    if (articles.length > 0) {
-      // SALVA no cache local apenas para leitura offline (quando sem internet)
       saveAllManagedArticles(articles); 
       return articles;
     } else {
-      // Se o banco estiver vazio, carrega os originais e salva no Firebase
-      for (const art of ACADEMIC_ARTICLES) {
-        await setDoc(doc(db, "articles", art.id), art);
-      }
-      saveAllManagedArticles(ACADEMIC_ARTICLES);
-      return ACADEMIC_ARTICLES;
+      return []; 
     }
   } catch (err) {
-    // SE DER ERRO AQUI: significa que a conexão Firebase está falhando
     console.error('ERRO CRÍTICO: Falha ao buscar no Firebase. Detalhes:', err);
-    // Só usa o cache local se o usuário estiver literalmente sem internet
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
         return getAllManagedArticles(); 
     }
-    // Retorna vazio para forçar você a ver se o banco está respondendo
     return []; 
   }
 }
+
+export async function fetchServerCategories(): Promise<CustomCategory[]> {
+  try {
+    const querySnapshot = await getDocs(collection(db, "categories"));
+    let categories: CustomCategory[] = [];
+    
+    querySnapshot.forEach((docSnap) => {
+      const cat = docSnap.data() as CustomCategory;
+      if (cat.id !== 'all') {
+          categories.push({ ...cat, order: cat.order ?? 99 });
+      }
+    });
+
+    categories.sort((a, b) => {
+      const orderA = a.order ?? 99;
+      const orderB = b.order ?? 99;
+      if (orderA !== orderB) {
+        return orderA - orderB;
+      }
+      return a.label.localeCompare(b.label);
+    });
+
+    const finalCategories: CustomCategory[] = [
+      { id: 'all', label: 'Todas as Áreas', order: 0 }, 
+      ...categories
+    ];
+
+    if (categories.length > 0) {
+      saveCustomCategories(finalCategories);
+      return finalCategories;
+    } else {
+      for (const cat of DEFAULT_BASE_CATEGORIES) {
+        if(cat.id !== 'all') {
+             await setDoc(doc(db, "categories", cat.id), { ...cat, order: 99 });
+        }
+      }
+      saveCustomCategories(DEFAULT_BASE_CATEGORIES);
+      return DEFAULT_BASE_CATEGORIES;
+    }
+  } catch (err) {
+    console.error('ERRO CRÍTICO: Falha ao buscar categorias no Firebase:', err);
+    return getCustomCategories();
+  }
 }
 
 export async function saveOrUpdateArticle(article: NewsArticle): Promise<NewsArticle[]> {
@@ -132,7 +141,45 @@ export async function deleteCategoryFromServer(categoryId: string): Promise<Cust
 }
 
 // -------------------------------------------------------------
-// CACHE LOCAL (Para funcionar Offline)
+// RSS FEEDS (O Tradutor Automático)
+// -------------------------------------------------------------
+export async function fetchRssArticles(): Promise<NewsArticle[]> {
+  const feeds = getCustomRssFeeds().filter(f => f.enabled);
+  
+  const rssPromises = feeds.map(async (feed) => {
+    try {
+      const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feed.url)}`);
+      const data = await res.json();
+      
+      if (data.status === 'ok') {
+        return data.items.map((item: any) => ({
+          id: `rss-${feed.id}-${item.guid || item.link}`,
+          title: item.title,
+          titlePt: "",
+          summary: (item.description || "").replace(/(<([^>]+)>)/gi, "").substring(0, 250) + "...",
+          summaryPt: "",
+          source: feed.name,
+          sourceCategory: feed.category,
+          date: item.pubDate?.split(' ')[0] || new Date().toISOString().split('T')[0],
+          url: item.link,
+          imageUrl: item.thumbnail || item.enclosure?.link || "https://images.unsplash.com/photo-1532094349884-543bc11b234d",
+          authors: item.author ? [item.author] : ["Redação"],
+          tags: ["RSS Automático", feed.category]
+        }));
+      }
+      return [];
+    } catch (err) {
+      console.warn(`Erro ao buscar RSS ${feed.name}:`, err);
+      return [];
+    }
+  });
+
+  const results = await Promise.all(rssPromises);
+  return results.flat(); 
+}
+
+// -------------------------------------------------------------
+// CACHE LOCAL
 // -------------------------------------------------------------
 
 export function getCustomCategories(): CustomCategory[] {
@@ -205,93 +252,4 @@ export function checkAdminPassword(input: string): boolean {
 
 export function setAdminPassword(newPassword: string): void {
   localStorage.setItem(ADMIN_PASSWORD_KEY, newPassword.trim());
-}
-
-export async function fetchRssArticles(): Promise<NewsArticle[]> {
-  const feeds = getCustomRssFeeds().filter(f => f.enabled);
-  
-  // Busca todos os feeds ao mesmo tempo para ser mais rápido
-  const rssPromises = feeds.map(async (feed) => {
-    try {
-      // Converte o XML do RSS para JSON usando uma API pública gratuita
-      const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feed.url)}`);
-      const data = await res.json();
-      
-      if (data.status === 'ok') {
-        return data.items.map((item: any) => ({
-          id: `rss-${feed.id}-${item.guid || item.link}`,
-          title: item.title,
-          titlePt: "", // O app vai traduzir automaticamente se a opção estiver ativa
-          summary: (item.description || "").replace(/(<([^>]+)>)/gi, "").substring(0, 250) + "...", // Remove tags HTML e corta o texto
-          summaryPt: "",
-          source: feed.name,
-          sourceCategory: feed.category,
-          date: item.pubDate?.split(' ')[0] || new Date().toISOString().split('T')[0],
-          url: item.link,
-          imageUrl: item.thumbnail || item.enclosure?.link || "https://images.unsplash.com/photo-1532094349884-543bc11b234d", // Imagem padrão se o RSS não tiver
-          authors: item.author ? [item.author] : ["Redação"],
-          tags: ["RSS Automático", feed.category]
-        }));
-      }
-      return [];
-    } catch (err) {
-      console.warn(`Erro ao buscar RSS ${feed.name}:`, err);
-      return [];
-    }
-  });
-
-  // Junta o resultado de todos os feeds
-  const results = await Promise.all(rssPromises);
-  return results.flat(); 
-}
-
-
-export async function fetchServerCategories(): Promise<CustomCategory[]> {
-  try {
-    const querySnapshot = await getDocs(collection(db, "categories"));
-    let categories: CustomCategory[] = [];
-    
-    querySnapshot.forEach((docSnap) => {
-      const cat = docSnap.data() as CustomCategory;
-      if (cat.id !== 'all') {
-          // Se a categoria antiga não tiver o campo order, assume 99 (vai pro final)
-          categories.push({ ...cat, order: cat.order ?? 99 });
-      }
-    });
-
-    // 1. Organiza pela ordem (números menores primeiro). 
-    // Em caso de empate, usa ordem alfabética.
-    categories.sort((a, b) => {
-      const orderA = a.order ?? 99;
-      const orderB = b.order ?? 99;
-      
-      if (orderA !== orderB) {
-        return orderA - orderB;
-      }
-      return a.label.localeCompare(b.label);
-    });
-
-    // 2. Trava o "Todas as Áreas" na posição absoluta 0 (início do menu)
-    const finalCategories: CustomCategory[] = [
-      { id: 'all', label: 'Todas as Áreas', order: 0 }, 
-      ...categories
-    ];
-
-    if (categories.length > 0) {
-      saveCustomCategories(finalCategories);
-      return finalCategories;
-    } else {
-      // Cria no banco com order default (99) caso o banco esteja limpo
-      for (const cat of DEFAULT_BASE_CATEGORIES) {
-        if(cat.id !== 'all') {
-             await setDoc(doc(db, "categories", cat.id), { ...cat, order: 99 });
-        }
-      }
-      saveCustomCategories(DEFAULT_BASE_CATEGORIES);
-      return DEFAULT_BASE_CATEGORIES;
-    }
-  } catch (err) {
-    console.error('ERRO CRÍTICO: Falha ao buscar categorias no Firebase:', err);
-    return getCustomCategories();
-  }
 }
