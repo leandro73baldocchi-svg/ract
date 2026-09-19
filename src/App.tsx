@@ -15,7 +15,7 @@ import { AdminDashboardModal } from './components/AdminDashboardModal';
 import {
   DEFAULT_BASE_CATEGORIES,
   getCustomCategories,
-  getCustomArticles,
+  getAllManagedArticles,
 } from './utils/customDataManager';
 import {
   getOfflineArticles,
@@ -64,9 +64,9 @@ export default function App() {
   // Dark mode state
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => getDarkModePreference());
 
-  // Custom Categories & Custom Articles (Secret Admin Panel)
+  // Custom Categories & Managed Articles (Secret Admin Panel)
   const [customCategories, setCustomCategories] = useState<CustomCategory[]>(() => getCustomCategories());
-  const [customArticles, setCustomArticles] = useState<NewsArticle[]>(() => getCustomArticles());
+  const [managedArticles, setManagedArticles] = useState<NewsArticle[]>(() => getAllManagedArticles());
   const [isAdminOpen, setIsAdminOpen] = useState<boolean>(false);
 
   // Check URL parameter or hash: ONLY opens if explicitly typed in the browser's address bar
@@ -121,7 +121,7 @@ export default function App() {
 
   const handleDataUpdated = () => {
     setCustomCategories(getCustomCategories());
-    setCustomArticles(getCustomArticles());
+    setManagedArticles(getAllManagedArticles());
   };
 
   const allCategoriesList = useMemo(() => {
@@ -264,21 +264,13 @@ export default function App() {
     return new Set(offlineArticles.map((a) => a.id));
   }, [offlineArticles]);
 
-  // Current dataset to display (merging base articles with custom articles registered by user)
+  // Current dataset to display (uses managedArticles which contains all articles, edited texts, and new additions)
   const displaySource = useMemo(() => {
-    if (showOfflineOnly || (!isOnline && articles.length === 0)) {
+    if (showOfflineOnly || (!isOnline && managedArticles.length === 0)) {
       return offlineArticles;
     }
-    // Combine base catalog with custom added articles (avoiding duplicates by id)
-    const combined = [...customArticles];
-    const customIds = new Set(customArticles.map((a) => a.id));
-    for (const art of articles) {
-      if (!customIds.has(art.id)) {
-        combined.push(art);
-      }
-    }
-    return combined;
-  }, [showOfflineOnly, isOnline, articles, customArticles, offlineArticles]);
+    return managedArticles;
+  }, [showOfflineOnly, isOnline, managedArticles, offlineArticles]);
 
   // Filtered articles
   const filteredArticles = useMemo(() => {

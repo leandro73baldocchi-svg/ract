@@ -1,8 +1,19 @@
 import { CustomCategory, NewsArticle } from '../types';
+import { ACADEMIC_ARTICLES } from '../data/academicArticles';
 
 const CUSTOM_CATEGORIES_KEY = 'ract_custom_categories_v1';
-const CUSTOM_ARTICLES_KEY = 'ract_custom_articles_v1';
+const ALL_ARTICLES_KEY = 'ract_all_managed_articles_v2';
+const DELETED_ARTICLE_IDS_KEY = 'ract_deleted_article_ids_v1';
+const CUSTOM_FEEDS_KEY = 'ract_custom_rss_feeds_v1';
 const ADMIN_PASSWORD_KEY = 'ract_admin_password_hash_v1';
+
+export interface CustomRssFeed {
+  id: string;
+  name: string;
+  url: string;
+  category: string;
+  enabled: boolean;
+}
 
 export const DEFAULT_BASE_CATEGORIES: CustomCategory[] = [
   { id: 'all', label: 'Todas as Áreas' },
@@ -71,6 +82,21 @@ export const INITIAL_PSYCHOLOGY_ARTICLES: NewsArticle[] = [
   }
 ];
 
+export const DEFAULT_RSS_FEEDS: CustomRssFeed[] = [
+  { id: 'f-nature', name: 'Nature Journal', url: 'https://www.nature.com/nature.rss', category: 'biotech', enabled: true },
+  { id: 'f-science', name: 'Science Magazine', url: 'https://www.science.org/rss/news_current.xml', category: 'health', enabled: true },
+  { id: 'f-harvard', name: 'Harvard Gazette', url: 'https://news.harvard.edu/gazette/feed/', category: 'education', enabled: true },
+  { id: 'f-cambridge', name: 'Cambridge Research', url: 'https://www.cam.ac.uk/research/feed', category: 'universities', enabled: true },
+  { id: 'f-mit', name: 'MIT News', url: 'https://news.mit.edu/rss/feed', category: 'universities', enabled: true },
+  { id: 'f-nasa', name: 'NASA News', url: 'https://www.nasa.gov/rss/dyn/breaking_news.rss', category: 'astronomy', enabled: true },
+  { id: 'f-cern', name: 'CERN Courier (Física)', url: 'https://cerncourier.com/feed/', category: 'physics', enabled: true },
+  { id: 'f-quanta', name: 'Quanta Magazine (Matemática)', url: 'https://api.quantamagazine.org/feed/', category: 'math', enabled: true },
+  { id: 'f-phys-earth', name: 'Phys.org Geology', url: 'https://phys.org/rss-feed/earth-news/geology/', category: 'geology', enabled: true },
+  { id: 'f-mit-tech', name: 'MIT Tech Review', url: 'https://www.technologyreview.com/feed/', category: 'tech', enabled: true },
+  { id: 'f-mit-ai', name: 'MIT News AI', url: 'https://news.mit.edu/rss/topic/artificial-intelligence2', category: 'ai', enabled: true },
+  { id: 'f-nobel', name: 'The Nobel Prize (Biografias)', url: 'https://www.nobelprize.org/feed/', category: 'biography', enabled: true },
+];
+
 export function getCustomCategories(): CustomCategory[] {
   try {
     const raw = localStorage.getItem(CUSTOM_CATEGORIES_KEY);
@@ -90,31 +116,135 @@ export function saveCustomCategories(categories: CustomCategory[]): void {
   }
 }
 
-export function getCustomArticles(): NewsArticle[] {
+export function getDeletedArticleIds(): Set<string> {
   try {
-    const raw = localStorage.getItem(CUSTOM_ARTICLES_KEY);
-    if (!raw) {
-      // Initialize with default psychology articles on first access
-      saveCustomArticles(INITIAL_PSYCHOLOGY_ARTICLES);
-      return INITIAL_PSYCHOLOGY_ARTICLES;
-    }
-    return JSON.parse(raw);
+    const raw = localStorage.getItem(DELETED_ARTICLE_IDS_KEY);
+    if (!raw) return new Set();
+    return new Set(JSON.parse(raw));
   } catch (e) {
-    console.warn('Erro ao ler artigos customizados:', e);
-    return INITIAL_PSYCHOLOGY_ARTICLES;
+    return new Set();
   }
 }
 
-export function saveCustomArticles(articles: NewsArticle[]): void {
+export function saveDeletedArticleIds(ids: Set<string>): void {
   try {
-    localStorage.setItem(CUSTOM_ARTICLES_KEY, JSON.stringify(articles));
+    localStorage.setItem(DELETED_ARTICLE_IDS_KEY, JSON.stringify(Array.from(ids)));
   } catch (e) {
-    console.warn('Erro ao salvar artigos customizados:', e);
+    console.warn('Erro ao salvar ids excluídos:', e);
+  }
+}
+
+/**
+ * Retorna todos os artigos do portal (catálogo completo + psicologia + novos adicionados - excluídos)
+ */
+export function getAllManagedArticles(): NewsArticle[] {
+  try {
+    const raw = localStorage.getItem(ALL_ARTICLES_KEY);
+    const deletedIds = getDeletedArticleIds();
+
+    if (!raw) {
+      // Primeira inicialização: junta ACADEMIC_ARTICLES + INITIAL_PSYCHOLOGY_ARTICLES
+      const initialMap = new Map<string, NewsArticle>();
+      for (const art of INITIAL_PSYCHOLOGY_ARTICLES) {
+        initialMap.set(art.id, art);
+      }
+      for (const art of ACADEMIC_ARTICLES) {
+        if (!deletedIds.has(art.id)) {
+          initialMap.set(art.id, art);
+        }
+      }
+      const initialList = Array.from(initialMap.values());
+      saveAllManagedArticles(initialList);
+      return initialList;
+    }
+
+    const parsed: NewsArticle[] = JSON.parse(raw);
+    return parsed.filter((art) => !deletedIds.has(art.id));
+  } catch (e) {
+    console.warn('Erro ao ler todos os artigos:', e);
+    return [...INITIAL_PSYCHOLOGY_ARTICLES, ...ACADEMIC_ARTICLES];
+  }
+}
+
+export function saveAllManagedArticles(articles: NewsArticle[]): void {
+  try {
+    localStorage.setItem(ALL_ARTICLES_KEY, JSON.stringify(articles));
+  } catch (e) {
+    console.warn('Erro ao salvar todos os artigos:', e);
+  }
+}
+
+/**
+ * Salva ou atualiza um artigo individual (se já existir atualiza, senão adiciona no topo)
+ */
+export function saveOrUpdateArticle(article: NewsArticle): void {
+  const current = getAllManagedArticles();
+  const index = current.findIndex((a) => a.id === article.id);
+  let updated: NewsArticle[];
+
+  if (index >= 0) {
+    updated = [...current];
+    updated[index] = { ...updated[index], ...article };
+  } else {
+    updated = [article, ...current];
+  }
+
+  // Se havia sido marcado como excluído antes, remove dos excluídos
+  const deleted = getDeletedArticleIds();
+  if (deleted.has(article.id)) {
+    deleted.delete(article.id);
+    saveDeletedArticleIds(deleted);
+  }
+
+  saveAllManagedArticles(updated);
+}
+
+/**
+ * Exclui um artigo permanentemente do portal
+ */
+export function deleteManagedArticle(articleId: string): void {
+  const current = getAllManagedArticles();
+  const updated = current.filter((a) => a.id !== articleId);
+  saveAllManagedArticles(updated);
+
+  const deleted = getDeletedArticleIds();
+  deleted.add(articleId);
+  saveDeletedArticleIds(deleted);
+}
+
+/**
+ * Restaura todos os artigos padrão de fábrica
+ */
+export function resetToFactoryArticles(): void {
+  localStorage.removeItem(ALL_ARTICLES_KEY);
+  localStorage.removeItem(DELETED_ARTICLE_IDS_KEY);
+  const combined = [...INITIAL_PSYCHOLOGY_ARTICLES, ...ACADEMIC_ARTICLES];
+  saveAllManagedArticles(combined);
+}
+
+// RSS Feeds Management
+export function getCustomRssFeeds(): CustomRssFeed[] {
+  try {
+    const raw = localStorage.getItem(CUSTOM_FEEDS_KEY);
+    if (!raw) {
+      saveCustomRssFeeds(DEFAULT_RSS_FEEDS);
+      return DEFAULT_RSS_FEEDS;
+    }
+    return JSON.parse(raw);
+  } catch (e) {
+    return DEFAULT_RSS_FEEDS;
+  }
+}
+
+export function saveCustomRssFeeds(feeds: CustomRssFeed[]): void {
+  try {
+    localStorage.setItem(CUSTOM_FEEDS_KEY, JSON.stringify(feeds));
+  } catch (e) {
+    console.warn('Erro ao salvar feeds RSS:', e);
   }
 }
 
 export function checkAdminPassword(input: string): boolean {
-  // Senha padrão inicial: 'admin2026' ou 'ciencia' ou o que você definir
   const stored = localStorage.getItem(ADMIN_PASSWORD_KEY) || 'admin2026';
   return input.trim() === stored || input.trim() === 'admin2026' || input.trim() === 'ciencia123';
 }
@@ -126,3 +256,4 @@ export function setAdminPassword(newPassword: string): void {
     console.warn('Erro ao salvar nova senha:', e);
   }
 }
+
