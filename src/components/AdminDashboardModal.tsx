@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { CustomCategory, NewsArticle, CategoryType } from '../types';
 import {
-  DEFAULT_BASE_CATEGORIES, 
+  DEFAULT_BASE_CATEGORIES,
   getCustomCategories,
   saveCustomCategories,
   getAllManagedArticles,
@@ -20,7 +20,10 @@ import {
   fetchServerCategories,
   fetchServerAffiliates,
   saveAffiliateToServer,
-  AffiliateLink
+  AffiliateLink,
+  fetchServerFeeds,
+  saveFeedToServer,
+  deleteFeedFromServer
 } from '../utils/customDataManager';
 import {
   X,
@@ -126,6 +129,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
       fetchServerArticles().then(setArticlesList);
       fetchServerCategories().then(setCustomCategories);
       fetchServerAffiliates().then(setAffiliatesList);
+      fetchServerFeeds().then(setRssFeeds);
     }
   }, [isOpen]);
 
@@ -136,6 +140,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     setCustomCategories(cats);
     const affs = await fetchServerAffiliates();
     setAffiliatesList(affs);
+    const fds = await fetchServerFeeds();
+    setRssFeeds(fds);
   };
 
   if (!isOpen) return null;
@@ -305,8 +311,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     }
   };
 
-  // RSS functions
-  const handleAddRssFeed = (e: React.FormEvent) => {
+  // RSS functions (AGORA COM FIREBASE)
+  const handleAddRssFeed = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!feedName.trim() || !feedUrl.trim()) return;
 
@@ -318,26 +324,36 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
       enabled: true,
     };
 
-    const updated = [...rssFeeds, newFeed];
-    setRssFeeds(updated);
-    saveCustomRssFeeds(updated);
-    setFeedName('');
-    setFeedUrl('');
-    setFeedSuccessMsg(`Fonte RSS "${newFeed.name}" adicionada com sucesso!`);
-    setTimeout(() => setFeedSuccessMsg(null), 4000);
-  };
-
-  const handleToggleFeed = (id: string) => {
-    const updated = rssFeeds.map((f) => (f.id === id ? { ...f, enabled: !f.enabled } : f));
-    setRssFeeds(updated);
-    saveCustomRssFeeds(updated);
-  };
-
-  const handleDeleteFeed = (id: string) => {
-    if (confirm('Deseja remover esta fonte RSS?')) {
-      const updated = rssFeeds.filter((f) => f.id !== id);
+    try {
+      const updated = await saveFeedToServer(newFeed);
       setRssFeeds(updated);
-      saveCustomRssFeeds(updated);
+      setFeedName('');
+      setFeedUrl('');
+      setFeedSuccessMsg(`Fonte RSS "${newFeed.name}" adicionada no Firebase com sucesso!`);
+      setTimeout(() => setFeedSuccessMsg(null), 4000);
+    } catch (err) {
+      alert('Erro ao salvar Feed no servidor');
+    }
+  };
+
+  const handleToggleFeed = async (feed: CustomRssFeed) => {
+    try {
+      const updatedFeed = { ...feed, enabled: !feed.enabled };
+      const updated = await saveFeedToServer(updatedFeed);
+      setRssFeeds(updated);
+    } catch (err) {
+      alert('Erro ao atualizar status do Feed no servidor');
+    }
+  };
+
+  const handleDeleteFeed = async (id: string) => {
+    if (confirm('Deseja remover esta fonte RSS de todos os dispositivos?')) {
+      try {
+        const updated = await deleteFeedFromServer(id);
+        setRssFeeds(updated);
+      } catch (err) {
+        alert('Erro ao excluir Feed no servidor');
+      }
     }
   };
 
@@ -486,7 +502,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
               Digite a chave de segurança para gerenciar todos os artigos.
             </p>
             {/* SENHA EM VERMELHO AQUI */}
-            <p className="text-[11px] text-rose-600 dark:text-rose-400 font-bold mb-6">
+            <p className="text-[12px] text-rose-600 dark:text-rose-400 font-bold mb-6">
               (Dica de senha padrão: admin2026)
             </p>
 
@@ -847,7 +863,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                             <span className="block text-[11px] text-stone-400 font-mono truncate">{feed.url}</span>
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
-                            <button onClick={() => handleToggleFeed(feed.id)} className={`px-2.5 py-1 rounded text-[11px] font-semibold transition-colors cursor-pointer ${feed.enabled ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-stone-200 text-stone-600 dark:bg-stone-800 dark:text-stone-400'}`}>
+                            <button onClick={() => handleToggleFeed(feed)} className={`px-2.5 py-1 rounded text-[11px] font-semibold transition-colors cursor-pointer ${feed.enabled ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-stone-200 text-stone-600 dark:bg-stone-800 dark:text-stone-400'}`}>
                               {feed.enabled ? 'Ativo' : 'Pausado'}
                             </button>
                             <button onClick={() => handleDeleteFeed(feed.id)} className="p-1.5 rounded text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors cursor-pointer" title="Remover fonte">
