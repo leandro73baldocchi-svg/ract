@@ -196,3 +196,41 @@ export function checkAdminPassword(input: string): boolean {
 export function setAdminPassword(newPassword: string): void {
   localStorage.setItem(ADMIN_PASSWORD_KEY, newPassword.trim());
 }
+
+export async function fetchRssArticles(): Promise<NewsArticle[]> {
+  const feeds = getCustomRssFeeds().filter(f => f.enabled);
+  
+  // Busca todos os feeds ao mesmo tempo para ser mais rápido
+  const rssPromises = feeds.map(async (feed) => {
+    try {
+      // Converte o XML do RSS para JSON usando uma API pública gratuita
+      const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feed.url)}`);
+      const data = await res.json();
+      
+      if (data.status === 'ok') {
+        return data.items.map((item: any) => ({
+          id: `rss-${feed.id}-${item.guid || item.link}`,
+          title: item.title,
+          titlePt: "", // O app vai traduzir automaticamente se a opção estiver ativa
+          summary: (item.description || "").replace(/(<([^>]+)>)/gi, "").substring(0, 250) + "...", // Remove tags HTML e corta o texto
+          summaryPt: "",
+          source: feed.name,
+          sourceCategory: feed.category,
+          date: item.pubDate?.split(' ')[0] || new Date().toISOString().split('T')[0],
+          url: item.link,
+          imageUrl: item.thumbnail || item.enclosure?.link || "https://images.unsplash.com/photo-1532094349884-543bc11b234d", // Imagem padrão se o RSS não tiver
+          authors: item.author ? [item.author] : ["Redação"],
+          tags: ["RSS Automático", feed.category]
+        }));
+      }
+      return [];
+    } catch (err) {
+      console.warn(`Erro ao buscar RSS ${feed.name}:`, err);
+      return [];
+    }
+  });
+
+  // Junta o resultado de todos os feeds
+  const results = await Promise.all(rssPromises);
+  return results.flat(); 
+}
