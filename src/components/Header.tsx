@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { CategoryType, CustomCategory } from '../types';
-import { RefreshCw, Bookmark, Globe, Wifi, WifiOff, Search, X, Moon, Sun, Lock, Sparkles, Rss } from 'lucide-react';
+import { RefreshCw, Bookmark, Globe, Wifi, WifiOff, Search, X, Moon, Sun, Lock, Sparkles } from 'lucide-react';
 
 interface HeaderProps {
   date: string;
@@ -21,8 +21,6 @@ interface HeaderProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
   categoriesList: CustomCategory[];
-  onOpenRssModal: () => void;
-  rssFeedsCount?: number;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -44,8 +42,6 @@ export const Header: React.FC<HeaderProps> = ({
   searchQuery,
   onSearchChange,
   categoriesList,
-  onOpenRssModal,
-  rssFeedsCount = 0,
 }) => {
   return (
     <header className="border-b border-stone-300 dark:border-stone-800 bg-[#FCFCFB] dark:bg-[#151515] sticky top-0 z-40 shadow-[0_1px_3px_rgba(0,0,0,0.03)] dark:shadow-none transition-colors">
@@ -160,22 +156,6 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <Sparkles className="w-3.5 h-3.5" />
               <span>Síntese do Radar</span>
-            </button>
-
-            {/* Public RSS Feeds & Transmitters Button */}
-            <button
-              onClick={onOpenRssModal}
-              id="btn-public-rss-feeds"
-              title="Ver e explorar todos os canais e fontes RSS ativas do RACT"
-              className="px-3 py-1.5 rounded text-xs font-medium border flex items-center gap-1.5 transition-colors cursor-pointer bg-orange-50 dark:bg-orange-950/40 text-orange-800 dark:text-orange-300 border-orange-200 dark:border-orange-900/60 hover:bg-orange-100 dark:hover:bg-orange-900/60"
-            >
-              <Rss className="w-3.5 h-3.5 text-orange-600 dark:text-orange-400" />
-              <span>Canais RSS</span>
-              {rssFeedsCount > 0 && (
-                <span className="text-[10px] px-1.5 py-0.2 rounded font-mono-subtle font-semibold bg-orange-200/80 dark:bg-orange-900/80 text-orange-900 dark:text-orange-200">
-                  {rssFeedsCount}
-                </span>
-              )}
             </button>
 
             {/* Offline Saved Articles Filter */}

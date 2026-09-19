@@ -9,7 +9,6 @@ import { DailyBriefingCard } from './components/DailyBriefingCard';
 import { ArticleCard } from './components/ArticleCard';
 import { ArticleDetailModal } from './components/ArticleDetailModal';
 import { UniversitiesView } from './components/UniversitiesView';
-import { PublicRssFeedsModal } from './components/PublicRssFeedsModal';
 import { NewsArticle, DailyBriefing, CategoryType, CustomCategory } from './types';
 import { ACADEMIC_ARTICLES } from './data/academicArticles';
 import { AdminDashboardModal } from './components/AdminDashboardModal';
@@ -18,11 +17,8 @@ import {
   getCustomCategories,
   getAllManagedArticles,
   getDeletedArticleIds,
-  getCustomRssFeeds,
-  CustomRssFeed,
   getShowRadarBriefingPreference,
   setShowRadarBriefingPreference,
-  syncPortalWithServer,
 } from './utils/customDataManager';
 import {
   getOfflineArticles,
@@ -33,7 +29,7 @@ import {
   getDarkModePreference,
   setDarkModePreference,
 } from './utils/offlineStorage';
-import { BookOpen, AlertCircle, WifiOff, Rss } from 'lucide-react';
+import { BookOpen, AlertCircle, WifiOff } from 'lucide-react';
 
 export default function App() {
   const [articles, setArticles] = useState<NewsArticle[]>(() => ACADEMIC_ARTICLES);
@@ -68,10 +64,6 @@ export default function App() {
   const [selectedArticle, setSelectedArticle] = useState<NewsArticle | null>(null);
   const [errorNotice, setErrorNotice] = useState<string | null>(null);
 
-  // RSS Feeds State & Modal
-  const [rssFeeds, setRssFeeds] = useState<CustomRssFeed[]>(() => getCustomRssFeeds());
-  const [isRssModalOpen, setIsRssModalOpen] = useState<boolean>(false);
-
   // Dark mode state
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => getDarkModePreference());
 
@@ -87,56 +79,43 @@ export default function App() {
   };
 
   // Custom Categories & Managed Articles (Secret Admin Panel)
-  const [customCategories, setCustomCategories] = useState<CustomCategory[]>(() => {
-    return getCustomCategories().filter((c) => c && c.id !== 'neurociencias' && c.id !== 'psico-social');
-  });
+  const [customCategories, setCustomCategories] = useState<CustomCategory[]>(() => getCustomCategories());
   const [managedArticles, setManagedArticles] = useState<NewsArticle[]>(() => getAllManagedArticles());
-  const [deletedIdsState, setDeletedIdsState] = useState<Set<string>>(() => getDeletedArticleIds());
   const [isAdminOpen, setIsAdminOpen] = useState<boolean>(false);
 
-  // Check URL parameter or hash: ONLY opens if explicitly typed in the browser's address bar (e.g., /#admin, /admin, ?admin)
+  // Check URL parameter or hash: ONLY opens if explicitly typed in the browser's address bar
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
     const checkUrlForAdmin = () => {
-      try {
-        const fullUrl = window.location.href.toLowerCase();
-        const search = window.location.search.toLowerCase();
-        const hash = (window.location.hash || '').toLowerCase();
-        const pathname = window.location.pathname.toLowerCase();
-        const params = new URLSearchParams(window.location.search);
+      const search = window.location.search.toLowerCase();
+      const hash = window.location.hash.toLowerCase();
+      const pathname = window.location.pathname.toLowerCase();
+      const params = new URLSearchParams(window.location.search);
 
-        const isAdminRequested =
-          hash === '#admin' ||
-          hash.startsWith('#admin') ||
-          hash === '#painel' ||
-          hash.startsWith('#painel') ||
-          hash.includes('admin') ||
-          params.has('admin') ||
-          params.has('painel') ||
-          params.has('gestao') ||
-          pathname.endsWith('/admin') ||
-          pathname.endsWith('/painel') ||
-          fullUrl.includes('/#admin') ||
-          search.includes('admin');
-
-        setIsAdminOpen(isAdminRequested);
-      } catch (err) {
-        console.warn('Erro ao checar rota de admin:', err);
+      if (
+        params.has('admin') ||
+        params.has('painel') ||
+        params.has('gestao') ||
+        search.includes('admin') ||
+        search.includes('painel') ||
+        hash.includes('admin') ||
+        hash.includes('painel') ||
+        pathname.endsWith('/admin') ||
+        pathname.endsWith('/painel')
+      ) {
+        setIsAdminOpen(true);
+      } else {
+        setIsAdminOpen(false);
       }
     };
 
     checkUrlForAdmin();
     window.addEventListener('popstate', checkUrlForAdmin);
     window.addEventListener('hashchange', checkUrlForAdmin);
-
-    // Polling de segurança leve caso a hash seja alterada sem disparo do evento
-    const hashInterval = setInterval(checkUrlForAdmin, 500);
-
     return () => {
       window.removeEventListener('popstate', checkUrlForAdmin);
       window.removeEventListener('hashchange', checkUrlForAdmin);
-      clearInterval(hashInterval);
     };
   }, []);
 
@@ -144,35 +123,19 @@ export default function App() {
     setIsAdminOpen(false);
     // Clean URL without reloading page
     if (typeof window !== 'undefined') {
-      try {
-        const url = new URL(window.location.href);
-        url.searchParams.delete('admin');
-        url.searchParams.delete('gestao');
-        url.searchParams.delete('painel');
-        if (url.hash.toLowerCase().includes('admin') || url.hash.toLowerCase().includes('painel')) {
-          url.hash = '';
-        }
-        window.history.replaceState({}, '', url.pathname + (url.search ? url.search : '') + (url.hash || ''));
-      } catch (e) {
-        window.location.hash = '';
+      const url = new URL(window.location.href);
+      url.searchParams.delete('admin');
+      url.searchParams.delete('gestao');
+      if (url.hash === '#admin' || url.hash === '#secreto') {
+        url.hash = '';
       }
+      window.history.replaceState({}, '', url.pathname + (url.search ? url.search : ''));
     }
   };
 
-  const handleDataUpdated = async () => {
-    const synced = await syncPortalWithServer();
-    if (synced) {
-      setCustomCategories(synced.customCategories);
-      setManagedArticles(synced.managedArticles);
-      setRssFeeds(synced.customRssFeeds);
-      setDeletedIdsState(new Set(synced.deletedArticleIds));
-    } else {
-      setCustomCategories(getCustomCategories());
-      setManagedArticles(getAllManagedArticles());
-      setRssFeeds(getCustomRssFeeds());
-      setDeletedIdsState(getDeletedArticleIds());
-    }
-    loadNewsFeed(true);
+  const handleDataUpdated = () => {
+    setCustomCategories(getCustomCategories());
+    setManagedArticles(getAllManagedArticles());
   };
 
   const allCategoriesList = useMemo(() => {
@@ -229,46 +192,9 @@ export default function App() {
     };
   }, []);
 
-  // Sincronização segura com o servidor na inicialização e atualização periódica suave
+  // Initial load
   useEffect(() => {
-    let isMounted = true;
-    let isSyncing = false;
-
-    const pullServerUpdates = async () => {
-      if (isSyncing || document.visibilityState !== 'visible') return;
-      isSyncing = true;
-      try {
-        const synced = await syncPortalWithServer();
-        if (synced && isMounted) {
-          setCustomCategories(synced.customCategories);
-          setManagedArticles(synced.managedArticles);
-          setRssFeeds(synced.customRssFeeds);
-          setDeletedIdsState(new Set(synced.deletedArticleIds));
-        }
-      } catch (e) {
-        // Silencioso em caso de conexão instável
-      } finally {
-        isSyncing = false;
-      }
-    };
-
-    pullServerUpdates();
     loadNewsFeed(false);
-
-    // Verificação periódica a cada 8 segundos em segundo plano e ao focar a tela
-    const intervalId = setInterval(pullServerUpdates, 8000);
-    const handleVisibility = () => {
-      if (document.visibilityState === 'visible') pullServerUpdates();
-    };
-    window.addEventListener('focus', pullServerUpdates);
-    window.addEventListener('visibilitychange', handleVisibility);
-
-    return () => {
-      isMounted = false;
-      clearInterval(intervalId);
-      window.removeEventListener('focus', pullServerUpdates);
-      window.removeEventListener('visibilitychange', handleVisibility);
-    };
   }, []);
 
   const loadNewsFeed = async (force: boolean = false) => {
@@ -283,13 +209,8 @@ export default function App() {
     }
 
     try {
-      const activeFeeds = getCustomRssFeeds().filter((f) => f.enabled !== false);
       const [newsRes, briefingRes] = await Promise.allSettled([
-        fetch(`/api/news${force ? '?force=true' : ''}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ force, customFeeds: activeFeeds }),
-        }).then((r) => r.json()),
+        fetch(`/api/news${force ? '?force=true' : ''}`).then((r) => r.json()),
         fetch(`/api/daily-briefing${force ? '?force=true' : ''}`).then((r) => r.json()),
       ]);
 
@@ -367,7 +288,7 @@ export default function App() {
     // Start with managed articles (which contains local edits, deletions, custom articles)
     const combined = [...managedArticles];
     const existingIds = new Set(managedArticles.map((a) => a.id));
-    const deletedIds = deletedIdsState;
+    const deletedIds = getDeletedArticleIds();
 
     // If live RSS feeds were fetched from /api/news, include those that aren't duplicated or deleted
     for (const art of articles) {
@@ -377,19 +298,10 @@ export default function App() {
     }
 
     return combined;
-  }, [showOfflineOnly, isOnline, managedArticles, articles, offlineArticles, deletedIdsState]);
+  }, [showOfflineOnly, isOnline, managedArticles, articles, offlineArticles]);
 
-  // Filter by publication origin: All, Peer-reviewed Academic Articles, or Live RSS News
-  const [feedOriginFilter, setFeedOriginFilter] = useState<'all' | 'academic' | 'rss'>('all');
-  const [visibleCount, setVisibleCount] = useState<number>(18);
-
-  // Reset pagination when active filters change
-  useEffect(() => {
-    setVisibleCount(18);
-  }, [activeCategory, searchQuery, feedOriginFilter]);
-
-  // Matches for category and search
-  const categoryMatchedArticles = useMemo(() => {
+  // Filtered articles
+  const filteredArticles = useMemo(() => {
     return displaySource.filter((article) => {
       // Category filter
       if (activeCategory !== 'all' && article.sourceCategory !== activeCategory) {
@@ -413,35 +325,6 @@ export default function App() {
       return true;
     });
   }, [displaySource, activeCategory, searchQuery]);
-
-  // Distinguish academic papers vs live RSS dispatches
-  const isAcademicArticle = (a: NewsArticle) => {
-    return Boolean(a.isPeerReviewed || a.articleType !== 'news' || a.fullArticle || a.doi);
-  };
-
-  const academicCount = useMemo(() => {
-    return categoryMatchedArticles.filter(isAcademicArticle).length;
-  }, [categoryMatchedArticles]);
-
-  const rssCount = useMemo(() => {
-    return categoryMatchedArticles.length - academicCount;
-  }, [categoryMatchedArticles, academicCount]);
-
-  // Filtered articles based on selected origin
-  const filteredArticles = useMemo(() => {
-    if (feedOriginFilter === 'academic') {
-      return categoryMatchedArticles.filter(isAcademicArticle);
-    }
-    if (feedOriginFilter === 'rss') {
-      return categoryMatchedArticles.filter((a) => !isAcademicArticle(a));
-    }
-    return categoryMatchedArticles;
-  }, [categoryMatchedArticles, feedOriginFilter]);
-
-  // Visible page slice
-  const visibleArticles = useMemo(() => {
-    return filteredArticles.slice(0, visibleCount);
-  }, [filteredArticles, visibleCount]);
 
   const formattedDate = useMemo(() => {
     const d = new Date();
@@ -479,8 +362,6 @@ export default function App() {
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         categoriesList={allCategoriesList}
-        onOpenRssModal={() => setIsRssModalOpen(true)}
-        rssFeedsCount={rssFeeds.length}
       />
 
       {/* Main Workspace */}
@@ -547,86 +428,45 @@ export default function App() {
           <UniversitiesView />
         ) : (
           <>
-            {/* Current Category / Section Indicator with Origin Filters */}
-            <div className="mb-5 border-b border-stone-200 dark:border-stone-800 pb-3">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-mono-subtle text-stone-500 dark:text-stone-400">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="uppercase tracking-wider font-semibold text-stone-800 dark:text-stone-200">
-                    {showOfflineOnly
-                      ? 'Artigos Salvos Offline'
-                      : activeCategory === 'all'
-                      ? 'Todas as Publicações Científicas'
-                      : activeCategory === 'biography'
-                      ? 'Biografias e Vida & Obra'
-                      : activeCategory === 'education'
-                      ? 'Educação & Aprendizado'
-                      : activeCategory === 'biotech'
-                      ? 'Biotecnologia & Genômica'
-                      : activeCategory === 'health'
-                      ? 'Saúde & Medicina'
-                      : activeCategory === 'physics'
-                      ? 'Física & Quântica'
-                      : activeCategory === 'math'
-                      ? 'Matemática Pura & Aplicada'
-                      : activeCategory === 'astronomy'
-                      ? 'Astronomia & Cosmologia'
-                      : activeCategory === 'geology'
-                      ? 'Geologia & Ciências da Terra'
-                      : activeCategory === 'tech'
-                      ? 'Tecnologia & Computação'
-                      : activeCategory === 'ai'
-                      ? 'Inteligência Artificial & Dados'
-                      : 'Feed de Ciências'}
-                  </span>
-                  <span>•</span>
-                  <span className="font-medium text-stone-700 dark:text-stone-300">
-                    {filteredArticles.length} {filteredArticles.length === 1 ? 'publicação' : 'publicações'}
-                  </span>
-                </div>
-
-                {searchQuery ? (
-                  <span className="text-stone-600 dark:text-stone-400">
-                    Filtro ativo: "{searchQuery}"
-                  </span>
-                ) : !showOfflineOnly && (
-                  <div className="flex items-center gap-1.5 self-start sm:self-auto">
-                    <button
-                      onClick={() => setFeedOriginFilter('all')}
-                      className={`px-2.5 py-1 text-[11px] font-sans rounded-md transition-colors cursor-pointer ${
-                        feedOriginFilter === 'all'
-                          ? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900 font-semibold'
-                          : 'bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-stone-900 dark:text-stone-400 dark:hover:bg-stone-800'
-                      }`}
-                    >
-                      Todas ({categoryMatchedArticles.length})
-                    </button>
-                    <button
-                      onClick={() => setFeedOriginFilter('academic')}
-                      className={`px-2.5 py-1 text-[11px] font-sans rounded-md transition-colors cursor-pointer ${
-                        feedOriginFilter === 'academic'
-                          ? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900 font-semibold'
-                          : 'bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-stone-900 dark:text-stone-400 dark:hover:bg-stone-800'
-                      }`}
-                      title="Artigos revisados por pares e acervo acadêmico com leitura completa"
-                    >
-                      Artigos Acadêmicos ({academicCount})
-                    </button>
-                    {rssCount > 0 && (
-                      <button
-                        onClick={() => setFeedOriginFilter('rss')}
-                        className={`px-2.5 py-1 text-[11px] font-sans rounded-md transition-colors cursor-pointer ${
-                          feedOriginFilter === 'rss'
-                            ? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900 font-semibold'
-                            : 'bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-stone-900 dark:text-stone-400 dark:hover:bg-stone-800'
-                        }`}
-                        title="Últimos despachos das agências internacionais (MIT, CERN, Nature, etc.)"
-                      >
-                        Despachos RSS ({rssCount})
-                      </button>
-                    )}
-                  </div>
-                )}
+            {/* Current Category / Section Indicator */}
+            <div className="mb-4 flex items-center justify-between text-xs font-mono-subtle text-stone-500 dark:text-stone-400 border-b border-stone-200 dark:border-stone-800 pb-2">
+              <div className="flex items-center gap-2">
+                <span className="uppercase tracking-wider font-semibold text-stone-800 dark:text-stone-200">
+                  {showOfflineOnly
+                    ? 'Artigos Salvos Offline'
+                    : activeCategory === 'all'
+                    ? 'Todas as Publicações Científicas'
+                    : activeCategory === 'biography'
+                    ? 'Biografias e Vida & Obra'
+                    : activeCategory === 'education'
+                    ? 'Educação & Aprendizado'
+                    : activeCategory === 'biotech'
+                    ? 'Biotecnologia & Genômica'
+                    : activeCategory === 'health'
+                    ? 'Saúde & Medicina'
+                    : activeCategory === 'physics'
+                    ? 'Física & Quântica'
+                    : activeCategory === 'math'
+                    ? 'Matemática Pura & Aplicada'
+                    : activeCategory === 'astronomy'
+                    ? 'Astronomia & Cosmologia'
+                    : activeCategory === 'geology'
+                    ? 'Geologia & Ciências da Terra'
+                    : activeCategory === 'tech'
+                    ? 'Tecnologia & Computação'
+                    : activeCategory === 'ai'
+                    ? 'Inteligência Artificial & Dados'
+                    : 'Feed de Ciências'}
+                </span>
+                <span>•</span>
+                <span>{filteredArticles.length} {filteredArticles.length === 1 ? 'publicação disponível' : 'publicações disponíveis'}</span>
               </div>
+
+              {searchQuery && (
+                <span className="text-stone-600 dark:text-stone-400">
+                  Filtro ativo: "{searchQuery}"
+                </span>
+              )}
             </div>
 
             {/* Articles Grid or Loading */}
@@ -649,9 +489,9 @@ export default function App() {
                 ))}
               </div>
             ) : filteredArticles.length > 0 ? (
-              <div className="space-y-8">
+              <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                  {visibleArticles.map((article) => (
+                  {filteredArticles.map((article) => (
                     <ArticleCard
                       key={article.id}
                       article={article}
@@ -662,21 +502,6 @@ export default function App() {
                     />
                   ))}
                 </div>
-
-                {/* Pagination / Load More Button */}
-                {visibleCount < filteredArticles.length && (
-                  <div className="flex flex-col items-center justify-center pt-4 pb-2">
-                    <button
-                      onClick={() => setVisibleCount((prev) => prev + 18)}
-                      className="px-6 py-2.5 rounded-lg border border-stone-300 dark:border-stone-700 bg-white dark:bg-[#181818] text-xs font-semibold text-stone-800 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 hover:border-stone-400 dark:hover:border-stone-600 transition-all shadow-xs cursor-pointer"
-                    >
-                      Carregar mais publicações ({visibleArticles.length} de {filteredArticles.length})
-                    </button>
-                    <span className="text-[11px] font-mono-subtle text-stone-500 dark:text-stone-400 mt-2">
-                      Exibindo {visibleArticles.length} de {filteredArticles.length} publicações disponíveis
-                    </span>
-                  </div>
-                )}
               </div>
             ) : (
               /* Empty State */
@@ -721,34 +546,11 @@ export default function App() {
             <span className="hidden sm:inline mx-2">•</span>
             <span className="block sm:inline mt-0.5 sm:mt-0">Leitura offline & Tradução contínua</span>
           </div>
-          <div className="flex items-center gap-3 text-[11px] flex-wrap justify-center sm:justify-end">
-            <span className="text-stone-400 dark:text-stone-500">
-              Nature • Science • CERN • Harvard • Cambridge • MIT • NASA • ScienceDaily • Wired
-            </span>
-            <button
-              onClick={() => setIsRssModalOpen(true)}
-              className="inline-flex items-center gap-1 text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 underline font-medium cursor-pointer"
-            >
-              <Rss className="w-3 h-3" />
-              <span>Ver Todos os Feeds RSS ({rssFeeds.length})</span>
-            </button>
+          <div className="text-stone-400 dark:text-stone-500 text-[11px]">
+            Fontes: Nature • Science • CERN • Harvard • Cambridge • Oxford • Bolonha • MIT • USP • UNICAMP • ONU • PISA • NASA • Wired
           </div>
         </div>
       </footer>
-
-      {/* Public RSS Feeds Directory Modal */}
-      <PublicRssFeedsModal
-        isOpen={isRssModalOpen}
-        onClose={() => setIsRssModalOpen(false)}
-        feeds={rssFeeds}
-        activeCategory={activeCategory}
-        onSelectCategoryFeed={(cat) => {
-          setActiveCategory(cat);
-          if (showOfflineOnly) setShowOfflineOnly(false);
-        }}
-        onRefreshFeeds={() => loadNewsFeed(true)}
-        isRefreshing={isRefreshing}
-      />
 
       {/* Article Reader Modal */}
       <ArticleDetailModal

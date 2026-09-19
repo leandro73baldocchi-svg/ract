@@ -83,7 +83,6 @@ export const INITIAL_PSYCHOLOGY_ARTICLES: NewsArticle[] = [
 ];
 
 export const DEFAULT_RSS_FEEDS: CustomRssFeed[] = [
-  { id: 'f-sciencedaily-society', name: 'ScienceDaily (Society & Psychology)', url: 'https://www.sciencedaily.com/rss/top/society.xml', category: 'psychology', enabled: true },
   { id: 'f-nature', name: 'Nature Journal', url: 'https://www.nature.com/nature.rss', category: 'biotech', enabled: true },
   { id: 'f-science', name: 'Science Magazine', url: 'https://www.science.org/rss/news_current.xml', category: 'health', enabled: true },
   { id: 'f-harvard', name: 'Harvard Gazette', url: 'https://news.harvard.edu/gazette/feed/', category: 'education', enabled: true },
@@ -98,87 +97,28 @@ export const DEFAULT_RSS_FEEDS: CustomRssFeed[] = [
   { id: 'f-nobel', name: 'The Nobel Prize (Biografias)', url: 'https://www.nobelprize.org/feed/', category: 'biography', enabled: true },
 ];
 
-const isBrowser = typeof window !== 'undefined' && typeof localStorage !== 'undefined';
-
-function safeGetItem(key: string): string | null {
-  if (!isBrowser) return null;
-  try {
-    return localStorage.getItem(key);
-  } catch {
-    return null;
-  }
-}
-
-function safeSetItem(key: string, val: string): void {
-  if (!isBrowser) return;
-  try {
-    localStorage.setItem(key, val);
-  } catch {}
-}
-
-function safeRemoveItem(key: string): void {
-  if (!isBrowser) return;
-  try {
-    localStorage.removeItem(key);
-  } catch {}
-}
-
-// Limpeza preventiva de categorias de teste antigas do cache local
-if (isBrowser) {
-  try {
-    const raw = safeGetItem(CUSTOM_CATEGORIES_KEY);
-    if (raw && (raw.includes('neurociencias') || raw.includes('psico-social'))) {
-      const parsed = JSON.parse(raw);
-      const cleaned = (Array.isArray(parsed) ? parsed : []).filter(
-        (c: any) => c && c.id !== 'neurociencias' && c.id !== 'psico-social'
-      );
-      safeSetItem(CUSTOM_CATEGORIES_KEY, JSON.stringify(cleaned));
-    }
-  } catch {}
-}
-
 export function getCustomCategories(): CustomCategory[] {
   try {
-    const raw = safeGetItem(CUSTOM_CATEGORIES_KEY);
+    const raw = localStorage.getItem(CUSTOM_CATEGORIES_KEY);
     if (!raw) return [];
-    const parsed: CustomCategory[] = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter((c) => c && c.id !== 'neurociencias' && c.id !== 'psico-social');
+    return JSON.parse(raw);
   } catch (e) {
     console.warn('Erro ao ler categorias customizadas:', e);
     return [];
   }
 }
 
-export async function saveCustomCategories(categories: CustomCategory[]): Promise<CustomCategory[]> {
-  const filtered = categories.filter((c) => c && c.id !== 'neurociencias' && c.id !== 'psico-social');
-  safeSetItem(CUSTOM_CATEGORIES_KEY, JSON.stringify(filtered));
-
-  if (isBrowser) {
-    try {
-      const res = await fetch('/api/portal/categories', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ categories: filtered }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data.categories)) {
-          const serverCleaned = data.categories.filter((c: any) => c && c.id !== 'neurociencias' && c.id !== 'psico-social');
-          safeSetItem(CUSTOM_CATEGORIES_KEY, JSON.stringify(serverCleaned));
-          return serverCleaned;
-        }
-      }
-    } catch (e) {
-      console.warn('Erro ao salvar categorias no servidor:', e);
-    }
+export function saveCustomCategories(categories: CustomCategory[]): void {
+  try {
+    localStorage.setItem(CUSTOM_CATEGORIES_KEY, JSON.stringify(categories));
+  } catch (e) {
+    console.warn('Erro ao salvar categorias:', e);
   }
-  return filtered;
 }
 
 export function getDeletedArticleIds(): Set<string> {
   try {
-    const raw = safeGetItem(DELETED_ARTICLE_IDS_KEY);
+    const raw = localStorage.getItem(DELETED_ARTICLE_IDS_KEY);
     if (!raw) return new Set();
     return new Set(JSON.parse(raw));
   } catch (e) {
@@ -188,7 +128,7 @@ export function getDeletedArticleIds(): Set<string> {
 
 export function saveDeletedArticleIds(ids: Set<string>): void {
   try {
-    safeSetItem(DELETED_ARTICLE_IDS_KEY, JSON.stringify(Array.from(ids)));
+    localStorage.setItem(DELETED_ARTICLE_IDS_KEY, JSON.stringify(Array.from(ids)));
   } catch (e) {
     console.warn('Erro ao salvar ids excluídos:', e);
   }
@@ -199,7 +139,7 @@ export function saveDeletedArticleIds(ids: Set<string>): void {
  */
 export function getAllManagedArticles(): NewsArticle[] {
   try {
-    const raw = safeGetItem(ALL_ARTICLES_KEY);
+    const raw = localStorage.getItem(ALL_ARTICLES_KEY);
     const deletedIds = getDeletedArticleIds();
 
     if (!raw) {
@@ -214,7 +154,7 @@ export function getAllManagedArticles(): NewsArticle[] {
         }
       }
       const initialList = Array.from(initialMap.values());
-      safeSetItem(ALL_ARTICLES_KEY, JSON.stringify(initialList));
+      saveAllManagedArticles(initialList);
       return initialList;
     }
 
@@ -228,7 +168,7 @@ export function getAllManagedArticles(): NewsArticle[] {
 
 export function saveAllManagedArticles(articles: NewsArticle[]): void {
   try {
-    safeSetItem(ALL_ARTICLES_KEY, JSON.stringify(articles));
+    localStorage.setItem(ALL_ARTICLES_KEY, JSON.stringify(articles));
   } catch (e) {
     console.warn('Erro ao salvar todos os artigos:', e);
   }
@@ -236,9 +176,8 @@ export function saveAllManagedArticles(articles: NewsArticle[]): void {
 
 /**
  * Salva ou atualiza um artigo individual (se já existir atualiza, senão adiciona no topo)
- * Persiste localmente E remotamente no servidor para que todos os dispositivos (celular, desktop) vejam.
  */
-export async function saveOrUpdateArticle(article: NewsArticle): Promise<NewsArticle[]> {
+export function saveOrUpdateArticle(article: NewsArticle): void {
   const current = getAllManagedArticles();
   const index = current.findIndex((a) => a.id === article.id);
   let updated: NewsArticle[];
@@ -258,32 +197,12 @@ export async function saveOrUpdateArticle(article: NewsArticle): Promise<NewsArt
   }
 
   saveAllManagedArticles(updated);
-
-  // Sincroniza imediatamente com o servidor para persistir para celular e todos os visitantes
-  if (isBrowser) {
-    try {
-      const res = await fetch('/api/portal/article', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ article }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.article) {
-          // Confirmado pelo servidor
-        }
-      }
-    } catch (err) {
-      console.warn('Erro ao persistir artigo no servidor:', err);
-    }
-  }
-  return updated;
 }
 
 /**
- * Exclui um artigo permanentemente do portal (local e servidor)
+ * Exclui um artigo permanentemente do portal
  */
-export async function deleteManagedArticle(articleId: string): Promise<void> {
+export function deleteManagedArticle(articleId: string): void {
   const current = getAllManagedArticles();
   const updated = current.filter((a) => a.id !== articleId);
   saveAllManagedArticles(updated);
@@ -291,95 +210,46 @@ export async function deleteManagedArticle(articleId: string): Promise<void> {
   const deleted = getDeletedArticleIds();
   deleted.add(articleId);
   saveDeletedArticleIds(deleted);
-
-  if (isBrowser) {
-    try {
-      await fetch(`/api/portal/article/${encodeURIComponent(articleId)}`, {
-        method: 'DELETE',
-      });
-    } catch (err) {
-      console.warn('Erro ao deletar artigo no servidor:', err);
-    }
-  }
 }
 
 /**
  * Restaura todos os artigos padrão de fábrica
  */
-export async function resetToFactoryArticles(): Promise<void> {
-  safeRemoveItem(ALL_ARTICLES_KEY);
-  safeRemoveItem(DELETED_ARTICLE_IDS_KEY);
-  safeRemoveItem(CUSTOM_CATEGORIES_KEY);
+export function resetToFactoryArticles(): void {
+  localStorage.removeItem(ALL_ARTICLES_KEY);
+  localStorage.removeItem(DELETED_ARTICLE_IDS_KEY);
   const combined = [...INITIAL_PSYCHOLOGY_ARTICLES, ...ACADEMIC_ARTICLES];
   saveAllManagedArticles(combined);
-
-  if (isBrowser) {
-    try {
-      await fetch('/api/portal/reset', {
-        method: 'POST',
-      });
-    } catch (err) {
-      console.warn('Erro ao resetar dados no servidor:', err);
-    }
-  }
 }
 
 // RSS Feeds Management
 export function getCustomRssFeeds(): CustomRssFeed[] {
   try {
-    const raw = safeGetItem(CUSTOM_FEEDS_KEY);
+    const raw = localStorage.getItem(CUSTOM_FEEDS_KEY);
     if (!raw) {
-      safeSetItem(CUSTOM_FEEDS_KEY, JSON.stringify(DEFAULT_RSS_FEEDS));
+      saveCustomRssFeeds(DEFAULT_RSS_FEEDS);
       return DEFAULT_RSS_FEEDS;
     }
-    const parsed: CustomRssFeed[] = JSON.parse(raw);
-    // Ensure all default feeds exist in the list
-    let updated = false;
-    const result = [...parsed];
-    for (const def of DEFAULT_RSS_FEEDS) {
-      if (!result.some((f) => f.url === def.url || f.id === def.id)) {
-        result.unshift(def);
-        updated = true;
-      }
-    }
-    if (updated) {
-      safeSetItem(CUSTOM_FEEDS_KEY, JSON.stringify(result));
-    }
-    return result;
+    return JSON.parse(raw);
   } catch (e) {
     return DEFAULT_RSS_FEEDS;
   }
 }
 
-export async function saveCustomRssFeeds(feeds: CustomRssFeed[]): Promise<CustomRssFeed[]> {
+export function saveCustomRssFeeds(feeds: CustomRssFeed[]): void {
   try {
-    safeSetItem(CUSTOM_FEEDS_KEY, JSON.stringify(feeds));
-    if (isBrowser) {
-      const res = await fetch('/api/portal/feeds', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ feeds }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data.feeds)) {
-          safeSetItem(CUSTOM_FEEDS_KEY, JSON.stringify(data.feeds));
-          return data.feeds;
-        }
-      }
-    }
+    localStorage.setItem(CUSTOM_FEEDS_KEY, JSON.stringify(feeds));
   } catch (e) {
     console.warn('Erro ao salvar feeds RSS:', e);
   }
-  return feeds;
 }
 
 const SHOW_RADAR_BRIEFING_KEY = 'ract_show_radar_briefing_v1';
 
 export function getShowRadarBriefingPreference(): boolean {
   try {
-    const val = safeGetItem(SHOW_RADAR_BRIEFING_KEY);
-    if (val === null) return false;
+    const val = localStorage.getItem(SHOW_RADAR_BRIEFING_KEY);
+    if (val === null) return false; // Default to false (hidden) as requested by user
     return val === 'true';
   } catch (e) {
     return false;
@@ -388,73 +258,22 @@ export function getShowRadarBriefingPreference(): boolean {
 
 export function setShowRadarBriefingPreference(show: boolean): void {
   try {
-    safeSetItem(SHOW_RADAR_BRIEFING_KEY, show ? 'true' : 'false');
+    localStorage.setItem(SHOW_RADAR_BRIEFING_KEY, show ? 'true' : 'false');
   } catch (e) {
     console.warn('Erro ao salvar preferência de radar:', e);
   }
 }
 
 export function checkAdminPassword(input: string): boolean {
-  const stored = safeGetItem(ADMIN_PASSWORD_KEY) || 'admin2026';
+  const stored = localStorage.getItem(ADMIN_PASSWORD_KEY) || 'admin2026';
   return input.trim() === stored || input.trim() === 'admin2026' || input.trim() === 'ciencia123';
 }
 
 export function setAdminPassword(newPassword: string): void {
   try {
-    safeSetItem(ADMIN_PASSWORD_KEY, newPassword.trim());
-    if (isBrowser) {
-      fetch('/api/portal/password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password: newPassword.trim() }),
-      }).catch((err) => console.warn('Erro ao salvar senha no servidor:', err));
-    }
+    localStorage.setItem(ADMIN_PASSWORD_KEY, newPassword.trim());
   } catch (e) {
     console.warn('Erro ao salvar nova senha:', e);
-  }
-}
-
-/**
- * SINCRONIZAÇÃO AUTORITATIVA COM O SERVIDOR (Multi-dispositivos: Celular, Tablet, Desktop):
- * Baixa os dados autoritativos do servidor central (única fonte de verdade).
- * Atualiza o cache local e garante que todos os dispositivos vejam exatamente o mesmo acervo.
- */
-export async function syncPortalWithServer(): Promise<{
-  managedArticles: NewsArticle[];
-  customCategories: CustomCategory[];
-  customRssFeeds: CustomRssFeed[];
-  deletedArticleIds: string[];
-} | null> {
-  if (!isBrowser) return null;
-
-  try {
-    const res = await fetch('/api/portal/data');
-    if (!res.ok) return null;
-    const serverData = await res.json();
-    if (!serverData.success) return null;
-
-    const serverArticles: NewsArticle[] = serverData.managedArticles || [];
-    const serverDeleted: string[] = serverData.deletedArticleIds || [];
-    const serverCats: CustomCategory[] = (serverData.customCategories || []).filter(
-      (c: any) => c && c.id !== 'neurociencias' && c.id !== 'psico-social'
-    );
-    const serverFeeds: CustomRssFeed[] = serverData.customRssFeeds || [];
-
-    // O servidor é a autoridade máxima: atualiza o cache local para corresponder perfeitamente
-    safeSetItem(ALL_ARTICLES_KEY, JSON.stringify(serverArticles));
-    safeSetItem(CUSTOM_CATEGORIES_KEY, JSON.stringify(serverCats));
-    safeSetItem(CUSTOM_FEEDS_KEY, JSON.stringify(serverFeeds));
-    safeSetItem(DELETED_ARTICLE_IDS_KEY, JSON.stringify(serverDeleted));
-
-    return {
-      managedArticles: serverArticles,
-      customCategories: serverCats,
-      customRssFeeds: serverFeeds,
-      deletedArticleIds: serverDeleted,
-    };
-  } catch (err) {
-    console.warn('Servidor offline, utilizando dados locais:', err);
-    return null;
   }
 }
 

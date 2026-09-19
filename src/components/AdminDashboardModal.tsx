@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { CustomCategory, NewsArticle, CategoryType } from '../types';
 import {
   DEFAULT_BASE_CATEGORIES,
@@ -14,7 +14,6 @@ import {
   CustomRssFeed,
   checkAdminPassword,
   setAdminPassword,
-  syncPortalWithServer,
 } from '../utils/customDataManager';
 import {
   X,
@@ -107,16 +106,6 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   const [newPassInput, setNewPassInput] = useState<string>('');
   const [passSuccessMsg, setPassSuccessMsg] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (isOpen) {
-      syncPortalWithServer().then(() => {
-        setArticlesList(getAllManagedArticles());
-        setCustomCategories(getCustomCategories());
-        setRssFeeds(getCustomRssFeeds());
-      });
-    }
-  }, [isOpen]);
-
   if (!isOpen) return null;
 
   const refreshArticles = () => {
@@ -130,11 +119,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
       setIsAuthenticated(true);
       setAuthError(null);
       setPasswordInput('');
-      syncPortalWithServer().then(() => {
-        refreshArticles();
-        setCustomCategories(getCustomCategories());
-        setRssFeeds(getCustomRssFeeds());
-      });
+      refreshArticles();
     } else {
       setAuthError('Senha incorreta. (Dica padrão: admin2026)');
     }
@@ -178,16 +163,13 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     });
   };
 
-  const [isSaving, setIsSaving] = useState<boolean>(false);
-
-  const handleSaveArticle = async (e: React.FormEvent) => {
+  const handleSaveArticle = (e: React.FormEvent) => {
     e.preventDefault();
     if (!articleForm.titlePt.trim() || !articleForm.summaryPt.trim()) {
       alert('Preencha pelo menos o Título em Português e o Resumo!');
       return;
     }
 
-    setIsSaving(true);
     const articleToSave: NewsArticle = {
       id: isEditingId ? isEditingId : `art-${Date.now()}`,
       title: articleForm.titleEn.trim() || articleForm.titlePt.trim(),
@@ -208,59 +190,47 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
         .filter(Boolean),
     };
 
-    await saveOrUpdateArticle(articleToSave);
+    saveOrUpdateArticle(articleToSave);
     refreshArticles();
     handleCancelEdit();
-    setIsSaving(false);
 
     setArtSuccessMsg(
       isEditingId
-        ? 'Artigo atualizado e sincronizado globalmente (PC e Celular)!'
-        : 'Novo artigo publicado no banco central e disponível em todos os aparelhos!'
+        ? 'Artigo atualizado com sucesso no portal!'
+        : 'Novo artigo publicado e incluído no acervo com sucesso!'
     );
     setTimeout(() => setArtSuccessMsg(null), 4000);
     onDataUpdated();
   };
 
-  const handleDeleteArticle = async (articleId: string, title: string) => {
+  const handleDeleteArticle = (articleId: string, title: string) => {
     if (confirm(`Deseja realmente EXCLUIR do portal o artigo:\n"${title}"?`)) {
-      await deleteManagedArticle(articleId);
+      deleteManagedArticle(articleId);
       refreshArticles();
       if (isEditingId === articleId) handleCancelEdit();
       onDataUpdated();
     }
   };
 
-  const handleResetFactory = async () => {
+  const handleResetFactory = () => {
     if (
       confirm(
         'Tem certeza que deseja restaurar todo o acervo original de fábrica? Isso recarregará os artigos padrão.'
       )
     ) {
-      await resetToFactoryArticles();
+      resetToFactoryArticles();
       refreshArticles();
-      setCustomCategories(getCustomCategories());
       onDataUpdated();
       alert('Acervo restaurado com sucesso!');
     }
   };
 
   // Categories Handlers
-  const handleAddCategory = async (e: React.FormEvent) => {
+  const handleAddCategory = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCatLabel.trim()) return;
 
-    const cleanId = (
-      newCatId.trim() ||
-      newCatLabel
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-|-$/g, '')
-    ) || `cat-${Date.now()}`;
-    const id = cleanId.toLowerCase();
-
+    const id = (newCatId.trim() || newCatLabel.toLowerCase().replace(/[^a-z0-9]/g, '-')).toLowerCase();
     const allExisting = [...DEFAULT_BASE_CATEGORIES, ...customCategories];
     if (allExisting.some((c) => c.id === id)) {
       alert('Essa categoria ou identificador já existe!');
@@ -275,29 +245,25 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
     const updated = [...customCategories, newCat];
     setCustomCategories(updated);
+    saveCustomCategories(updated);
     setNewCatId('');
     setNewCatLabel('');
-    setCatSuccessMsg(`Gravando área "${newCat.label}" no servidor central...`);
-
-    const saved = await saveCustomCategories(updated);
-    setCustomCategories(saved);
-    setCatSuccessMsg(`Área "${newCat.label}" adicionada e sincronizada com todos os celulares!`);
+    setCatSuccessMsg(`Área "${newCat.label}" adicionada com sucesso ao menu principal!`);
     setTimeout(() => setCatSuccessMsg(null), 4000);
     onDataUpdated();
   };
 
-  const handleDeleteCategory = async (catId: string) => {
+  const handleDeleteCategory = (catId: string) => {
     if (confirm(`Tem certeza que deseja remover esta área do menu?`)) {
       const updated = customCategories.filter((c) => c.id !== catId);
       setCustomCategories(updated);
-      const saved = await saveCustomCategories(updated);
-      setCustomCategories(saved);
+      saveCustomCategories(updated);
       onDataUpdated();
     }
   };
 
   // RSS Feeds Handlers
-  const handleAddRssFeed = async (e: React.FormEvent) => {
+  const handleAddRssFeed = (e: React.FormEvent) => {
     e.preventDefault();
     if (!feedName.trim() || !feedUrl.trim()) return;
 
@@ -311,32 +277,24 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
     const updated = [...rssFeeds, newFeed];
     setRssFeeds(updated);
+    saveCustomRssFeeds(updated);
     setFeedName('');
     setFeedUrl('');
-    setFeedSuccessMsg(`Gravando canal RSS "${newFeed.name}" no servidor central...`);
-
-    const saved = await saveCustomRssFeeds(updated);
-    setRssFeeds(saved);
-    setFeedSuccessMsg(`Fonte RSS "${newFeed.name}" salva e ativa para todos os dispositivos!`);
+    setFeedSuccessMsg(`Fonte RSS / Agência "${newFeed.name}" adicionada com sucesso!`);
     setTimeout(() => setFeedSuccessMsg(null), 4000);
-    onDataUpdated();
   };
 
-  const handleToggleFeed = async (id: string) => {
+  const handleToggleFeed = (id: string) => {
     const updated = rssFeeds.map((f) => (f.id === id ? { ...f, enabled: !f.enabled } : f));
     setRssFeeds(updated);
-    const saved = await saveCustomRssFeeds(updated);
-    setRssFeeds(saved);
-    onDataUpdated();
+    saveCustomRssFeeds(updated);
   };
 
-  const handleDeleteFeed = async (id: string) => {
+  const handleDeleteFeed = (id: string) => {
     if (confirm('Deseja remover esta fonte RSS?')) {
       const updated = rssFeeds.filter((f) => f.id !== id);
       setRssFeeds(updated);
-      const saved = await saveCustomRssFeeds(updated);
-      setRssFeeds(saved);
-      onDataUpdated();
+      saveCustomRssFeeds(updated);
     }
   };
 
@@ -424,18 +382,14 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
               <ShieldCheck className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="font-bold text-base flex flex-wrap items-center gap-2">
+              <h2 className="font-bold text-base flex items-center gap-2">
                 Painel de Controle Editorial Completo (RACT)
                 <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 font-semibold">
                   Área Restrita
                 </span>
-                <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                  Banco Global Sincronizado (Celular & PC)
-                </span>
               </h2>
               <p className="text-xs text-stone-500 dark:text-stone-400">
-                Gerencie todos os {articlesList.length} artigos do portal. Todas as publicações e edições são salvas no banco de dados e aparecem imediatamente para todos os visitantes.
+                Gerencie todos os {articlesList.length} artigos do portal, adicione novos links, edite fontes e cadastre feeds RSS.
               </p>
             </div>
           </div>
