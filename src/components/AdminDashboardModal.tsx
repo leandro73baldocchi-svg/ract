@@ -204,17 +204,21 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
         .filter(Boolean),
     };
 
-    const updated = await saveOrUpdateArticle(articleToSave);
-    setArticlesList(updated);
-    handleCancelEdit();
+    try {
+      const updated = await saveOrUpdateArticle(articleToSave);
+      setArticlesList(updated);
+      handleCancelEdit();
 
-    setArtSuccessMsg(
-      isEditingId
-        ? 'Artigo atualizado com sucesso no servidor e em todos os dispositivos!'
-        : 'Novo artigo publicado no servidor e visível em todos os aparelhos conectados!'
-    );
-    setTimeout(() => setArtSuccessMsg(null), 4000);
-    onDataUpdated();
+      setArtSuccessMsg(
+        isEditingId
+          ? 'Artigo atualizado com sucesso no servidor e em todos os dispositivos!'
+          : 'Novo artigo publicado no servidor e visível em todos os aparelhos conectados!'
+      );
+      setTimeout(() => setArtSuccessMsg(null), 4000);
+      onDataUpdated();
+    } catch (err: any) {
+      alert(err?.message || 'Erro ao publicar artigo no servidor');
+    }
   };
 
   const handleDeleteArticle = async (articleId: string, title: string) => {
@@ -257,13 +261,17 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
       isCustom: true,
     };
 
-    const updated = await saveCategoryToServer(newCat);
-    setCustomCategories(updated);
-    setNewCatId('');
-    setNewCatLabel('');
-    setCatSuccessMsg(`Área "${newCat.label}" cadastrada no servidor e ativa em todos os dispositivos!`);
-    setTimeout(() => setCatSuccessMsg(null), 4000);
-    onDataUpdated();
+    try {
+      const updated = await saveCategoryToServer(newCat);
+      setCustomCategories(updated);
+      setNewCatId('');
+      setNewCatLabel('');
+      setCatSuccessMsg(`Área "${newCat.label}" cadastrada no servidor e ativa em todos os dispositivos!`);
+      setTimeout(() => setCatSuccessMsg(null), 4000);
+      onDataUpdated();
+    } catch (err: any) {
+      alert(err?.message || 'Erro ao cadastrar área no servidor');
+    }
   };
 
   const handleDeleteCategory = async (catId: string) => {

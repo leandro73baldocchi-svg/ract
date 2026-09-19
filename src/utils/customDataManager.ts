@@ -51,7 +51,7 @@ export const DEFAULT_RSS_FEEDS: CustomRssFeed[] = [
 // -------------------------------------------------------------
 
 /**
- * Busca todos os artigos salvos no servidor (que contém exatamente os 41 artigos ou os novos adicionados)
+ * Busca todos os artigos salvos no servidor e sincroniza com dados locais pendentes
  */
 export async function fetchServerArticles(): Promise<NewsArticle[]> {
   try {
@@ -59,6 +59,8 @@ export async function fetchServerArticles(): Promise<NewsArticle[]> {
     if (res.ok) {
       const data = await res.json();
       if (data.success && Array.isArray(data.articles)) {
+        // Verifica se existem artigos criados localmente que ainda não estão no servidor
+        await syncPendingLocalArticles(data.articles);
         saveAllManagedArticles(data.articles);
         return data.articles;
       }
@@ -70,7 +72,7 @@ export async function fetchServerArticles(): Promise<NewsArticle[]> {
 }
 
 /**
- * Busca todas as categorias salvas no servidor
+ * Busca todas as categorias salvas no servidor e sincroniza áreas criadas localmente
  */
 export async function fetchServerCategories(): Promise<CustomCategory[]> {
   try {
@@ -78,6 +80,8 @@ export async function fetchServerCategories(): Promise<CustomCategory[]> {
     if (res.ok) {
       const data = await res.json();
       if (data.success && Array.isArray(data.categories)) {
+        // Verifica se existem categorias criadas localmente que ainda não estão no servidor
+        await syncPendingLocalCategories(data.categories);
         saveCustomCategories(data.categories);
         return data.categories;
       }
@@ -89,60 +93,115 @@ export async function fetchServerCategories(): Promise<CustomCategory[]> {
 }
 
 /**
+ * Sincroniza artigos que estavam salvos apenas no localStorage deste computador para o servidor central
+ */
+async function syncPendingLocalArticles(serverArticles: NewsArticle[]): Promise<void> {
+  try {
+    const local = getAllManagedArticles();
+    const serverIds = new Set(serverArticles.map((a) => a.id));
+    const pending = local.filter((a) => !serverIds.has(a.id));
+
+    if (pending.length > 0) {
+      console.log(`Encontrados ${pending.length} artigos locais pendentes. Sincronizando com o servidor...`);
+      for (const art of pending) {
+        try {
+          await fetch('/api/articles', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(art),
+          });
+          serverArticles.unshift(art);
+        } catch (e) {
+          console.error('Falha ao sincronizar artigo pendente:', art.id, e);
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('Erro ao checar sincronização de artigos locais:', e);
+  }
+}
+
+/**
+ * Sincroniza áreas que estavam salvas apenas no localStorage deste computador para o servidor central
+ */
+async function syncPendingLocalCategories(serverCategories: CustomCategory[]): Promise<void> {
+  try {
+    const local = getCustomCategories();
+    const serverIds = new Set(serverCategories.map((c) => c.id));
+    const pending = local.filter((c) => !serverIds.has(c.id));
+
+    if (pending.length > 0) {
+      console.log(`Encontradas ${pending.length} áreas locais pendentes. Sincronizando com o servidor...`);
+      for (const cat of pending) {
+        try {
+          await fetch('/api/categories', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(cat),
+          });
+          serverCategories.push(cat);
+        } catch (e) {
+          console.error('Falha ao sincronizar área pendente:', cat.id, e);
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('Erro ao checar sincronização de áreas locais:', e);
+  }
+}
+
+/**
  * Salva um artigo no servidor (aparece em todos os aparelhos conectados)
  */
 export async function saveOrUpdateArticle(article: NewsArticle): Promise<NewsArticle[]> {
-  // Salva no servidor central
   try {
     const res = await fetch('/api/articles', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(article),
     });
-    if (res.ok) {
-      const data = await res.json();
-      if (data.success && Array.isArray(data.articles)) {
-        saveAllManagedArticles(data.articles);
-        return data.articles;
-      }
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`Servidor retornou erro ${res.status}: ${errText}`);
     }
-  } catch (err) {
-    console.warn('Erro ao salvar no servidor:', err);
+    const data = await res.json();
+    if (data.success && Array.isArray(data.articles)) {
+      saveAllManagedArticles(data.articles);
+      return data.articles;
+    }
+    throw new Error('Resposta do servidor em formato inesperado');
+  } catch (err: any) {
+    console.error('Erro ao salvar no servidor:', err);
+    // Salva no cache local para não perder o texto digitado
+    const current = getAllManagedArticles();
+    const index = current.findIndex((a) => a.id === article.id);
+    let updated: NewsArticle[];
+    if (index >= 0) {
+      updated = [...current];
+      updated[index] = { ...updated[index], ...article };
+    } else {
+      updated = [article, ...current];
+    }
+    saveAllManagedArticles(updated);
+    throw new Error(`Atenção: Não foi possível salvar no servidor central (${err?.message || 'offline'}). O rascunho foi salvo neste navegador.`);
   }
-
-  // Fallback local
-  const current = getAllManagedArticles();
-  const index = current.findIndex((a) => a.id === article.id);
-  let updated: NewsArticle[];
-  if (index >= 0) {
-    updated = [...current];
-    updated[index] = { ...updated[index], ...article };
-  } else {
-    updated = [article, ...current];
-  }
-  saveAllManagedArticles(updated);
-  return updated;
 }
 
 /**
  * Remove um artigo do servidor central
  */
 export async function deleteManagedArticle(articleId: string): Promise<NewsArticle[]> {
-  try {
-    const res = await fetch(`/api/articles/${articleId}`, {
-      method: 'DELETE',
-    });
-    if (res.ok) {
-      const data = await res.json();
-      if (data.success && Array.isArray(data.articles)) {
-        saveAllManagedArticles(data.articles);
-        return data.articles;
-      }
-    }
-  } catch (err) {
-    console.warn('Erro ao excluir no servidor:', err);
+  const res = await fetch(`/api/articles/${articleId}`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) {
+    throw new Error(`Falha ao excluir no servidor: HTTP ${res.status}`);
   }
-
+  const data = await res.json();
+  if (data.success && Array.isArray(data.articles)) {
+    saveAllManagedArticles(data.articles);
+    return data.articles;
+  }
   const current = getAllManagedArticles();
   const updated = current.filter((a) => a.id !== articleId);
   saveAllManagedArticles(updated);
@@ -153,19 +212,16 @@ export async function deleteManagedArticle(articleId: string): Promise<NewsArtic
  * Restaura acervo para os 41 artigos originais no servidor
  */
 export async function resetToFactoryArticles(): Promise<NewsArticle[]> {
-  try {
-    const res = await fetch('/api/articles/reset', {
-      method: 'POST',
-    });
-    if (res.ok) {
-      const data = await res.json();
-      if (data.success && Array.isArray(data.articles)) {
-        saveAllManagedArticles(data.articles);
-        return data.articles;
-      }
-    }
-  } catch (err) {
-    console.warn('Erro ao restaurar acervo no servidor:', err);
+  const res = await fetch('/api/articles/reset', {
+    method: 'POST',
+  });
+  if (!res.ok) {
+    throw new Error('Falha ao restaurar acervo padrão no servidor');
+  }
+  const data = await res.json();
+  if (data.success && Array.isArray(data.articles)) {
+    saveAllManagedArticles(data.articles);
+    return data.articles;
   }
   return getAllManagedArticles();
 }
@@ -180,42 +236,41 @@ export async function saveCategoryToServer(category: CustomCategory): Promise<Cu
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(category),
     });
-    if (res.ok) {
-      const data = await res.json();
-      if (data.success && Array.isArray(data.categories)) {
-        saveCustomCategories(data.categories);
-        return data.categories;
-      }
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`Servidor retornou erro ${res.status}: ${errText}`);
     }
-  } catch (err) {
-    console.warn('Erro ao salvar categoria no servidor:', err);
+    const data = await res.json();
+    if (data.success && Array.isArray(data.categories)) {
+      saveCustomCategories(data.categories);
+      return data.categories;
+    }
+    throw new Error('Resposta do servidor em formato inesperado');
+  } catch (err: any) {
+    console.error('Erro ao salvar categoria no servidor:', err);
+    // Salva localmente para não perder
+    const current = getCustomCategories();
+    const updated = [...current, category];
+    saveCustomCategories(updated);
+    throw new Error(`Não foi possível enviar a área ao servidor (${err?.message || 'offline'}). Foi salva apenas neste dispositivo.`);
   }
-
-  const current = getCustomCategories();
-  const updated = [...current, category];
-  saveCustomCategories(updated);
-  return updated;
 }
 
 /**
  * Remove uma área do servidor
  */
 export async function deleteCategoryFromServer(categoryId: string): Promise<CustomCategory[]> {
-  try {
-    const res = await fetch(`/api/categories/${categoryId}`, {
-      method: 'DELETE',
-    });
-    if (res.ok) {
-      const data = await res.json();
-      if (data.success && Array.isArray(data.categories)) {
-        saveCustomCategories(data.categories);
-        return data.categories;
-      }
-    }
-  } catch (err) {
-    console.warn('Erro ao excluir categoria no servidor:', err);
+  const res = await fetch(`/api/categories/${categoryId}`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) {
+    throw new Error(`Falha ao excluir categoria no servidor: HTTP ${res.status}`);
   }
-
+  const data = await res.json();
+  if (data.success && Array.isArray(data.categories)) {
+    saveCustomCategories(data.categories);
+    return data.categories;
+  }
   const current = getCustomCategories();
   const updated = current.filter((c) => c.id !== categoryId);
   saveCustomCategories(updated);
