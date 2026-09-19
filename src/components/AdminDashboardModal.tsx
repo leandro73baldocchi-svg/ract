@@ -38,7 +38,6 @@ import {
   Rss,
   Search,
   RotateCcw,
-  BookOpen,
 } from 'lucide-react';
 
 interface AdminDashboardModalProps {
