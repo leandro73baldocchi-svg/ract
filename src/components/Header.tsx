@@ -89,11 +89,11 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="flex items-center gap-4">
             
             {/* O seu Logotipo Oficial */}
-            <div className="shrink-0 flex items-center justify-center w-14 h-14 bg-white dark:bg-stone-900 rounded-xl shadow-sm overflow-hidden border border-stone-200 dark:border-stone-800">
+            <div className="shrink-0 flex items-center justify-center w-[80px] h-[80px] bg-white dark:bg-stone-900 rounded-xl shadow-sm overflow-hidden border border-stone-200 dark:border-stone-800">
               <img 
                 src="/logo.png" 
                 alt="Logo Radar Autônomo" 
-                className="w-full h-full object-cover"
+                className="w-full h-full object-contain p-1"
               />
             </div>
 
