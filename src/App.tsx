@@ -74,14 +74,21 @@ export default function App() {
     if (typeof window === 'undefined') return;
 
     const checkUrlForAdmin = () => {
+      const search = window.location.search.toLowerCase();
+      const hash = window.location.hash.toLowerCase();
+      const pathname = window.location.pathname.toLowerCase();
       const params = new URLSearchParams(window.location.search);
-      const hash = window.location.hash;
+
       if (
-        params.get('admin') === 'true' ||
-        params.get('admin') === 'secreto' ||
-        params.get('gestao') === '1' ||
-        hash === '#admin' ||
-        hash === '#secreto'
+        params.has('admin') ||
+        params.has('painel') ||
+        params.has('gestao') ||
+        search.includes('admin') ||
+        search.includes('painel') ||
+        hash.includes('admin') ||
+        hash.includes('painel') ||
+        pathname.endsWith('/admin') ||
+        pathname.endsWith('/painel')
       ) {
         setIsAdminOpen(true);
       } else {
