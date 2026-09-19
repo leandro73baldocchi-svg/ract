@@ -19,6 +19,7 @@ export interface CustomCategory {
   label: string;
   description?: string;
   isCustom?: boolean;
+  order?: number; // ADICIONADO CAMPO DE ORDENAÇÃO
 }
 
 export interface FullArticleContent {
