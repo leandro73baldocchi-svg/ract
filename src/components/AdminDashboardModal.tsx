@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { CustomCategory, NewsArticle, CategoryType } from '../types';
 import {
-  DEFAULT_BASE_CATEGORIES,
+  DEFAULT_BASE_CATEGORIES, 
   getCustomCategories,
   saveCustomCategories,
   getAllManagedArticles,
