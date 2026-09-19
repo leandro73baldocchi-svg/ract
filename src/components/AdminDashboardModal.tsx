@@ -18,6 +18,9 @@ import {
   deleteCategoryFromServer,
   fetchServerArticles,
   fetchServerCategories,
+  fetchServerAffiliates,
+  saveAffiliateToServer,
+  AffiliateLink
 } from '../utils/customDataManager';
 import {
   X,
@@ -37,7 +40,9 @@ import {
   AlertCircle,
   Rss,
   Search,
-  RotateCcw
+  RotateCcw,
+  ShoppingCart,
+  TrendingUp
 } from 'lucide-react';
 
 interface AdminDashboardModalProps {
@@ -55,8 +60,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   const [passwordInput, setPasswordInput] = useState<string>('');
   const [authError, setAuthError] = useState<string | null>(null);
 
-  // Active subtab
-  const [activeTab, setActiveTab] = useState<'articles' | 'categories' | 'feeds' | 'backup'>('articles');
+  // Active subtab (agora incluindo 'affiliates')
+  const [activeTab, setActiveTab] = useState<'articles' | 'categories' | 'feeds' | 'backup' | 'affiliates'>('articles');
 
   // Articles
   const [articlesList, setArticlesList] = useState<NewsArticle[]>(() => getAllManagedArticles());
@@ -69,7 +74,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   const [newCatId, setNewCatId] = useState<string>('');
   const [newCatLabel, setNewCatLabel] = useState<string>('');
   const [newCatOrder, setNewCatOrder] = useState<string>('99'); 
-  const [isEditingCategory, setIsEditingCategory] = useState<boolean>(false); // NOVO: Controle de edição de área
+  const [isEditingCategory, setIsEditingCategory] = useState<boolean>(false);
   const [catSuccessMsg, setCatSuccessMsg] = useState<string | null>(null);
 
   // RSS
@@ -78,6 +83,13 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   const [feedUrl, setFeedUrl] = useState<string>('');
   const [feedCategory, setFeedCategory] = useState<string>('tech');
   const [feedSuccessMsg, setFeedSuccessMsg] = useState<string | null>(null);
+
+  // Affiliates (Monetização)
+  const [affiliatesList, setAffiliatesList] = useState<AffiliateLink[]>([]);
+  const [affCatId, setAffCatId] = useState<string>('default');
+  const [affTitle, setAffTitle] = useState<string>('');
+  const [affUrl, setAffUrl] = useState<string>('');
+  const [affSuccessMsg, setAffSuccessMsg] = useState<string | null>(null);
 
   // Form Article
   const [isEditingId, setIsEditingId] = useState<string | null>(null);
@@ -114,6 +126,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     if (isOpen) {
       fetchServerArticles().then(setArticlesList);
       fetchServerCategories().then(setCustomCategories);
+      fetchServerAffiliates().then(setAffiliatesList);
     }
   }, [isOpen]);
 
@@ -122,6 +135,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     setArticlesList(list);
     const cats = await fetchServerCategories();
     setCustomCategories(cats);
+    const affs = await fetchServerAffiliates();
+    setAffiliatesList(affs);
   };
 
   if (!isOpen) return null;
@@ -236,13 +251,12 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     }
   };
 
-  // Funções de Edição de Categoria
+  // Categoria functions
   const handleEditCategory = (cat: CustomCategory) => {
     setNewCatId(cat.id);
     setNewCatLabel(cat.label);
     setNewCatOrder((cat.order ?? 99).toString());
     setIsEditingCategory(true);
-    // Rola suavemente para o topo do formulário
     const modalContent = document.getElementById('admin-scrollable-content');
     if (modalContent) modalContent.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -292,6 +306,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     }
   };
 
+  // RSS functions
   const handleAddRssFeed = (e: React.FormEvent) => {
     e.preventDefault();
     if (!feedName.trim() || !feedUrl.trim()) return;
@@ -325,6 +340,37 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
       setRssFeeds(updated);
       saveCustomRssFeeds(updated);
     }
+  };
+
+  // Affiliates function
+  const handleSaveAffiliate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!affTitle.trim() || !affUrl.trim()) return;
+
+    const newAffiliate: AffiliateLink = {
+      id: affCatId,
+      title: affTitle.trim(),
+      url: affUrl.trim()
+    };
+
+    try {
+      const updated = await saveAffiliateToServer(newAffiliate);
+      setAffiliatesList(updated);
+      setAffTitle('');
+      setAffUrl('');
+      setAffSuccessMsg('Link de monetização salvo com sucesso e já está ativo no portal!');
+      setTimeout(() => setAffSuccessMsg(null), 4000);
+    } catch (err: any) {
+      alert(err?.message || 'Erro ao salvar link de afiliado');
+    }
+  };
+
+  const handleStartEditAffiliate = (aff: AffiliateLink) => {
+    setAffCatId(aff.id);
+    setAffTitle(aff.title);
+    setAffUrl(aff.url);
+    const modalContent = document.getElementById('admin-scrollable-content');
+    if (modalContent) modalContent.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleExportBackup = () => {
@@ -417,7 +463,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                 </span>
               </h2>
               <p className="text-xs text-stone-500 dark:text-stone-400">
-                Gerencie todos os {articlesList.length} artigos do portal, adicione novos links e edite áreas.
+                Gerencie artigos, links e a monetização de todo o portal.
               </p>
             </div>
           </div>
@@ -478,7 +524,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                 }`}
               >
                 <FileText className="w-3.5 h-3.5" />
-                <span>Gerenciar Todos os Artigos ({articlesList.length})</span>
+                <span>Acervo ({articlesList.length})</span>
               </button>
 
               <button
@@ -487,8 +533,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                   activeTab === 'feeds' ? 'border-stone-900 dark:border-stone-100 text-stone-900 dark:text-stone-100' : 'border-transparent text-stone-500 hover:text-stone-800 dark:hover:text-stone-300'
                 }`}
               >
-                <Rss className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-                <span>Feeds RSS / Agências ({rssFeeds.length})</span>
+                <Rss className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                <span>Fontes RSS ({rssFeeds.length})</span>
               </button>
 
               <button
@@ -498,7 +544,17 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                 }`}
               >
                 <Layers className="w-3.5 h-3.5" />
-                <span>Áreas e Categorias ({allAvailableCategories.length})</span>
+                <span>Áreas ({allAvailableCategories.length})</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('affiliates')}
+                className={`pb-2.5 px-3 text-xs font-semibold flex items-center gap-1.5 border-b-2 transition-colors cursor-pointer shrink-0 ${
+                  activeTab === 'affiliates' ? 'border-amber-600 dark:border-amber-400 text-amber-700 dark:text-amber-400' : 'border-transparent text-stone-500 hover:text-stone-800 dark:hover:text-stone-300'
+                }`}
+              >
+                <TrendingUp className="w-3.5 h-3.5 text-amber-600 dark:text-amber-500" />
+                <span>Monetização</span>
               </button>
 
               <button
@@ -508,7 +564,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                 }`}
               >
                 <Database className="w-3.5 h-3.5" />
-                <span>Backup e Segurança</span>
+                <span>Backup</span>
               </button>
             </div>
 
@@ -527,7 +583,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                   <form onSubmit={handleSaveArticle} className="p-4 sm:p-5 bg-stone-50 dark:bg-stone-900/60 border border-stone-200 dark:border-stone-800 rounded-xl space-y-4">
                     <div className="flex items-center justify-between">
                       <h4 className="text-xs font-bold uppercase tracking-wider text-stone-800 dark:text-stone-200 flex items-center gap-1.5">
-                        {isEditingId ? <><Edit className="w-3.5 h-3.5 text-amber-600" /> Editar Artigo Selecionado (ID: {isEditingId})</> : <><Plus className="w-3.5 h-3.5 text-blue-600" /> Cadastrar Novo Artigo ou Notícia de Agência</>}
+                        {isEditingId ? <><Edit className="w-3.5 h-3.5 text-amber-600" /> Editar Artigo Selecionado (ID: {isEditingId})</> : <><Plus className="w-3.5 h-3.5 text-blue-600" /> Cadastrar Novo Artigo</>}
                       </h4>
                       {isEditingId && <button type="button" onClick={handleCancelEdit} className="text-xs text-stone-500 hover:text-stone-800 dark:hover:text-stone-200 underline cursor-pointer">Cancelar Edição</button>}
                     </div>
@@ -597,9 +653,6 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                         <h4 className="text-xs font-bold uppercase tracking-wider text-stone-800 dark:text-stone-200">
                           Catálogo Geral ({displayedArticles.length} de {articlesList.length})
                         </h4>
-                        <p className="text-[11px] text-stone-500">
-                          Você pode editar o texto, corrigir informações ou excluir qualquer artigo.
-                        </p>
                       </div>
 
                       <button onClick={handleResetFactory} className="px-2.5 py-1 bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 rounded text-xs hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors flex items-center gap-1 self-start sm:self-auto cursor-pointer" title="Restaura os artigos originais">
@@ -651,6 +704,87 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                             </div>
                           </div>
                         ))
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB: MONETIZAÇÃO (NOVO) */}
+              {activeTab === 'affiliates' && (
+                <div className="space-y-6">
+                  {affSuccessMsg && (
+                    <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 rounded-lg text-xs flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 shrink-0" /> <span>{affSuccessMsg}</span>
+                    </div>
+                  )}
+
+                  <div className="p-4 sm:p-5 bg-stone-50 dark:bg-stone-900/60 border border-stone-200 dark:border-stone-800 rounded-xl space-y-4">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
+                      <TrendingUp className="w-4 h-4" /> Configurar Link de Afiliado Amazon
+                    </h4>
+                    <p className="text-xs text-stone-500 dark:text-stone-400">
+                      Associe um livro ou equipamento a uma Área do portal. Toda vez que um usuário ler uma notícia dessa área, seu link será recomendado no final do texto.
+                    </p>
+
+                    <form onSubmit={handleSaveAffiliate} className="space-y-3 pt-2">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="sm:col-span-2">
+                          <label className="block text-[11px] font-semibold text-stone-700 dark:text-stone-300 mb-1">Escolha a Área / Categoria do Artigo *</label>
+                          <select value={affCatId} onChange={(e) => setAffCatId(e.target.value)} className="w-full px-3 py-2 text-xs bg-white dark:bg-stone-950 border border-stone-300 dark:border-stone-700 rounded focus:outline-none">
+                            <option value="default">📘 Padrão Geral (Exibe se a área não tiver um link específico)</option>
+                            {allAvailableCategories.filter(c => c.id !== 'all').map((c) => (
+                              <option key={c.id} value={c.id}>🔸 Área: {c.label}</option>
+                            ))}
+                          </select>
+                        </div>
+                        
+                        <div>
+                          <label className="block text-[11px] font-semibold text-stone-700 dark:text-stone-300 mb-1">Título do Livro/Produto *</label>
+                          <input type="text" required value={affTitle} onChange={(e) => setAffTitle(e.target.value)} placeholder="Ex: Cosmos (Carl Sagan)" className="w-full px-3 py-1.5 text-xs bg-white dark:bg-stone-950 border border-stone-300 dark:border-stone-700 rounded" />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-[11px] font-semibold text-stone-700 dark:text-stone-300 mb-1">Seu Link de Afiliado (amzn.to) *</label>
+                          <input type="url" required value={affUrl} onChange={(e) => setAffUrl(e.target.value)} placeholder="https://amzn.to/..." className="w-full px-3 py-1.5 text-xs bg-white dark:bg-stone-950 border border-stone-300 dark:border-stone-700 rounded font-mono" />
+                        </div>
+                      </div>
+                      
+                      <div className="pt-2 flex justify-end">
+                        <button type="submit" className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1.5">
+                          <Save className="w-3.5 h-3.5" /> Salvar Recomendação
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+
+                  <div className="space-y-2">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-stone-800 dark:text-stone-200">
+                      Links Ativos Configurados ({affiliatesList.length})
+                    </h4>
+                    <div className="border border-stone-200 dark:border-stone-800 rounded-xl overflow-hidden bg-white dark:bg-stone-950 divide-y divide-stone-200 dark:divide-stone-800">
+                      {affiliatesList.length === 0 ? (
+                        <div className="p-8 text-center text-xs text-stone-500">Nenhum link configurado ainda. Comece criando o Padrão Geral acima.</div>
+                      ) : (
+                        affiliatesList.map((aff) => {
+                          const categoryName = aff.id === 'default' ? 'Padrão Geral' : allAvailableCategories.find(c => c.id === aff.id)?.label || aff.id;
+                          return (
+                            <div key={aff.id} className="p-3 flex items-center justify-between gap-3 text-xs">
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-2 mb-0.5">
+                                  <span className={`px-1.5 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider ${aff.id === 'default' ? 'bg-amber-100 text-amber-800' : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300'}`}>
+                                    {categoryName}
+                                  </span>
+                                </div>
+                                <p className="font-bold text-stone-900 dark:text-stone-100 truncate">{aff.title}</p>
+                                <a href={aff.url} target="_blank" rel="noreferrer" className="text-[10px] text-blue-600 dark:text-blue-400 font-mono truncate hover:underline">{aff.url}</a>
+                              </div>
+                              <button onClick={() => handleStartEditAffiliate(aff)} className="p-1.5 rounded text-stone-600 hover:bg-stone-200 dark:text-stone-400 dark:hover:bg-stone-800 transition-colors" title="Editar link">
+                                <Edit className="w-4 h-4" />
+                              </button>
+                            </div>
+                          );
+                        })
                       )}
                     </div>
                   </div>
