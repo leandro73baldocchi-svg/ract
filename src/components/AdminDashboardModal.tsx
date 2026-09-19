@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CustomCategory, NewsArticle, CategoryType } from '../types';
 import {
   DEFAULT_BASE_CATEGORIES,
@@ -106,6 +106,16 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   // Password change state
   const [newPassInput, setNewPassInput] = useState<string>('');
   const [passSuccessMsg, setPassSuccessMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      syncPortalWithServer().then(() => {
+        setArticlesList(getAllManagedArticles());
+        setCustomCategories(getCustomCategories());
+        setRssFeeds(getCustomRssFeeds());
+      });
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 

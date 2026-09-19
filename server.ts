@@ -210,7 +210,8 @@ async function fetchFeed(source: FeedSource): Promise<any[]> {
     if (!channel) return [];
     const rawItems = channel.item || channel.entry || [];
     const items = Array.isArray(rawItems) ? rawItems : [rawItems];
-    return items.slice(0, 25).map((item: any, idx: number) => {
+    // Limita aos 2 destaques mais recentes por agência para manter o feed acadêmico equilibrado e sem inundações de centenas de itens
+    return items.slice(0, 2).map((item: any, idx: number) => {
       const title = cleanHtml(item.title || '');
       const rawDescription = item.description || item.summary || item['content:encoded'] || '';
       const summary = cleanHtml(rawDescription).slice(0, 320);
@@ -233,11 +234,12 @@ async function fetchFeed(source: FeedSource): Promise<any[]> {
         titlePt: title, 
         source: source.name,
         sourceCategory: source.category,
+        articleType: 'news' as const,
         link,
         pubDate: displayDate,
         summary,
         summaryPt: summary,
-        readTime: '5 min',
+        readTime: '4 min',
         tags: [source.category]
       };
     });
@@ -250,19 +252,15 @@ let cachedRssNews: any[] = [];
 let lastRssFetch = 0;
 
 async function getAggregatedNews(force = false, extraFeeds: FeedSource[] = []) {
-  const allSources = [...SOURCES];
-
-  // Incorpora todos os canais RSS ativos configurados no portal
+  // Utiliza os canais RSS ativos configurados no portal (ou SOURCES padrão caso vazio)
   const portalFeeds = (portalStore.customRssFeeds || []).filter((f: any) => f.enabled !== false);
-  for (const pf of portalFeeds) {
-    if (pf.url && !allSources.some((s) => s.url === pf.url)) {
-      allSources.push({
+  const allSources: FeedSource[] = portalFeeds.length > 0
+    ? portalFeeds.map((pf: any) => ({
         name: pf.name || 'Agência RSS',
         url: pf.url,
         category: pf.category || 'tech',
-      });
-    }
-  }
+      }))
+    : [...SOURCES];
 
   if (Array.isArray(extraFeeds)) {
     for (const ef of extraFeeds) {
