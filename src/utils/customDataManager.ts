@@ -5,7 +5,7 @@ import { collection, getDocs, doc, setDoc, deleteDoc } from 'firebase/firestore'
 
 const CUSTOM_CATEGORIES_KEY = 'ract_custom_categories_v2';
 const ALL_ARTICLES_KEY = 'ract_all_managed_articles_v3';
-const CUSTOM_FEEDS_KEY = 'ract_custom_rss_feeds_v1';
+const CUSTOM_FEEDS_KEY = 'ract_custom_rss_feeds_v2';
 const ADMIN_PASSWORD_KEY = 'ract_admin_password_hash_v1';
 const SHOW_RADAR_BRIEFING_KEY = 'ract_show_radar_briefing_v1';
 const AFFILIATE_LINKS_KEY = 'ract_affiliates_v1';
@@ -19,7 +19,7 @@ export interface CustomRssFeed {
 }
 
 export interface AffiliateLink {
-  id: string; 
+  id: string;
   title: string;
   url: string;
 }
@@ -169,13 +169,48 @@ export async function saveAffiliateToServer(link: AffiliateLink): Promise<Affili
   return await fetchServerAffiliates();
 }
 
+export async function fetchServerFeeds(): Promise<CustomRssFeed[]> {
+  try {
+    const querySnapshot = await getDocs(collection(db, "feeds"));
+    const feeds: CustomRssFeed[] = [];
+    querySnapshot.forEach((docSnap) => {
+      feeds.push(docSnap.data() as CustomRssFeed);
+    });
+
+    if (feeds.length > 0) {
+      saveCustomRssFeeds(feeds);
+      return feeds;
+    } else {
+      for (const f of DEFAULT_RSS_FEEDS) {
+         await setDoc(doc(db, "feeds", f.id), f);
+      }
+      saveCustomRssFeeds(DEFAULT_RSS_FEEDS);
+      return DEFAULT_RSS_FEEDS;
+    }
+  } catch (err) {
+    console.error('Falha ao buscar feeds:', err);
+    return getCustomRssFeeds();
+  }
+}
+
+export async function saveFeedToServer(feed: CustomRssFeed): Promise<CustomRssFeed[]> {
+  await setDoc(doc(db, "feeds", feed.id), feed);
+  return await fetchServerFeeds();
+}
+
+export async function deleteFeedFromServer(feedId: string): Promise<CustomRssFeed[]> {
+  await deleteDoc(doc(db, "feeds", feedId));
+  return await fetchServerFeeds();
+}
+
 // -------------------------------------------------------------
 // RSS FEEDS (O Tradutor Automático)
 // -------------------------------------------------------------
 export async function fetchRssArticles(): Promise<NewsArticle[]> {
-  const feeds = getCustomRssFeeds().filter(f => f.enabled);
+  const feeds = await fetchServerFeeds(); // Agora pega do Firebase!
+  const activeFeeds = feeds.filter(f => f.enabled);
 
-  const rssPromises = feeds.map(async (feed) => {
+  const rssPromises = activeFeeds.map(async (feed) => {
     try {
       const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feed.url)}`);
       const data = await res.json();
