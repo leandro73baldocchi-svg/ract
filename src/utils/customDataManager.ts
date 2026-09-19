@@ -253,24 +253,38 @@ export async function fetchServerCategories(): Promise<CustomCategory[]> {
     
     querySnapshot.forEach((docSnap) => {
       const cat = docSnap.data() as CustomCategory;
-      // Impede que o "all" venha do banco duplicado
       if (cat.id !== 'all') {
-          categories.push(cat);
+          // Se a categoria antiga não tiver o campo order, assume 99 (vai pro final)
+          categories.push({ ...cat, order: cat.order ?? 99 });
       }
     });
 
-    // Injeta o "Todas as Áreas" obrigatoriamente no início da lista
-    const finalCategories = [{ id: 'all', label: 'Todas as Áreas' }, ...categories];
+    // 1. Organiza pela ordem (números menores primeiro). 
+    // Em caso de empate, usa ordem alfabética.
+    categories.sort((a, b) => {
+      const orderA = a.order ?? 99;
+      const orderB = b.order ?? 99;
+      
+      if (orderA !== orderB) {
+        return orderA - orderB;
+      }
+      return a.label.localeCompare(b.label);
+    });
+
+    // 2. Trava o "Todas as Áreas" na posição absoluta 0 (início do menu)
+    const finalCategories: CustomCategory[] = [
+      { id: 'all', label: 'Todas as Áreas', order: 0 }, 
+      ...categories
+    ];
 
     if (categories.length > 0) {
       saveCustomCategories(finalCategories);
       return finalCategories;
     } else {
-      // Se o banco estiver vazio, sobe as áreas padrão
+      // Cria no banco com order default (99) caso o banco esteja limpo
       for (const cat of DEFAULT_BASE_CATEGORIES) {
-        // Não salva o 'all' no banco de dados para evitar confusão, ele é só da interface
         if(cat.id !== 'all') {
-             await setDoc(doc(db, "categories", cat.id), cat);
+             await setDoc(doc(db, "categories", cat.id), { ...cat, order: 99 });
         }
       }
       saveCustomCategories(DEFAULT_BASE_CATEGORIES);
