@@ -1,10 +1,15 @@
 export type CategoryType =
   | 'all'
+  | 'biography'
   | 'education'
+  | 'biotech'
   | 'health'
   | 'physics'
   | 'math'
+  | 'astronomy'
+  | 'geology'
   | 'tech'
+  | 'ai'
   | 'universities';
 
 export interface FullArticleContent {

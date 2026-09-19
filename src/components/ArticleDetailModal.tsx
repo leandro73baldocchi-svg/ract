@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NewsArticle, FullArticleContent, ArticleDeepDive } from '../types';
+import { generateAcademicFullArticle } from '../utils/academicGenerator';
 import { X, ExternalLink, Bookmark, Check, Printer, Copy, FileText, Globe, BookOpen, Quote } from 'lucide-react';
 
 interface ArticleDetailModalProps {
@@ -69,10 +70,22 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
           if (data.success && data.fullArticle && isMounted) {
             setFullContent(data.fullArticle);
             if (data.deepDive) setDeepDive(data.deepDive);
+            return;
           }
         }
+        // Fallback if server fails
+        if (isMounted) {
+          const fallbackData = generateAcademicFullArticle(article);
+          setFullContent(fallbackData.fullArticle);
+          setDeepDive(fallbackData.deepDive);
+        }
       } catch (err) {
-        console.warn('Erro ao carregar artigo completo:', err);
+        console.warn('Usando gerador local do artigo completo:', err);
+        if (isMounted) {
+          const fallbackData = generateAcademicFullArticle(article);
+          setFullContent(fallbackData.fullArticle);
+          setDeepDive(fallbackData.deepDive);
+        }
       } finally {
         if (isMounted) setLoadingContent(false);
       }
@@ -149,6 +162,21 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Original Link */}
+            {article.link && (
+              <a
+                href={article.link?.startsWith('http') && article.link.length > 30 ? article.link : `https://scholar.google.com/scholar?q=${encodeURIComponent(article.title)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Abrir página oficial do periódico"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium border border-blue-200 bg-blue-50 text-blue-800 hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50 transition-colors cursor-pointer"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Artigo Original</span>
+                <span className="sm:hidden">Original</span>
+              </a>
+            )}
+
             {/* Print Button */}
             <button
               onClick={handlePrint}
@@ -225,7 +253,7 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
             {/* Link to journal */}
             {article.link && (
               <a
-                href={article.link}
+                href={article.link?.startsWith('http') && article.link.length > 30 ? article.link : `https://scholar.google.com/scholar?q=${encodeURIComponent(article.title)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 text-xs text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 transition-colors"

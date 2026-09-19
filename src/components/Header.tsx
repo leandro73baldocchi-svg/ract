@@ -22,11 +22,16 @@ interface HeaderProps {
 
 const CATEGORIES: { id: CategoryType; label: string }[] = [
   { id: 'all', label: 'Todas as Áreas' },
+  { id: 'biography', label: 'Biografias' },
   { id: 'education', label: 'Educação' },
-  { id: 'health', label: 'Biotecnologia & Saúde' },
+  { id: 'biotech', label: 'Biotecnologia' },
+  { id: 'health', label: 'Saúde' },
   { id: 'physics', label: 'Física' },
   { id: 'math', label: 'Matemática' },
+  { id: 'astronomy', label: 'Astronomia' },
+  { id: 'geology', label: 'Geologia' },
   { id: 'tech', label: 'Tecnologia' },
+  { id: 'ai', label: 'Inteligência Artificial' },
   { id: 'universities', label: 'Universidades (Brasil & Mundo)' },
 ];
 

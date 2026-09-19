@@ -34,14 +34,26 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                 {article.sourceCategory === 'education'
                   ? 'Educação'
                   : article.sourceCategory === 'health'
-                  ? 'Saúde & Bio'
+                  ? 'Saúde'
+                  : article.sourceCategory === 'biotech'
+                  ? 'Biotecnologia'
                   : article.sourceCategory === 'physics'
                   ? 'Física'
                   : article.sourceCategory === 'math'
                   ? 'Matemática'
+                  : article.sourceCategory === 'astronomy'
+                  ? 'Astronomia'
+                  : article.sourceCategory === 'geology'
+                  ? 'Geologia'
+                  : article.sourceCategory === 'tech'
+                  ? 'Tecnologia'
+                  : article.sourceCategory === 'ai'
+                  ? 'Inteligência Artificial'
+                  : article.sourceCategory === 'biography'
+                  ? 'Biografias'
                   : article.sourceCategory === 'universities'
                   ? 'Universidades'
-                  : 'Tecnologia'}
+                  : 'Ciência'}
               </span>
             )}
             {article.isPeerReviewed && (

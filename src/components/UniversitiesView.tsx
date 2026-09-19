@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { UNIVERSITIES_DIRECTORY, UniversityInfo } from '../data/universities';
+import { UNIVERSITIES_DIRECTORY, University } from '../data/universities';
 import { ExternalLink, Search, Globe, BookOpen, GraduationCap, Building2 } from 'lucide-react';
 
 export const UniversitiesView: React.FC = () => {
@@ -115,7 +115,7 @@ export const UniversitiesView: React.FC = () => {
 
       {/* Directory Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        {filtered.map((item: UniversityInfo) => (
+        {filtered.map((item: University) => (
           <article
             key={item.id}
             className="border border-stone-200/90 dark:border-stone-800 bg-white dark:bg-[#181818] rounded-lg p-5 flex flex-col justify-between hover:border-stone-400 dark:hover:border-stone-600 transition-colors"
@@ -147,7 +147,7 @@ export const UniversitiesView: React.FC = () => {
 
               {/* Focus Areas Chips */}
               <div className="flex flex-wrap gap-1.5 mb-4">
-                {item.focusAreas.map((area, idx) => (
+                {item.focusAreas.map((area: string, idx: number) => (
                   <span
                     key={idx}
                     className="text-[10px] px-2 py-0.5 rounded bg-stone-50 dark:bg-stone-850 text-stone-700 dark:text-stone-300 border border-stone-200 dark:border-stone-750"

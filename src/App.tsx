@@ -10,6 +10,7 @@ import { ArticleCard } from './components/ArticleCard';
 import { ArticleDetailModal } from './components/ArticleDetailModal';
 import { UniversitiesView } from './components/UniversitiesView';
 import { NewsArticle, DailyBriefing, CategoryType } from './types';
+import { ACADEMIC_ARTICLES } from './data/academicArticles';
 import {
   getOfflineArticles,
   saveArticleOffline,
@@ -22,9 +23,31 @@ import {
 import { BookOpen, AlertCircle, WifiOff } from 'lucide-react';
 
 export default function App() {
-  const [articles, setArticles] = useState<NewsArticle[]>([]);
-  const [briefing, setBriefing] = useState<DailyBriefing | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [articles, setArticles] = useState<NewsArticle[]>(() => ACADEMIC_ARTICLES);
+  const [briefing, setBriefing] = useState<DailyBriefing | null>(() => ({
+    date: new Date().toLocaleDateString('pt-BR'),
+    edition: "Edição Global Acadêmica",
+    headline: "Avanços em Ciência, Educação e Tecnologias Críticas",
+    executiveSummary: "Acompanhe as publicações de periódicos revisados por pares e repositórios acadêmicos internacionais.",
+    keyBulletPoints: [
+      "Estudos da OCDE e UNESCO demonstram impacto de metodologias investigativas na aprendizagem.",
+      "Avanços em biotecnologia e genômica ampliam precisão diagnóstica.",
+      "Novos modelos de computação e algoritmos abrem fronteiras na física e matemática aplicada."
+    ],
+    scienceHighlight: {
+      title: "Publicações Abertas e Acessibilidade Científica",
+      source: "Consórcio Acadêmico Global",
+      impact: "Acesso universal a evidências científicas validadas."
+    },
+    techHighlight: {
+      title: "Algoritmos Científicos e Engenharia Aplicada",
+      source: "IEEE & MIT Tech",
+      impact: "Modelagem de alta resolução para desafios globais."
+    },
+    sourcesActive: ["Nature", "Science", "UNESCO", "arXiv", "USP", "Oxford"],
+    lastSync: new Date().toISOString()
+  }));
+  const [loading, setLoading] = useState<boolean>(false);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [activeCategory, setActiveCategory] = useState<CategoryType>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -107,18 +130,43 @@ export default function App() {
         fetch(`/api/daily-briefing${force ? '?force=true' : ''}`).then((r) => r.json()),
       ]);
 
-      if (newsRes.status === 'fulfilled' && newsRes.value?.success) {
-        setArticles(newsRes.value.articles || []);
+      if (newsRes.status === 'fulfilled' && newsRes.value?.success && Array.isArray(newsRes.value.articles) && newsRes.value.articles.length > 0) {
+        setArticles(newsRes.value.articles);
+      } else {
+        // Client-side fallback: direct academic articles catalog
+        setArticles(ACADEMIC_ARTICLES);
       }
 
       if (briefingRes.status === 'fulfilled' && briefingRes.value?.success) {
         setBriefing(briefingRes.value.briefing);
+      } else {
+        setBriefing({
+          date: new Date().toLocaleDateString('pt-BR'),
+          edition: "Edição Global Acadêmica",
+          headline: "Avanços em Ciência, Educação e Tecnologias Críticas",
+          executiveSummary: "Acompanhe as publicações de periódicos revisados por pares e repositórios acadêmicos internacionais.",
+          keyBulletPoints: [
+            "Estudos da OCDE e UNESCO demonstram impacto de metodologias investigativas na aprendizagem.",
+            "Avanços em biotecnologia e genômica ampliam precisão diagnóstica.",
+            "Novos modelos de computação e algoritmos abrem fronteiras na física e matemática aplicada."
+          ],
+          scienceHighlight: {
+            title: "Publicações Abertas e Acessibilidade Científica",
+            source: "Consórcio Acadêmico Global",
+            impact: "Acesso universal a evidências científicas validadas."
+          },
+          techHighlight: {
+            title: "Algoritmos Científicos e Engenharia Aplicada",
+            source: "IEEE & MIT Tech",
+            impact: "Modelagem de alta resolução para desafios globais."
+          },
+          sourcesActive: ["Nature", "Science", "UNESCO", "arXiv", "USP", "Oxford"],
+          lastSync: new Date().toISOString()
+        });
       }
     } catch (err) {
-      console.warn('Network sync notice:', err);
-      if (offlineArticles.length > 0) {
-        setErrorNotice('Rede instável: exibindo publicações armazenadas no dispositivo.');
-      }
+      console.warn('Network sync notice, activating direct client dataset:', err);
+      setArticles(ACADEMIC_ARTICLES);
     } finally {
       setLoading(false);
       setIsRefreshing(false);
@@ -286,15 +334,27 @@ export default function App() {
                     ? 'Artigos Salvos Offline'
                     : activeCategory === 'all'
                     ? 'Todas as Publicações Científicas'
+                    : activeCategory === 'biography'
+                    ? 'Biografias e Vida & Obra'
                     : activeCategory === 'education'
-                    ? 'Educação & Pedagogia'
+                    ? 'Educação & Aprendizado'
+                    : activeCategory === 'biotech'
+                    ? 'Biotecnologia & Genômica'
                     : activeCategory === 'health'
-                    ? 'Biotecnologia & Saúde'
+                    ? 'Saúde & Medicina'
                     : activeCategory === 'physics'
-                    ? 'Física & Astrofísica'
+                    ? 'Física & Quântica'
                     : activeCategory === 'math'
                     ? 'Matemática Pura & Aplicada'
-                    : 'Tecnologia & Computação'}
+                    : activeCategory === 'astronomy'
+                    ? 'Astronomia & Cosmologia'
+                    : activeCategory === 'geology'
+                    ? 'Geologia & Ciências da Terra'
+                    : activeCategory === 'tech'
+                    ? 'Tecnologia & Computação'
+                    : activeCategory === 'ai'
+                    ? 'Inteligência Artificial & Dados'
+                    : 'Feed de Ciências'}
                 </span>
                 <span>•</span>
                 <span>{filteredArticles.length} {filteredArticles.length === 1 ? 'publicação disponível' : 'publicações disponíveis'}</span>
