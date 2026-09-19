@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { CategoryType, CustomCategory } from '../types';
-import { RefreshCw, Bookmark, Globe, Wifi, WifiOff, Search, X, Moon, Sun, Sparkles } from 'lucide-react';
+import { RefreshCw, Bookmark, Globe, Wifi, WifiOff, Search, X, Moon, Sun, Sparkles, Coffee } from 'lucide-react';
 
 interface HeaderProps {
   date: string;
@@ -85,10 +85,8 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="border-b border-stone-200 dark:border-stone-800 transition-colors">
         <div className="max-w-6xl mx-auto px-4 sm:px-8 py-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           
-          {/* Logo and Titles Wrapper (OPÇÃO 1) */}
+          {/* Logo and Titles Wrapper */}
           <div className="flex items-center gap-4">
-            
-            {/* O seu Logotipo Oficial */}
             <div className="shrink-0 flex items-center justify-center w-[80px] h-[80px] bg-white dark:bg-stone-900 rounded-xl shadow-sm overflow-hidden border border-stone-200 dark:border-stone-800">
               <img 
                 src="/logo.png" 
@@ -113,8 +111,21 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           </div>
 
-          {/* Quick Utility Controls (Botões da direita) */}
+          {/* Quick Utility Controls */}
           <div className="flex items-center gap-2 self-start lg:self-auto shrink-0 flex-wrap">
+            
+            {/* NOVO: Botão de Apoio Financeiro (Monetização) */}
+            <a
+              href="https://livepix.gg/"
+              target="_blank"
+              rel="noreferrer"
+              className="px-3 py-1.5 rounded text-[11px] sm:text-xs font-bold border flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-600 hover:text-white dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800 dark:hover:bg-emerald-600 dark:hover:text-white"
+              title="Apoie o RACT e ajude a manter o servidor no ar"
+            >
+              <Coffee className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Apoiar Projeto</span>
+            </a>
+
             <button
               onClick={onToggleDarkMode}
               className={`px-3 py-1.5 rounded text-[11px] sm:text-xs font-medium border flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs ${
@@ -124,9 +135,9 @@ export const Header: React.FC<HeaderProps> = ({
               }`}
             >
               {isDarkMode ? (
-                <><Sun className="w-3.5 h-3.5 text-amber-300" /> <span className="hidden sm:inline">Modo Claro</span></>
+                <><Sun className="w-3.5 h-3.5 text-amber-300" /> <span className="hidden sm:inline">Claro</span></>
               ) : (
-                <><Moon className="w-3.5 h-3.5 text-stone-700" /> <span className="hidden sm:inline">Modo Escuro</span></>
+                <><Moon className="w-3.5 h-3.5 text-stone-700" /> <span className="hidden sm:inline">Escuro</span></>
               )}
             </button>
 
@@ -152,7 +163,7 @@ export const Header: React.FC<HeaderProps> = ({
               }`}
             >
               <Sparkles className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Síntese do Radar</span>
+              <span className="hidden sm:inline">Síntese</span>
             </button>
 
             <button
