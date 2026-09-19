@@ -98,9 +98,34 @@ export const DEFAULT_RSS_FEEDS: CustomRssFeed[] = [
   { id: 'f-nobel', name: 'The Nobel Prize (Biografias)', url: 'https://www.nobelprize.org/feed/', category: 'biography', enabled: true },
 ];
 
+const isBrowser = typeof window !== 'undefined' && typeof localStorage !== 'undefined';
+
+function safeGetItem(key: string): string | null {
+  if (!isBrowser) return null;
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function safeSetItem(key: string, val: string): void {
+  if (!isBrowser) return;
+  try {
+    localStorage.setItem(key, val);
+  } catch {}
+}
+
+function safeRemoveItem(key: string): void {
+  if (!isBrowser) return;
+  try {
+    localStorage.removeItem(key);
+  } catch {}
+}
+
 export function getCustomCategories(): CustomCategory[] {
   try {
-    const raw = localStorage.getItem(CUSTOM_CATEGORIES_KEY);
+    const raw = safeGetItem(CUSTOM_CATEGORIES_KEY);
     if (!raw) return [];
     return JSON.parse(raw);
   } catch (e) {
@@ -111,7 +136,14 @@ export function getCustomCategories(): CustomCategory[] {
 
 export function saveCustomCategories(categories: CustomCategory[]): void {
   try {
-    localStorage.setItem(CUSTOM_CATEGORIES_KEY, JSON.stringify(categories));
+    safeSetItem(CUSTOM_CATEGORIES_KEY, JSON.stringify(categories));
+    if (isBrowser) {
+      fetch('/api/portal/categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ categories }),
+      }).catch((err) => console.warn('Falha ao salvar categorias no servidor:', err));
+    }
   } catch (e) {
     console.warn('Erro ao salvar categorias:', e);
   }
@@ -119,7 +151,7 @@ export function saveCustomCategories(categories: CustomCategory[]): void {
 
 export function getDeletedArticleIds(): Set<string> {
   try {
-    const raw = localStorage.getItem(DELETED_ARTICLE_IDS_KEY);
+    const raw = safeGetItem(DELETED_ARTICLE_IDS_KEY);
     if (!raw) return new Set();
     return new Set(JSON.parse(raw));
   } catch (e) {
@@ -129,7 +161,7 @@ export function getDeletedArticleIds(): Set<string> {
 
 export function saveDeletedArticleIds(ids: Set<string>): void {
   try {
-    localStorage.setItem(DELETED_ARTICLE_IDS_KEY, JSON.stringify(Array.from(ids)));
+    safeSetItem(DELETED_ARTICLE_IDS_KEY, JSON.stringify(Array.from(ids)));
   } catch (e) {
     console.warn('Erro ao salvar ids excluídos:', e);
   }
@@ -140,7 +172,7 @@ export function saveDeletedArticleIds(ids: Set<string>): void {
  */
 export function getAllManagedArticles(): NewsArticle[] {
   try {
-    const raw = localStorage.getItem(ALL_ARTICLES_KEY);
+    const raw = safeGetItem(ALL_ARTICLES_KEY);
     const deletedIds = getDeletedArticleIds();
 
     if (!raw) {
@@ -155,7 +187,7 @@ export function getAllManagedArticles(): NewsArticle[] {
         }
       }
       const initialList = Array.from(initialMap.values());
-      saveAllManagedArticles(initialList);
+      safeSetItem(ALL_ARTICLES_KEY, JSON.stringify(initialList));
       return initialList;
     }
 
@@ -169,7 +201,7 @@ export function getAllManagedArticles(): NewsArticle[] {
 
 export function saveAllManagedArticles(articles: NewsArticle[]): void {
   try {
-    localStorage.setItem(ALL_ARTICLES_KEY, JSON.stringify(articles));
+    safeSetItem(ALL_ARTICLES_KEY, JSON.stringify(articles));
   } catch (e) {
     console.warn('Erro ao salvar todos os artigos:', e);
   }
@@ -177,6 +209,7 @@ export function saveAllManagedArticles(articles: NewsArticle[]): void {
 
 /**
  * Salva ou atualiza um artigo individual (se já existir atualiza, senão adiciona no topo)
+ * Persiste localmente E remotamente no servidor para que todos os dispositivos (celular, desktop) vejam.
  */
 export function saveOrUpdateArticle(article: NewsArticle): void {
   const current = getAllManagedArticles();
@@ -198,10 +231,19 @@ export function saveOrUpdateArticle(article: NewsArticle): void {
   }
 
   saveAllManagedArticles(updated);
+
+  // Sincroniza imediatamente com o servidor para persistir para celular e todos os visitantes
+  if (isBrowser) {
+    fetch('/api/portal/article', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ article }),
+    }).catch((err) => console.warn('Erro ao persistir artigo no servidor:', err));
+  }
 }
 
 /**
- * Exclui um artigo permanentemente do portal
+ * Exclui um artigo permanentemente do portal (local e servidor)
  */
 export function deleteManagedArticle(articleId: string): void {
   const current = getAllManagedArticles();
@@ -211,24 +253,36 @@ export function deleteManagedArticle(articleId: string): void {
   const deleted = getDeletedArticleIds();
   deleted.add(articleId);
   saveDeletedArticleIds(deleted);
+
+  if (isBrowser) {
+    fetch(`/api/portal/article/${encodeURIComponent(articleId)}`, {
+      method: 'DELETE',
+    }).catch((err) => console.warn('Erro ao deletar artigo no servidor:', err));
+  }
 }
 
 /**
  * Restaura todos os artigos padrão de fábrica
  */
 export function resetToFactoryArticles(): void {
-  localStorage.removeItem(ALL_ARTICLES_KEY);
-  localStorage.removeItem(DELETED_ARTICLE_IDS_KEY);
+  safeRemoveItem(ALL_ARTICLES_KEY);
+  safeRemoveItem(DELETED_ARTICLE_IDS_KEY);
   const combined = [...INITIAL_PSYCHOLOGY_ARTICLES, ...ACADEMIC_ARTICLES];
   saveAllManagedArticles(combined);
+
+  if (isBrowser) {
+    fetch('/api/portal/reset', {
+      method: 'POST',
+    }).catch((err) => console.warn('Erro ao resetar dados no servidor:', err));
+  }
 }
 
 // RSS Feeds Management
 export function getCustomRssFeeds(): CustomRssFeed[] {
   try {
-    const raw = localStorage.getItem(CUSTOM_FEEDS_KEY);
+    const raw = safeGetItem(CUSTOM_FEEDS_KEY);
     if (!raw) {
-      saveCustomRssFeeds(DEFAULT_RSS_FEEDS);
+      safeSetItem(CUSTOM_FEEDS_KEY, JSON.stringify(DEFAULT_RSS_FEEDS));
       return DEFAULT_RSS_FEEDS;
     }
     const parsed: CustomRssFeed[] = JSON.parse(raw);
@@ -242,7 +296,7 @@ export function getCustomRssFeeds(): CustomRssFeed[] {
       }
     }
     if (updated) {
-      saveCustomRssFeeds(result);
+      safeSetItem(CUSTOM_FEEDS_KEY, JSON.stringify(result));
     }
     return result;
   } catch (e) {
@@ -252,7 +306,14 @@ export function getCustomRssFeeds(): CustomRssFeed[] {
 
 export function saveCustomRssFeeds(feeds: CustomRssFeed[]): void {
   try {
-    localStorage.setItem(CUSTOM_FEEDS_KEY, JSON.stringify(feeds));
+    safeSetItem(CUSTOM_FEEDS_KEY, JSON.stringify(feeds));
+    if (isBrowser) {
+      fetch('/api/portal/feeds', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ feeds }),
+      }).catch((err) => console.warn('Erro ao salvar feeds no servidor:', err));
+    }
   } catch (e) {
     console.warn('Erro ao salvar feeds RSS:', e);
   }
@@ -262,8 +323,8 @@ const SHOW_RADAR_BRIEFING_KEY = 'ract_show_radar_briefing_v1';
 
 export function getShowRadarBriefingPreference(): boolean {
   try {
-    const val = localStorage.getItem(SHOW_RADAR_BRIEFING_KEY);
-    if (val === null) return false; // Default to false (hidden) as requested by user
+    const val = safeGetItem(SHOW_RADAR_BRIEFING_KEY);
+    if (val === null) return false;
     return val === 'true';
   } catch (e) {
     return false;
@@ -272,22 +333,120 @@ export function getShowRadarBriefingPreference(): boolean {
 
 export function setShowRadarBriefingPreference(show: boolean): void {
   try {
-    localStorage.setItem(SHOW_RADAR_BRIEFING_KEY, show ? 'true' : 'false');
+    safeSetItem(SHOW_RADAR_BRIEFING_KEY, show ? 'true' : 'false');
   } catch (e) {
     console.warn('Erro ao salvar preferência de radar:', e);
   }
 }
 
 export function checkAdminPassword(input: string): boolean {
-  const stored = localStorage.getItem(ADMIN_PASSWORD_KEY) || 'admin2026';
+  const stored = safeGetItem(ADMIN_PASSWORD_KEY) || 'admin2026';
   return input.trim() === stored || input.trim() === 'admin2026' || input.trim() === 'ciencia123';
 }
 
 export function setAdminPassword(newPassword: string): void {
   try {
-    localStorage.setItem(ADMIN_PASSWORD_KEY, newPassword.trim());
+    safeSetItem(ADMIN_PASSWORD_KEY, newPassword.trim());
+    if (isBrowser) {
+      fetch('/api/portal/password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: newPassword.trim() }),
+      }).catch((err) => console.warn('Erro ao salvar senha no servidor:', err));
+    }
   } catch (e) {
     console.warn('Erro ao salvar nova senha:', e);
+  }
+}
+
+/**
+ * SINCRONIZAÇÃO TOTAL COM O SERVIDOR (Multi-dispositivos: PC, Celular, Tablet):
+ * 1. Baixa os dados autoritativos gravados no servidor.
+ * 2. Se o navegador atual (ex: o computador onde o admin cadastrou artigos) tiver
+ *    artigos locais salvos que ainda não subiram para o servidor, envia-os para /api/portal/sync.
+ * 3. Atualiza o cache local e retorna o acervo unificado.
+ */
+export async function syncPortalWithServer(): Promise<{
+  managedArticles: NewsArticle[];
+  customCategories: CustomCategory[];
+  customRssFeeds: CustomRssFeed[];
+  deletedArticleIds: string[];
+} | null> {
+  if (!isBrowser) return null;
+
+  try {
+    const res = await fetch('/api/portal/data');
+    if (!res.ok) return null;
+    const serverData = await res.json();
+    if (!serverData.success) return null;
+
+    const serverArticles: NewsArticle[] = serverData.managedArticles || [];
+    const serverDeleted: string[] = serverData.deletedArticleIds || [];
+    const serverCats: CustomCategory[] = serverData.customCategories || [];
+    const serverFeeds: CustomRssFeed[] = serverData.customRssFeeds || [];
+
+    // Checa se o browser local possui artigos cadastrados antes da sincronização
+    const localArticles = getAllManagedArticles();
+    const serverIdSet = new Set(serverArticles.map((a) => a.id));
+    const serverDeletedSet = new Set(serverDeleted);
+
+    const unsyncedArticles = localArticles.filter(
+      (a) => !serverIdSet.has(a.id) && !serverDeletedSet.has(a.id)
+    );
+
+    const localCats = getCustomCategories();
+    const serverCatSet = new Set(serverCats.map((c) => c.id));
+    const unsyncedCats = localCats.filter((c) => !serverCatSet.has(c.id));
+
+    const localFeeds = getCustomRssFeeds();
+    const serverFeedUrlSet = new Set(serverFeeds.map((f) => f.url));
+    const unsyncedFeeds = localFeeds.filter((f) => !serverFeedUrlSet.has(f.url));
+
+    // Se houver dados locais inéditos no computador do admin, envia para o servidor salvar
+    if (unsyncedArticles.length > 0 || unsyncedCats.length > 0 || unsyncedFeeds.length > 0) {
+      try {
+        const syncRes = await fetch('/api/portal/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            managedArticles: unsyncedArticles,
+            customCategories: unsyncedCats,
+            customRssFeeds: unsyncedFeeds,
+          }),
+        });
+        const syncResult = await syncRes.json();
+        if (syncResult.success) {
+          safeSetItem(ALL_ARTICLES_KEY, JSON.stringify(syncResult.managedArticles));
+          safeSetItem(CUSTOM_CATEGORIES_KEY, JSON.stringify(syncResult.customCategories));
+          safeSetItem(CUSTOM_FEEDS_KEY, JSON.stringify(syncResult.customRssFeeds));
+          safeSetItem(DELETED_ARTICLE_IDS_KEY, JSON.stringify(syncResult.deletedArticleIds || []));
+          return {
+            managedArticles: syncResult.managedArticles,
+            customCategories: syncResult.customCategories,
+            customRssFeeds: syncResult.customRssFeeds,
+            deletedArticleIds: syncResult.deletedArticleIds || [],
+          };
+        }
+      } catch (syncErr) {
+        console.warn('Aviso de sincronização parcial com servidor:', syncErr);
+      }
+    }
+
+    // Se não há dados pendentes para subir, adota os dados do servidor como verdade global
+    safeSetItem(ALL_ARTICLES_KEY, JSON.stringify(serverArticles));
+    safeSetItem(CUSTOM_CATEGORIES_KEY, JSON.stringify(serverCats));
+    safeSetItem(CUSTOM_FEEDS_KEY, JSON.stringify(serverFeeds));
+    safeSetItem(DELETED_ARTICLE_IDS_KEY, JSON.stringify(serverDeleted));
+
+    return {
+      managedArticles: serverArticles,
+      customCategories: serverCats,
+      customRssFeeds: serverFeeds,
+      deletedArticleIds: serverDeleted,
+    };
+  } catch (err) {
+    console.warn('Portal server offline, utilizando dados locais:', err);
+    return null;
   }
 }
 

@@ -5,6 +5,7 @@ import { XMLParser } from 'fast-xml-parser';
 import { GoogleGenAI } from '@google/genai';
 import * as dotenv from 'dotenv';
 import { ACADEMIC_ARTICLES } from './src/data/academicArticles.js';
+import { INITIAL_PSYCHOLOGY_ARTICLES, DEFAULT_RSS_FEEDS } from './src/utils/customDataManager.js';
 
 dotenv.config();
 
@@ -16,12 +17,84 @@ app.use((req, res, next) => {
   res.removeHeader('X-Frame-Options');
   res.setHeader('Content-Security-Policy', "frame-ancestors *");
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, DELETE');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   next();
 });
 
-app.use(express.json());
+app.use(express.json({ limit: '25mb' }));
+
+// ============================================================================
+// ARMAZENAMENTO PERSISTENTE DO SERVIDOR (DATABASE JSON PERSISTENTE NO DISCO)
+// Garante que artigos criados no Admin apareçam para TODOS os usuários (Celular, PC, etc.)
+// ============================================================================
+const DATA_DIR = path.join(process.cwd(), 'data');
+const STORE_FILE = path.join(DATA_DIR, 'portal_store.json');
+
+interface PortalStore {
+  managedArticles: any[];
+  deletedArticleIds: string[];
+  customCategories: any[];
+  customRssFeeds: any[];
+  adminPassword?: string;
+}
+
+function initPortalStore(): PortalStore {
+  try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+    if (fs.existsSync(STORE_FILE)) {
+      const raw = fs.readFileSync(STORE_FILE, 'utf-8');
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed.managedArticles)) {
+        // Garantir que todos os feeds padrão estejam presentes
+        const currentFeeds = parsed.customRssFeeds || [];
+        for (const def of DEFAULT_RSS_FEEDS) {
+          if (!currentFeeds.some((f: any) => f.url === def.url || f.id === def.id)) {
+            currentFeeds.unshift(def);
+          }
+        }
+        parsed.customRssFeeds = currentFeeds;
+        return parsed;
+      }
+    }
+  } catch (err) {
+    console.warn('Aviso ao ler portal_store.json, inicializando novo:', err);
+  }
+
+  const initialStore: PortalStore = {
+    managedArticles: [...INITIAL_PSYCHOLOGY_ARTICLES, ...ACADEMIC_ARTICLES],
+    deletedArticleIds: [],
+    customCategories: [],
+    customRssFeeds: DEFAULT_RSS_FEEDS,
+    adminPassword: 'admin2026',
+  };
+
+  try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+    fs.writeFileSync(STORE_FILE, JSON.stringify(initialStore, null, 2), 'utf-8');
+  } catch (e) {
+    console.warn('Aviso ao inicializar portal_store.json:', e);
+  }
+
+  return initialStore;
+}
+
+let portalStore: PortalStore = initPortalStore();
+
+function savePortalStore() {
+  try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+    fs.writeFileSync(STORE_FILE, JSON.stringify(portalStore, null, 2), 'utf-8');
+  } catch (err) {
+    console.error('Falha crítica ao gravar portal_store.json:', err);
+  }
+}
 
 const parser = new XMLParser({
   ignoreAttributes: false,
@@ -165,6 +238,19 @@ async function fetchFeed(source: FeedSource): Promise<any[]> {
 
 async function getAggregatedNews(force = false, extraFeeds: FeedSource[] = []) {
   const allSources = [...SOURCES];
+
+  // Incorpora todos os canais RSS ativos configurados no portal
+  const portalFeeds = (portalStore.customRssFeeds || []).filter((f: any) => f.enabled !== false);
+  for (const pf of portalFeeds) {
+    if (pf.url && !allSources.some((s) => s.url === pf.url)) {
+      allSources.push({
+        name: pf.name || 'Agência RSS',
+        url: pf.url,
+        category: pf.category || 'tech',
+      });
+    }
+  }
+
   if (Array.isArray(extraFeeds)) {
     for (const ef of extraFeeds) {
       if (ef.url && !allSources.some((s) => s.url === ef.url)) {
@@ -183,14 +269,186 @@ async function getAggregatedNews(force = false, extraFeeds: FeedSource[] = []) {
   const allFeeds = await Promise.all(allSources.map(fetchFeed));
   let combined = allFeeds.flat();
   
-  const staticNews = ACADEMIC_ARTICLES;
-  const merged = [...staticNews, ...combined];
+  // Utiliza os artigos cadastrados e gerenciados no portal (excluindo os deletados)
+  const deletedSet = new Set(portalStore.deletedArticleIds || []);
+  const activeManagedArticles = (portalStore.managedArticles || []).filter(
+    (a: any) => !deletedSet.has(a.id)
+  );
+
+  const merged = [...activeManagedArticles, ...combined];
   if (extraFeeds.length === 0) {
     cachedNews = merged;
     lastNewsFetch = Date.now();
   }
   return merged;
 }
+
+// ============================================================================
+// ROTAS DO PORTAL ACADÊMICO & ADMINISTRAÇÃO PERSISTENTE
+// ============================================================================
+
+// 1. Obter todos os dados do portal (usado por celulares, tablets e desktops na inicialização)
+app.get('/api/portal/data', (req: Request, res: Response) => {
+  const deletedSet = new Set(portalStore.deletedArticleIds || []);
+  const activeArticles = (portalStore.managedArticles || []).filter(
+    (a: any) => !deletedSet.has(a.id)
+  );
+
+  res.json({
+    success: true,
+    managedArticles: activeArticles,
+    deletedArticleIds: portalStore.deletedArticleIds || [],
+    customCategories: portalStore.customCategories || [],
+    customRssFeeds: portalStore.customRssFeeds || DEFAULT_RSS_FEEDS,
+  });
+});
+
+// 2. Salvar ou atualizar um artigo individual (publicado pelo admin)
+app.post('/api/portal/article', (req: Request, res: Response) => {
+  const { article } = req.body;
+  if (!article || !article.id) {
+    return res.status(400).json({ error: 'Dados do artigo incompletos' });
+  }
+
+  const idx = portalStore.managedArticles.findIndex((a: any) => a.id === article.id);
+  if (idx >= 0) {
+    portalStore.managedArticles[idx] = { ...portalStore.managedArticles[idx], ...article };
+  } else {
+    portalStore.managedArticles.unshift(article);
+  }
+
+  portalStore.deletedArticleIds = portalStore.deletedArticleIds.filter((id: string) => id !== article.id);
+  savePortalStore();
+
+  // Invalida cache de notícias para refletir de imediato
+  cachedNews = [];
+  lastNewsFetch = 0;
+
+  res.json({ success: true, article });
+});
+
+// 3. Deletar um artigo do portal
+app.delete('/api/portal/article/:id', (req: Request, res: Response) => {
+  const { id } = req.params;
+  portalStore.managedArticles = portalStore.managedArticles.filter((a: any) => a.id !== id);
+  if (!portalStore.deletedArticleIds.includes(id)) {
+    portalStore.deletedArticleIds.push(id);
+  }
+  savePortalStore();
+
+  cachedNews = [];
+  lastNewsFetch = 0;
+
+  res.json({ success: true, deletedId: id });
+});
+
+// 4. Salvar categorias personalizadas
+app.post('/api/portal/categories', (req: Request, res: Response) => {
+  const { categories } = req.body;
+  if (Array.isArray(categories)) {
+    portalStore.customCategories = categories;
+    savePortalStore();
+  }
+  res.json({ success: true, categories: portalStore.customCategories });
+});
+
+// 5. Salvar canais RSS configurados
+app.post('/api/portal/feeds', (req: Request, res: Response) => {
+  const { feeds } = req.body;
+  if (Array.isArray(feeds)) {
+    portalStore.customRssFeeds = feeds;
+    savePortalStore();
+    cachedNews = [];
+    lastNewsFetch = 0;
+  }
+  res.json({ success: true, feeds: portalStore.customRssFeeds });
+});
+
+// 6. Atualizar senha do Admin
+app.post('/api/portal/password', (req: Request, res: Response) => {
+  const { password } = req.body;
+  if (password && typeof password === 'string') {
+    portalStore.adminPassword = password;
+    savePortalStore();
+  }
+  res.json({ success: true });
+});
+
+// 7. Resetar para acervo de fábrica
+app.post('/api/portal/reset', (req: Request, res: Response) => {
+  portalStore = {
+    managedArticles: [...INITIAL_PSYCHOLOGY_ARTICLES, ...ACADEMIC_ARTICLES],
+    deletedArticleIds: [],
+    customCategories: [],
+    customRssFeeds: DEFAULT_RSS_FEEDS,
+    adminPassword: 'admin2026',
+  };
+  savePortalStore();
+  cachedNews = [];
+  lastNewsFetch = 0;
+  res.json({ success: true });
+});
+
+// 8. Sincronização e migração de artigos (envia dados locais não salvos do admin para o servidor)
+app.post('/api/portal/sync', (req: Request, res: Response) => {
+  const { managedArticles, customCategories, customRssFeeds, deletedArticleIds } = req.body;
+
+  if (Array.isArray(deletedArticleIds)) {
+    for (const dId of deletedArticleIds) {
+      if (!portalStore.deletedArticleIds.includes(dId)) {
+        portalStore.deletedArticleIds.push(dId);
+      }
+    }
+  }
+
+  if (Array.isArray(managedArticles)) {
+    for (const incoming of managedArticles) {
+      if (!incoming || !incoming.id) continue;
+      if (portalStore.deletedArticleIds.includes(incoming.id)) continue;
+      const idx = portalStore.managedArticles.findIndex((a: any) => a.id === incoming.id);
+      if (idx >= 0) {
+        portalStore.managedArticles[idx] = { ...portalStore.managedArticles[idx], ...incoming };
+      } else {
+        portalStore.managedArticles.unshift(incoming);
+      }
+    }
+  }
+
+  if (Array.isArray(customCategories)) {
+    for (const cat of customCategories) {
+      if (!cat || !cat.id) continue;
+      if (!portalStore.customCategories.some((c: any) => c.id === cat.id)) {
+        portalStore.customCategories.push(cat);
+      }
+    }
+  }
+
+  if (Array.isArray(customRssFeeds)) {
+    for (const feed of customRssFeeds) {
+      if (!feed || !feed.url) continue;
+      if (!portalStore.customRssFeeds.some((f: any) => f.url === feed.url)) {
+        portalStore.customRssFeeds.push(feed);
+      }
+    }
+  }
+
+  savePortalStore();
+  cachedNews = [];
+  lastNewsFetch = 0;
+
+  const deletedSet = new Set(portalStore.deletedArticleIds || []);
+  const activeArticles = (portalStore.managedArticles || []).filter(
+    (a: any) => !deletedSet.has(a.id)
+  );
+
+  res.json({
+    success: true,
+    managedArticles: activeArticles,
+    customCategories: portalStore.customCategories,
+    customRssFeeds: portalStore.customRssFeeds,
+    deletedArticleIds: portalStore.deletedArticleIds,
+  });
+});
 
 app.all(['/api/news'], async (req: Request, res: Response) => {
   try {

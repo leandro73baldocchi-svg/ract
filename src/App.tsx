@@ -22,6 +22,7 @@ import {
   CustomRssFeed,
   getShowRadarBriefingPreference,
   setShowRadarBriefingPreference,
+  syncPortalWithServer,
 } from './utils/customDataManager';
 import {
   getOfflineArticles,
@@ -144,6 +145,15 @@ export default function App() {
     setCustomCategories(getCustomCategories());
     setManagedArticles(getAllManagedArticles());
     setRssFeeds(getCustomRssFeeds());
+
+    // Sincroniza em tempo real com o servidor persistente
+    syncPortalWithServer().then((synced) => {
+      if (synced) {
+        setCustomCategories(synced.customCategories);
+        setManagedArticles(synced.managedArticles);
+        setRssFeeds(synced.customRssFeeds);
+      }
+    });
   };
 
   const allCategoriesList = useMemo(() => {
@@ -200,8 +210,15 @@ export default function App() {
     };
   }, []);
 
-  // Initial load
+  // Initial load: sincroniza banco global com servidor e carrega notícias
   useEffect(() => {
+    syncPortalWithServer().then((synced) => {
+      if (synced) {
+        setCustomCategories(synced.customCategories);
+        setManagedArticles(synced.managedArticles);
+        setRssFeeds(synced.customRssFeeds);
+      }
+    });
     loadNewsFeed(false);
   }, []);
 

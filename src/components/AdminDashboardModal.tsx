@@ -14,6 +14,7 @@ import {
   CustomRssFeed,
   checkAdminPassword,
   setAdminPassword,
+  syncPortalWithServer,
 } from '../utils/customDataManager';
 import {
   X,
@@ -119,7 +120,11 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
       setIsAuthenticated(true);
       setAuthError(null);
       setPasswordInput('');
-      refreshArticles();
+      syncPortalWithServer().then(() => {
+        refreshArticles();
+        setCustomCategories(getCustomCategories());
+        setRssFeeds(getCustomRssFeeds());
+      });
     } else {
       setAuthError('Senha incorreta. (Dica padrão: admin2026)');
     }
@@ -385,14 +390,18 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
               <ShieldCheck className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="font-bold text-base flex items-center gap-2">
+              <h2 className="font-bold text-base flex flex-wrap items-center gap-2">
                 Painel de Controle Editorial Completo (RACT)
                 <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 font-semibold">
                   Área Restrita
                 </span>
+                <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  Banco Global Sincronizado (Celular & PC)
+                </span>
               </h2>
               <p className="text-xs text-stone-500 dark:text-stone-400">
-                Gerencie todos os {articlesList.length} artigos do portal, adicione novos links, edite fontes e cadastre feeds RSS.
+                Gerencie todos os {articlesList.length} artigos do portal. Todas as publicações e edições são salvas no banco de dados e aparecem imediatamente para todos os visitantes.
               </p>
             </div>
           </div>
