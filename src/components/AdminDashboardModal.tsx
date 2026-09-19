@@ -41,7 +41,6 @@ import {
   Rss,
   Search,
   RotateCcw,
-  ShoppingCart,
   TrendingUp
 } from 'lucide-react';
 
@@ -60,7 +59,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   const [passwordInput, setPasswordInput] = useState<string>('');
   const [authError, setAuthError] = useState<string | null>(null);
 
-  // Active subtab (agora incluindo 'affiliates')
+  // Active subtab
   const [activeTab, setActiveTab] = useState<'articles' | 'categories' | 'feeds' | 'backup' | 'affiliates'>('articles');
 
   // Articles
@@ -149,7 +148,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
       setPasswordInput('');
       refreshArticles();
     } else {
-      setAuthError('Senha incorreta. (Dica padrão: admin2026)');
+      setAuthError('Senha incorreta. Tente novamente.');
     }
   };
 
@@ -483,8 +482,12 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
               <Lock className="w-6 h-6" />
             </div>
             <h3 className="text-lg font-bold mb-1">Acesso do Administrador Editorial</h3>
-            <p className="text-xs text-stone-500 dark:text-stone-400 max-w-sm mb-6">
+            <p className="text-xs text-stone-500 dark:text-stone-400 max-w-sm mb-2">
               Digite a chave de segurança para gerenciar todos os artigos.
+            </p>
+            {/* SENHA EM VERMELHO AQUI */}
+            <p className="text-[11px] text-rose-600 dark:text-rose-400 font-bold mb-6">
+              (Dica de senha padrão: admin2026)
             </p>
 
             <form onSubmit={handleLogin} className="w-full max-w-xs space-y-3">
