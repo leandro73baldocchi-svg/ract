@@ -6,11 +6,9 @@ import {
   ExternalLink,
   Search,
   CheckCircle,
-  Layers,
   Radio,
   Copy,
   Check,
-  Plus,
   RefreshCw,
   Info,
 } from 'lucide-react';
@@ -18,8 +16,8 @@ import {
 interface PublicRssFeedsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  feeds: CustomRssFeed[];
-  activeCategory: string;
+  feeds?: CustomRssFeed[];
+  activeCategory?: string;
   onSelectCategoryFeed?: (category: string) => void;
   onRefreshFeeds?: () => void;
   isRefreshing?: boolean;
@@ -28,8 +26,8 @@ interface PublicRssFeedsModalProps {
 export const PublicRssFeedsModal: React.FC<PublicRssFeedsModalProps> = ({
   isOpen,
   onClose,
-  feeds,
-  activeCategory,
+  feeds = [],
+  activeCategory = 'all',
   onSelectCategoryFeed,
   onRefreshFeeds,
   isRefreshing = false,
@@ -38,44 +36,60 @@ export const PublicRssFeedsModal: React.FC<PublicRssFeedsModalProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [copiedFeedUrl, setCopiedFeedUrl] = useState<string | null>(null);
 
-  if (!isOpen) return null;
-
-  const handleCopyUrl = (url: string) => {
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(url);
-      setCopiedFeedUrl(url);
-      setTimeout(() => setCopiedFeedUrl(null), 2500);
-    }
-  };
+  const safeFeeds = useMemo(() => {
+    return Array.isArray(feeds) ? feeds : [];
+  }, [feeds]);
 
   const categories = useMemo(() => {
     const set = new Set<string>();
-    feeds.forEach((f) => {
-      if (f.category) set.add(f.category);
+    safeFeeds.forEach((f) => {
+      if (f && typeof f.category === 'string' && f.category.trim()) {
+        set.add(f.category.trim());
+      }
     });
     return Array.from(set).sort();
-  }, [feeds]);
+  }, [safeFeeds]);
 
   const filteredFeeds = useMemo(() => {
-    return feeds.filter((f) => {
-      const matchSearch =
-        !searchQuery.trim() ||
-        f.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        f.url.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        f.category.toLowerCase().includes(searchQuery.toLowerCase());
+    const q = (searchQuery || '').trim().toLowerCase();
+    return safeFeeds.filter((f) => {
+      if (!f) return false;
+      const fName = (f.name || '').toLowerCase();
+      const fUrl = (f.url || '').toLowerCase();
+      const fCat = (f.category || '').toLowerCase();
 
-      const matchCat =
-        selectedCategory === 'all' || f.category === selectedCategory;
+      const matchSearch = !q || fName.includes(q) || fUrl.includes(q) || fCat.includes(q);
+      const matchCat = selectedCategory === 'all' || f.category === selectedCategory;
 
       return matchSearch && matchCat;
     });
-  }, [feeds, searchQuery, selectedCategory]);
+  }, [safeFeeds, searchQuery, selectedCategory]);
+
+  if (!isOpen) return null;
+
+  const handleCopyUrl = (url: string) => {
+    try {
+      if (navigator && navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url);
+        setCopiedFeedUrl(url);
+        setTimeout(() => setCopiedFeedUrl(null), 2500);
+      }
+    } catch (err) {
+      console.warn('Clipboard copy error', err);
+    }
+  };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-      <div className="bg-white dark:bg-[#181818] border border-stone-300 dark:border-stone-800 rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/60 overflow-y-auto"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white dark:bg-[#181818] border border-stone-300 dark:border-stone-800 rounded-2xl w-full max-w-3xl max-h-[88vh] flex flex-col shadow-2xl overflow-hidden my-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Modal Header */}
-        <div className="p-4 sm:p-5 border-b border-stone-200 dark:border-stone-800 bg-[#FAF9F7] dark:bg-[#141414] flex items-center justify-between">
+        <div className="p-4 sm:p-5 border-b border-stone-200 dark:border-stone-800 bg-[#FAF9F7] dark:bg-[#141414] flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-orange-100 dark:bg-orange-950/50 text-orange-600 dark:text-orange-400 flex items-center justify-center shrink-0 border border-orange-200 dark:border-orange-800">
               <Rss className="w-5 h-5" />
@@ -100,11 +114,11 @@ export const PublicRssFeedsModal: React.FC<PublicRssFeedsModalProps> = ({
         </div>
 
         {/* Informative Banner */}
-        <div className="px-4 sm:px-5 py-3 bg-stone-100/70 dark:bg-stone-900/40 border-b border-stone-200 dark:border-stone-800 text-xs text-stone-600 dark:text-stone-400 flex items-start sm:items-center justify-between gap-3 flex-wrap">
+        <div className="px-4 sm:px-5 py-3 bg-stone-100/70 dark:bg-stone-900/40 border-b border-stone-200 dark:border-stone-800 text-xs text-stone-600 dark:text-stone-400 flex items-start sm:items-center justify-between gap-3 flex-wrap shrink-0">
           <div className="flex items-center gap-2">
-            <Radio className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 animate-pulse" />
+            <Radio className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
             <span>
-              <strong>{feeds.length} fontes RSS ativas</strong> alimentam os artigos do RACT de forma ininterrupta.
+              <strong>{safeFeeds.length} fontes RSS ativas</strong> alimentam os artigos do RACT de forma ininterrupta.
             </span>
           </div>
 
@@ -121,7 +135,7 @@ export const PublicRssFeedsModal: React.FC<PublicRssFeedsModalProps> = ({
         </div>
 
         {/* Search and Filters */}
-        <div className="p-4 border-b border-stone-200 dark:border-stone-800 flex flex-col sm:flex-row items-center gap-3">
+        <div className="p-4 border-b border-stone-200 dark:border-stone-800 flex flex-col sm:flex-row items-center gap-3 shrink-0">
           <div className="relative flex-1 w-full">
             <Search className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
@@ -139,10 +153,10 @@ export const PublicRssFeedsModal: React.FC<PublicRssFeedsModalProps> = ({
               onChange={(e) => setSelectedCategory(e.target.value)}
               className="w-full sm:w-48 px-3 py-1.5 text-xs bg-stone-50 dark:bg-stone-900 text-stone-800 dark:text-stone-200 border border-stone-300 dark:border-stone-700 rounded-lg focus:outline-none"
             >
-              <option value="all">Todas as Áreas ({feeds.length})</option>
+              <option value="all">Todas as Áreas ({safeFeeds.length})</option>
               {categories.map((cat) => (
                 <option key={cat} value={cat}>
-                  {cat.toUpperCase()} ({feeds.filter((f) => f.category === cat).length})
+                  {cat.toUpperCase()} ({safeFeeds.filter((f) => f && f.category === cat).length})
                 </option>
               ))}
             </select>
@@ -160,7 +174,7 @@ export const PublicRssFeedsModal: React.FC<PublicRssFeedsModalProps> = ({
               const isCopied = copiedFeedUrl === feed.url;
               return (
                 <div
-                  key={feed.id}
+                  key={feed.id || feed.url}
                   className="p-3.5 bg-stone-50 dark:bg-stone-900/60 border border-stone-200 dark:border-stone-800 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-stone-400 dark:hover:border-stone-700 transition-colors"
                 >
                   <div className="flex-1 min-w-0">
@@ -242,7 +256,7 @@ export const PublicRssFeedsModal: React.FC<PublicRssFeedsModalProps> = ({
         </div>
 
         {/* Modal Footer */}
-        <div className="p-4 border-t border-stone-200 dark:border-stone-800 bg-[#FAF9F7] dark:bg-[#141414] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-stone-500 dark:text-stone-400">
+        <div className="p-4 border-t border-stone-200 dark:border-stone-800 bg-[#FAF9F7] dark:bg-[#141414] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-stone-500 dark:text-stone-400 shrink-0">
           <div className="flex items-center gap-1.5 text-[11px]">
             <Info className="w-4 h-4 text-stone-400 shrink-0" />
             <span>
