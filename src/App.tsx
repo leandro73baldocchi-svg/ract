@@ -219,7 +219,7 @@ export default function App() {
     };
   }, []);
 
-  const loadNewsFeed = async (force: boolean = false) => {
+const loadNewsFeed = async (force: boolean = false) => {
     if (force) setIsRefreshing(true);
     setErrorNotice(null);
 
@@ -231,23 +231,38 @@ export default function App() {
     }
 
     try {
-      const [articlesData, categoriesData, briefingRes] = await Promise.allSettled([
+      // Agora ele busca também os artigos RSS (a quarta linha abaixo)
+      const [articlesData, categoriesData, briefingRes, rssData] = await Promise.allSettled([
         fetchServerArticles(),
         fetchServerCategories(),
         fetch(`/api/daily-briefing${force ? '?force=true' : ''}`).then((r) => r.json()),
+        fetchRssArticles() // <--- BUSCA OS RSS AUTOMATICAMENTE
       ]);
 
+      let combinedArticles: NewsArticle[] = [];
+
+      // Pega os seus artigos do Firebase
       if (articlesData.status === 'fulfilled' && Array.isArray(articlesData.value)) {
-        setArticles(articlesData.value);
+        combinedArticles = [...articlesData.value];
       }
 
+      // Pega os artigos dos RSS e mistura na mesma lista
+      if (rssData.status === 'fulfilled' && Array.isArray(rssData.value)) {
+        combinedArticles = [...combinedArticles, ...rssData.value];
+      }
+
+      setArticles(combinedArticles);
+
+      // Atualiza categorias
       if (categoriesData.status === 'fulfilled' && Array.isArray(categoriesData.value)) {
         setCustomCategories(categoriesData.value);
       }
 
+      // Atualiza o briefing (resumo diário)
       if (briefingRes.status === 'fulfilled' && briefingRes.value?.success) {
         setBriefing(briefingRes.value.briefing);
       } else {
+        // ... (Mantém o briefing padrão que já existia no seu código)
         setBriefing({
           date: new Date().toLocaleDateString('pt-BR'),
           edition: "Edição Global Acadêmica",
