@@ -123,11 +123,27 @@ function safeRemoveItem(key: string): void {
   } catch {}
 }
 
+// Limpeza preventiva de categorias de teste antigas do cache local
+if (isBrowser) {
+  try {
+    const raw = safeGetItem(CUSTOM_CATEGORIES_KEY);
+    if (raw && (raw.includes('neurociencias') || raw.includes('psico-social'))) {
+      const parsed = JSON.parse(raw);
+      const cleaned = (Array.isArray(parsed) ? parsed : []).filter(
+        (c: any) => c && c.id !== 'neurociencias' && c.id !== 'psico-social'
+      );
+      safeSetItem(CUSTOM_CATEGORIES_KEY, JSON.stringify(cleaned));
+    }
+  } catch {}
+}
+
 export function getCustomCategories(): CustomCategory[] {
   try {
     const raw = safeGetItem(CUSTOM_CATEGORIES_KEY);
     if (!raw) return [];
-    return JSON.parse(raw);
+    const parsed: CustomCategory[] = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((c) => c && c.id !== 'neurociencias' && c.id !== 'psico-social');
   } catch (e) {
     console.warn('Erro ao ler categorias customizadas:', e);
     return [];
@@ -135,26 +151,29 @@ export function getCustomCategories(): CustomCategory[] {
 }
 
 export async function saveCustomCategories(categories: CustomCategory[]): Promise<CustomCategory[]> {
-  try {
-    safeSetItem(CUSTOM_CATEGORIES_KEY, JSON.stringify(categories));
-    if (isBrowser) {
+  const filtered = categories.filter((c) => c && c.id !== 'neurociencias' && c.id !== 'psico-social');
+  safeSetItem(CUSTOM_CATEGORIES_KEY, JSON.stringify(filtered));
+
+  if (isBrowser) {
+    try {
       const res = await fetch('/api/portal/categories', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ categories }),
+        body: JSON.stringify({ categories: filtered }),
       });
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data.categories)) {
-          safeSetItem(CUSTOM_CATEGORIES_KEY, JSON.stringify(data.categories));
-          return data.categories;
+          const serverCleaned = data.categories.filter((c: any) => c && c.id !== 'neurociencias' && c.id !== 'psico-social');
+          safeSetItem(CUSTOM_CATEGORIES_KEY, JSON.stringify(serverCleaned));
+          return serverCleaned;
         }
       }
+    } catch (e) {
+      console.warn('Erro ao salvar categorias no servidor:', e);
     }
-  } catch (e) {
-    console.warn('Erro ao salvar categorias:', e);
   }
-  return categories;
+  return filtered;
 }
 
 export function getDeletedArticleIds(): Set<string> {
@@ -396,11 +415,9 @@ export function setAdminPassword(newPassword: string): void {
 }
 
 /**
- * SINCRONIZAÇÃO TOTAL COM O SERVIDOR (Multi-dispositivos: PC, Celular, Tablet):
- * 1. Baixa os dados autoritativos gravados no servidor.
- * 2. Se o navegador atual (ex: o computador onde o admin cadastrou artigos) tiver
- *    artigos locais salvos que ainda não subiram para o servidor, envia-os para /api/portal/sync.
- * 3. Atualiza o cache local e retorna o acervo unificado.
+ * SINCRONIZAÇÃO AUTORITATIVA COM O SERVIDOR (Multi-dispositivos: Celular, Tablet, Desktop):
+ * Baixa os dados autoritativos do servidor central (única fonte de verdade).
+ * Atualiza o cache local e garante que todos os dispositivos vejam exatamente o mesmo acervo.
  */
 export async function syncPortalWithServer(): Promise<{
   managedArticles: NewsArticle[];
@@ -418,57 +435,12 @@ export async function syncPortalWithServer(): Promise<{
 
     const serverArticles: NewsArticle[] = serverData.managedArticles || [];
     const serverDeleted: string[] = serverData.deletedArticleIds || [];
-    const serverCats: CustomCategory[] = serverData.customCategories || [];
+    const serverCats: CustomCategory[] = (serverData.customCategories || []).filter(
+      (c: any) => c && c.id !== 'neurociencias' && c.id !== 'psico-social'
+    );
     const serverFeeds: CustomRssFeed[] = serverData.customRssFeeds || [];
 
-    // Checa se o browser local possui artigos cadastrados antes da sincronização
-    const localArticles = getAllManagedArticles();
-    const serverIdSet = new Set(serverArticles.map((a) => a.id));
-    const serverDeletedSet = new Set(serverDeleted);
-
-    const unsyncedArticles = localArticles.filter(
-      (a) => !serverIdSet.has(a.id) && !serverDeletedSet.has(a.id)
-    );
-
-    const localCats = getCustomCategories();
-    const serverCatSet = new Set(serverCats.map((c) => c.id));
-    const unsyncedCats = localCats.filter((c) => !serverCatSet.has(c.id));
-
-    const localFeeds = getCustomRssFeeds();
-    const serverFeedUrlSet = new Set(serverFeeds.map((f) => f.url));
-    const unsyncedFeeds = localFeeds.filter((f) => !serverFeedUrlSet.has(f.url));
-
-    // Se houver dados locais inéditos no computador do admin, envia para o servidor salvar
-    if (unsyncedArticles.length > 0 || unsyncedCats.length > 0 || unsyncedFeeds.length > 0) {
-      try {
-        const syncRes = await fetch('/api/portal/sync', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            managedArticles: unsyncedArticles,
-            customCategories: unsyncedCats,
-            customRssFeeds: unsyncedFeeds,
-          }),
-        });
-        const syncResult = await syncRes.json();
-        if (syncResult.success) {
-          safeSetItem(ALL_ARTICLES_KEY, JSON.stringify(syncResult.managedArticles));
-          safeSetItem(CUSTOM_CATEGORIES_KEY, JSON.stringify(syncResult.customCategories));
-          safeSetItem(CUSTOM_FEEDS_KEY, JSON.stringify(syncResult.customRssFeeds));
-          safeSetItem(DELETED_ARTICLE_IDS_KEY, JSON.stringify(syncResult.deletedArticleIds || []));
-          return {
-            managedArticles: syncResult.managedArticles,
-            customCategories: syncResult.customCategories,
-            customRssFeeds: syncResult.customRssFeeds,
-            deletedArticleIds: syncResult.deletedArticleIds || [],
-          };
-        }
-      } catch (syncErr) {
-        console.warn('Aviso de sincronização parcial com servidor:', syncErr);
-      }
-    }
-
-    // Se não há dados pendentes para subir, adota os dados do servidor como verdade global
+    // O servidor é a autoridade máxima: atualiza o cache local para corresponder perfeitamente
     safeSetItem(ALL_ARTICLES_KEY, JSON.stringify(serverArticles));
     safeSetItem(CUSTOM_CATEGORIES_KEY, JSON.stringify(serverCats));
     safeSetItem(CUSTOM_FEEDS_KEY, JSON.stringify(serverFeeds));
@@ -481,7 +453,7 @@ export async function syncPortalWithServer(): Promise<{
       deletedArticleIds: serverDeleted,
     };
   } catch (err) {
-    console.warn('Portal server offline, utilizando dados locais:', err);
+    console.warn('Servidor offline, utilizando dados locais:', err);
     return null;
   }
 }

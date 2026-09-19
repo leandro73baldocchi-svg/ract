@@ -87,8 +87,11 @@ export default function App() {
   };
 
   // Custom Categories & Managed Articles (Secret Admin Panel)
-  const [customCategories, setCustomCategories] = useState<CustomCategory[]>(() => getCustomCategories());
+  const [customCategories, setCustomCategories] = useState<CustomCategory[]>(() => {
+    return getCustomCategories().filter((c) => c && c.id !== 'neurociencias' && c.id !== 'psico-social');
+  });
   const [managedArticles, setManagedArticles] = useState<NewsArticle[]>(() => getAllManagedArticles());
+  const [deletedIdsState, setDeletedIdsState] = useState<Set<string>>(() => getDeletedArticleIds());
   const [isAdminOpen, setIsAdminOpen] = useState<boolean>(false);
 
   // Check URL parameter or hash: ONLY opens if explicitly typed in the browser's address bar
@@ -147,11 +150,14 @@ export default function App() {
       setCustomCategories(synced.customCategories);
       setManagedArticles(synced.managedArticles);
       setRssFeeds(synced.customRssFeeds);
+      setDeletedIdsState(new Set(synced.deletedArticleIds));
     } else {
       setCustomCategories(getCustomCategories());
       setManagedArticles(getAllManagedArticles());
       setRssFeeds(getCustomRssFeeds());
+      setDeletedIdsState(getDeletedArticleIds());
     }
+    loadNewsFeed(true);
   };
 
   const allCategoriesList = useMemo(() => {
@@ -219,21 +225,10 @@ export default function App() {
       try {
         const synced = await syncPortalWithServer();
         if (synced && isMounted) {
-          setCustomCategories((prev) => {
-            const prevIds = prev.map((c) => c.id).join(',');
-            const newIds = synced.customCategories.map((c) => c.id).join(',');
-            return prevIds !== newIds ? synced.customCategories : prev;
-          });
-          setManagedArticles((prev) => {
-            const prevMap = prev.map((a) => `${a.id}:${a.titlePt || a.title}`).join('|');
-            const newMap = synced.managedArticles.map((a) => `${a.id}:${a.titlePt || a.title}`).join('|');
-            return prevMap !== newMap ? synced.managedArticles : prev;
-          });
-          setRssFeeds((prev) => {
-            const prevList = prev.map((f) => `${f.id}:${f.enabled}`).join('|');
-            const newList = synced.customRssFeeds.map((f) => `${f.id}:${f.enabled}`).join('|');
-            return prevList !== newList ? synced.customRssFeeds : prev;
-          });
+          setCustomCategories(synced.customCategories);
+          setManagedArticles(synced.managedArticles);
+          setRssFeeds(synced.customRssFeeds);
+          setDeletedIdsState(new Set(synced.deletedArticleIds));
         }
       } catch (e) {
         // Silencioso em caso de conexão instável
@@ -245,12 +240,19 @@ export default function App() {
     pullServerUpdates();
     loadNewsFeed(false);
 
-    // Verificação periódica a cada 20 segundos em segundo plano, apenas com tela visível
-    const intervalId = setInterval(pullServerUpdates, 20000);
+    // Verificação periódica a cada 8 segundos em segundo plano e ao focar a tela
+    const intervalId = setInterval(pullServerUpdates, 8000);
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') pullServerUpdates();
+    };
+    window.addEventListener('focus', pullServerUpdates);
+    window.addEventListener('visibilitychange', handleVisibility);
 
     return () => {
       isMounted = false;
       clearInterval(intervalId);
+      window.removeEventListener('focus', pullServerUpdates);
+      window.removeEventListener('visibilitychange', handleVisibility);
     };
   }, []);
 
@@ -350,7 +352,7 @@ export default function App() {
     // Start with managed articles (which contains local edits, deletions, custom articles)
     const combined = [...managedArticles];
     const existingIds = new Set(managedArticles.map((a) => a.id));
-    const deletedIds = getDeletedArticleIds();
+    const deletedIds = deletedIdsState;
 
     // If live RSS feeds were fetched from /api/news, include those that aren't duplicated or deleted
     for (const art of articles) {
@@ -360,7 +362,7 @@ export default function App() {
     }
 
     return combined;
-  }, [showOfflineOnly, isOnline, managedArticles, articles, offlineArticles]);
+  }, [showOfflineOnly, isOnline, managedArticles, articles, offlineArticles, deletedIdsState]);
 
   // Filtered articles
   const filteredArticles = useMemo(() => {

@@ -56,6 +56,12 @@ function initPortalStore(): PortalStore {
           }
         }
         parsed.customRssFeeds = currentFeeds;
+        // Limpar categorias de teste indesejadas
+        if (Array.isArray(parsed.customCategories)) {
+          parsed.customCategories = parsed.customCategories.filter(
+            (c: any) => c.id !== 'neurociencias' && c.id !== 'psico-social'
+          );
+        }
         return parsed;
       }
     }
@@ -84,6 +90,10 @@ function initPortalStore(): PortalStore {
 }
 
 let portalStore: PortalStore = initPortalStore();
+portalStore.customCategories = (portalStore.customCategories || []).filter(
+  (c: any) => c.id !== 'neurociencias' && c.id !== 'psico-social'
+);
+savePortalStore();
 
 function savePortalStore() {
   try {
@@ -347,7 +357,9 @@ app.delete('/api/portal/article/:id', (req: Request, res: Response) => {
 app.post('/api/portal/categories', (req: Request, res: Response) => {
   const { categories } = req.body;
   if (Array.isArray(categories)) {
-    portalStore.customCategories = categories;
+    portalStore.customCategories = categories.filter(
+      (c: any) => c && c.id !== 'neurociencias' && c.id !== 'psico-social'
+    );
     savePortalStore();
   }
   res.json({ success: true, categories: portalStore.customCategories });
@@ -384,58 +396,13 @@ app.post('/api/portal/reset', (req: Request, res: Response) => {
     adminPassword: 'admin2026',
   };
   savePortalStore();
-  cachedNews = [];
-  lastNewsFetch = 0;
+  cachedRssNews = [];
+  lastRssFetch = 0;
   res.json({ success: true });
 });
 
-// 8. Sincronização e migração de artigos (envia dados locais não salvos do admin para o servidor)
+// 8. Sincronização do portal: retorna sempre os dados oficiais do servidor (fonte única da verdade)
 app.post('/api/portal/sync', (req: Request, res: Response) => {
-  const { managedArticles, customCategories, customRssFeeds, deletedArticleIds } = req.body;
-
-  if (Array.isArray(deletedArticleIds)) {
-    for (const dId of deletedArticleIds) {
-      if (!portalStore.deletedArticleIds.includes(dId)) {
-        portalStore.deletedArticleIds.push(dId);
-      }
-    }
-  }
-
-  if (Array.isArray(managedArticles)) {
-    for (const incoming of managedArticles) {
-      if (!incoming || !incoming.id) continue;
-      if (portalStore.deletedArticleIds.includes(incoming.id)) continue;
-      const idx = portalStore.managedArticles.findIndex((a: any) => a.id === incoming.id);
-      if (idx >= 0) {
-        portalStore.managedArticles[idx] = { ...portalStore.managedArticles[idx], ...incoming };
-      } else {
-        portalStore.managedArticles.unshift(incoming);
-      }
-    }
-  }
-
-  if (Array.isArray(customCategories)) {
-    for (const cat of customCategories) {
-      if (!cat || !cat.id) continue;
-      if (!portalStore.customCategories.some((c: any) => c.id === cat.id)) {
-        portalStore.customCategories.push(cat);
-      }
-    }
-  }
-
-  if (Array.isArray(customRssFeeds)) {
-    for (const feed of customRssFeeds) {
-      if (!feed || !feed.url) continue;
-      if (!portalStore.customRssFeeds.some((f: any) => f.url === feed.url)) {
-        portalStore.customRssFeeds.push(feed);
-      }
-    }
-  }
-
-  savePortalStore();
-  cachedNews = [];
-  lastNewsFetch = 0;
-
   const deletedSet = new Set(portalStore.deletedArticleIds || []);
   const activeArticles = (portalStore.managedArticles || []).filter(
     (a: any) => !deletedSet.has(a.id)
@@ -444,9 +411,9 @@ app.post('/api/portal/sync', (req: Request, res: Response) => {
   res.json({
     success: true,
     managedArticles: activeArticles,
-    customCategories: portalStore.customCategories,
-    customRssFeeds: portalStore.customRssFeeds,
-    deletedArticleIds: portalStore.deletedArticleIds,
+    customCategories: portalStore.customCategories || [],
+    customRssFeeds: portalStore.customRssFeeds || DEFAULT_RSS_FEEDS,
+    deletedArticleIds: portalStore.deletedArticleIds || [],
   });
 });
 
