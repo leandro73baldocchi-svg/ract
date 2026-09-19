@@ -69,6 +69,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   const [newCatId, setNewCatId] = useState<string>('');
   const [newCatLabel, setNewCatLabel] = useState<string>('');
   const [newCatOrder, setNewCatOrder] = useState<string>('99'); 
+  const [isEditingCategory, setIsEditingCategory] = useState<boolean>(false); // NOVO: Controle de edição de área
   const [catSuccessMsg, setCatSuccessMsg] = useState<string | null>(null);
 
   // RSS
@@ -235,6 +236,24 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     }
   };
 
+  // Funções de Edição de Categoria
+  const handleEditCategory = (cat: CustomCategory) => {
+    setNewCatId(cat.id);
+    setNewCatLabel(cat.label);
+    setNewCatOrder((cat.order ?? 99).toString());
+    setIsEditingCategory(true);
+    // Rola suavemente para o topo do formulário
+    const modalContent = document.getElementById('admin-scrollable-content');
+    if (modalContent) modalContent.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleCancelEditCategory = () => {
+    setNewCatId('');
+    setNewCatLabel('');
+    setNewCatOrder('99');
+    setIsEditingCategory(false);
+  };
+
   const handleAddCategory = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCatLabel.trim()) return;
@@ -254,11 +273,13 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
       setNewCatId('');
       setNewCatLabel('');
       setNewCatOrder('99');
-      setCatSuccessMsg(`Área "${newCat.label}" configurada na posição ${newCat.order}!`);
+      setIsEditingCategory(false);
+      
+      setCatSuccessMsg(`Área "${newCat.label}" configurada com sucesso na posição ${newCat.order}!`);
       setTimeout(() => setCatSuccessMsg(null), 4000);
       onDataUpdated();
     } catch (err: any) {
-      alert(err?.message || 'Erro ao cadastrar área no servidor');
+      alert(err?.message || 'Erro ao cadastrar/editar área no servidor');
     }
   };
 
@@ -266,6 +287,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     if (confirm(`Tem certeza que deseja remover esta área do servidor?`)) {
       const updated = await deleteCategoryFromServer(catId);
       setCustomCategories(updated);
+      if (newCatId === catId) handleCancelEditCategory();
       onDataUpdated();
     }
   };
@@ -712,15 +734,14 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                     </div>
                   )}
 
-                  <form onSubmit={handleAddCategory} className="p-4 sm:p-5 bg-stone-50 dark:bg-stone-900/60 border border-stone-200 dark:border-stone-800 rounded-xl space-y-3">
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-stone-800 dark:text-stone-200 flex items-center gap-1.5">
-                      <Plus className="w-3.5 h-3.5 text-blue-600" />
-                      Criar Área ou Editar Posição
-                    </h4>
-                    <p className="text-[11px] text-stone-500 dark:text-stone-400">
-                      Para mudar a posição de uma área que já existe, digite o mesmo Nome/ID e escolha a nova posição.
-                    </p>
-
+                  <form onSubmit={handleAddCategory} className={`p-4 sm:p-5 border rounded-xl space-y-3 ${isEditingCategory ? 'bg-amber-50/50 border-amber-200' : 'bg-stone-50 border-stone-200 dark:bg-stone-900/60 dark:border-stone-800'}`}>
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-stone-800 dark:text-stone-200 flex items-center gap-1.5">
+                        {isEditingCategory ? <><Edit className="w-3.5 h-3.5 text-amber-600" /> Editar Área ou Mudar Ordem</> : <><Plus className="w-3.5 h-3.5 text-blue-600" /> Criar Nova Área no Menu</>}
+                      </h4>
+                      {isEditingCategory && <button type="button" onClick={handleCancelEditCategory} className="text-xs text-stone-500 hover:text-stone-800 underline cursor-pointer">Cancelar Edição</button>}
+                    </div>
+                    
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <div>
                         <label className="block text-[11px] font-semibold text-stone-700 dark:text-stone-300 mb-1">Nome da Área *</label>
@@ -728,8 +749,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                       </div>
 
                       <div>
-                        <label className="block text-[11px] font-semibold text-stone-700 dark:text-stone-300 mb-1">ID (Opcional)</label>
-                        <input type="text" value={newCatId} onChange={(e) => setNewCatId(e.target.value)} placeholder="Ex: robotica" className="w-full px-3 py-1.5 text-xs bg-white dark:bg-stone-950 border border-stone-300 dark:border-stone-700 rounded font-mono" />
+                        <label className="block text-[11px] font-semibold text-stone-700 dark:text-stone-300 mb-1">ID do Sistema</label>
+                        <input type="text" value={newCatId} onChange={(e) => setNewCatId(e.target.value)} placeholder="Ex: robotica" disabled={isEditingCategory} className="w-full px-3 py-1.5 text-xs bg-white dark:bg-stone-950 border border-stone-300 dark:border-stone-700 rounded font-mono disabled:opacity-50 disabled:bg-stone-100" />
                       </div>
 
                       <div>
@@ -740,7 +761,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
                     <div className="pt-2 flex justify-end">
                       <button type="submit" className="px-4 py-2 bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 rounded-lg text-xs font-semibold hover:bg-stone-800 dark:hover:bg-white transition-colors cursor-pointer flex items-center gap-1.5">
-                        <Save className="w-3.5 h-3.5" /> Salvar Área / Posição
+                        <Save className="w-3.5 h-3.5" /> {isEditingCategory ? 'Salvar Alterações' : 'Criar Nova Área'}
                       </button>
                     </div>
                   </form>
@@ -752,7 +773,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {allAvailableCategories.map((c) => (
-                        <div key={c.id} className="p-3 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg flex items-center justify-between">
+                        <div key={c.id} className={`p-3 bg-white dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-lg flex items-center justify-between ${isEditingCategory && newCatId === c.id ? 'ring-2 ring-amber-300' : ''}`}>
                           <div className="flex items-center gap-3">
                             <div className="w-6 h-6 rounded bg-stone-100 dark:bg-stone-900 flex items-center justify-center font-bold text-[10px] text-stone-500">
                               {c.order ?? 99}
@@ -762,10 +783,16 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                               <span className="block text-[10px] text-stone-400 font-mono">ID: {c.id}</span>
                             </div>
                           </div>
+                          
                           {c.id !== 'all' ? (
-                            <button onClick={() => handleDeleteCategory(c.id)} className="p-1.5 rounded text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors cursor-pointer" title="Remover área">
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <button onClick={() => handleEditCategory(c)} className="p-1.5 rounded text-stone-600 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-stone-800 transition-colors cursor-pointer" title="Editar área">
+                                <Edit className="w-4 h-4" />
+                              </button>
+                              <button onClick={() => handleDeleteCategory(c.id)} className="p-1.5 rounded text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors cursor-pointer" title="Remover área">
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
                           ) : (
                             <span className="text-[10px] text-stone-400 uppercase tracking-wider font-semibold">Principal</span>
                           )}
