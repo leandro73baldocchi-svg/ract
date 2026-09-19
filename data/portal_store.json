@@ -856,7 +856,18 @@
   "deletedArticleIds": [
     "test-server-persist-1"
   ],
-  "customCategories": [],
+  "customCategories": [
+    {
+      "id": "psico-social",
+      "label": "Psicologia Social",
+      "isCustom": true
+    },
+    {
+      "id": "neurociencias",
+      "label": "Neurociências",
+      "isCustom": true
+    }
+  ],
   "customRssFeeds": [
     {
       "id": "f-sciencedaily-society",

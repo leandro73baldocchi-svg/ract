@@ -168,13 +168,16 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     });
   };
 
-  const handleSaveArticle = (e: React.FormEvent) => {
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+
+  const handleSaveArticle = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!articleForm.titlePt.trim() || !articleForm.summaryPt.trim()) {
       alert('Preencha pelo menos o Título em Português e o Resumo!');
       return;
     }
 
+    setIsSaving(true);
     const articleToSave: NewsArticle = {
       id: isEditingId ? isEditingId : `art-${Date.now()}`,
       title: articleForm.titleEn.trim() || articleForm.titlePt.trim(),
@@ -195,43 +198,45 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
         .filter(Boolean),
     };
 
-    saveOrUpdateArticle(articleToSave);
+    await saveOrUpdateArticle(articleToSave);
     refreshArticles();
     handleCancelEdit();
+    setIsSaving(false);
 
     setArtSuccessMsg(
       isEditingId
-        ? 'Artigo atualizado com sucesso no portal!'
-        : 'Novo artigo publicado e incluído no acervo com sucesso!'
+        ? 'Artigo atualizado e sincronizado globalmente (PC e Celular)!'
+        : 'Novo artigo publicado no banco central e disponível em todos os aparelhos!'
     );
     setTimeout(() => setArtSuccessMsg(null), 4000);
     onDataUpdated();
   };
 
-  const handleDeleteArticle = (articleId: string, title: string) => {
+  const handleDeleteArticle = async (articleId: string, title: string) => {
     if (confirm(`Deseja realmente EXCLUIR do portal o artigo:\n"${title}"?`)) {
-      deleteManagedArticle(articleId);
+      await deleteManagedArticle(articleId);
       refreshArticles();
       if (isEditingId === articleId) handleCancelEdit();
       onDataUpdated();
     }
   };
 
-  const handleResetFactory = () => {
+  const handleResetFactory = async () => {
     if (
       confirm(
         'Tem certeza que deseja restaurar todo o acervo original de fábrica? Isso recarregará os artigos padrão.'
       )
     ) {
-      resetToFactoryArticles();
+      await resetToFactoryArticles();
       refreshArticles();
+      setCustomCategories(getCustomCategories());
       onDataUpdated();
       alert('Acervo restaurado com sucesso!');
     }
   };
 
   // Categories Handlers
-  const handleAddCategory = (e: React.FormEvent) => {
+  const handleAddCategory = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCatLabel.trim()) return;
 
@@ -250,25 +255,29 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
     const updated = [...customCategories, newCat];
     setCustomCategories(updated);
-    saveCustomCategories(updated);
     setNewCatId('');
     setNewCatLabel('');
-    setCatSuccessMsg(`Área "${newCat.label}" adicionada com sucesso ao menu principal!`);
+    setCatSuccessMsg(`Gravando área "${newCat.label}" no servidor central...`);
+
+    const saved = await saveCustomCategories(updated);
+    setCustomCategories(saved);
+    setCatSuccessMsg(`Área "${newCat.label}" adicionada e sincronizada com todos os celulares!`);
     setTimeout(() => setCatSuccessMsg(null), 4000);
     onDataUpdated();
   };
 
-  const handleDeleteCategory = (catId: string) => {
+  const handleDeleteCategory = async (catId: string) => {
     if (confirm(`Tem certeza que deseja remover esta área do menu?`)) {
       const updated = customCategories.filter((c) => c.id !== catId);
       setCustomCategories(updated);
-      saveCustomCategories(updated);
+      const saved = await saveCustomCategories(updated);
+      setCustomCategories(saved);
       onDataUpdated();
     }
   };
 
   // RSS Feeds Handlers
-  const handleAddRssFeed = (e: React.FormEvent) => {
+  const handleAddRssFeed = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!feedName.trim() || !feedUrl.trim()) return;
 
@@ -282,26 +291,31 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
     const updated = [...rssFeeds, newFeed];
     setRssFeeds(updated);
-    saveCustomRssFeeds(updated);
     setFeedName('');
     setFeedUrl('');
-    setFeedSuccessMsg(`Fonte RSS / Agência "${newFeed.name}" adicionada com sucesso!`);
+    setFeedSuccessMsg(`Gravando canal RSS "${newFeed.name}" no servidor central...`);
+
+    const saved = await saveCustomRssFeeds(updated);
+    setRssFeeds(saved);
+    setFeedSuccessMsg(`Fonte RSS "${newFeed.name}" salva e ativa para todos os dispositivos!`);
     setTimeout(() => setFeedSuccessMsg(null), 4000);
     onDataUpdated();
   };
 
-  const handleToggleFeed = (id: string) => {
+  const handleToggleFeed = async (id: string) => {
     const updated = rssFeeds.map((f) => (f.id === id ? { ...f, enabled: !f.enabled } : f));
     setRssFeeds(updated);
-    saveCustomRssFeeds(updated);
+    const saved = await saveCustomRssFeeds(updated);
+    setRssFeeds(saved);
     onDataUpdated();
   };
 
-  const handleDeleteFeed = (id: string) => {
+  const handleDeleteFeed = async (id: string) => {
     if (confirm('Deseja remover esta fonte RSS?')) {
       const updated = rssFeeds.filter((f) => f.id !== id);
       setRssFeeds(updated);
-      saveCustomRssFeeds(updated);
+      const saved = await saveCustomRssFeeds(updated);
+      setRssFeeds(saved);
       onDataUpdated();
     }
   };

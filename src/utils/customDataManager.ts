@@ -134,19 +134,27 @@ export function getCustomCategories(): CustomCategory[] {
   }
 }
 
-export function saveCustomCategories(categories: CustomCategory[]): void {
+export async function saveCustomCategories(categories: CustomCategory[]): Promise<CustomCategory[]> {
   try {
     safeSetItem(CUSTOM_CATEGORIES_KEY, JSON.stringify(categories));
     if (isBrowser) {
-      fetch('/api/portal/categories', {
+      const res = await fetch('/api/portal/categories', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ categories }),
-      }).catch((err) => console.warn('Falha ao salvar categorias no servidor:', err));
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.categories)) {
+          safeSetItem(CUSTOM_CATEGORIES_KEY, JSON.stringify(data.categories));
+          return data.categories;
+        }
+      }
     }
   } catch (e) {
     console.warn('Erro ao salvar categorias:', e);
   }
+  return categories;
 }
 
 export function getDeletedArticleIds(): Set<string> {
@@ -211,7 +219,7 @@ export function saveAllManagedArticles(articles: NewsArticle[]): void {
  * Salva ou atualiza um artigo individual (se já existir atualiza, senão adiciona no topo)
  * Persiste localmente E remotamente no servidor para que todos os dispositivos (celular, desktop) vejam.
  */
-export function saveOrUpdateArticle(article: NewsArticle): void {
+export async function saveOrUpdateArticle(article: NewsArticle): Promise<NewsArticle[]> {
   const current = getAllManagedArticles();
   const index = current.findIndex((a) => a.id === article.id);
   let updated: NewsArticle[];
@@ -234,18 +242,29 @@ export function saveOrUpdateArticle(article: NewsArticle): void {
 
   // Sincroniza imediatamente com o servidor para persistir para celular e todos os visitantes
   if (isBrowser) {
-    fetch('/api/portal/article', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ article }),
-    }).catch((err) => console.warn('Erro ao persistir artigo no servidor:', err));
+    try {
+      const res = await fetch('/api/portal/article', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ article }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.article) {
+          // Confirmado pelo servidor
+        }
+      }
+    } catch (err) {
+      console.warn('Erro ao persistir artigo no servidor:', err);
+    }
   }
+  return updated;
 }
 
 /**
  * Exclui um artigo permanentemente do portal (local e servidor)
  */
-export function deleteManagedArticle(articleId: string): void {
+export async function deleteManagedArticle(articleId: string): Promise<void> {
   const current = getAllManagedArticles();
   const updated = current.filter((a) => a.id !== articleId);
   saveAllManagedArticles(updated);
@@ -255,25 +274,34 @@ export function deleteManagedArticle(articleId: string): void {
   saveDeletedArticleIds(deleted);
 
   if (isBrowser) {
-    fetch(`/api/portal/article/${encodeURIComponent(articleId)}`, {
-      method: 'DELETE',
-    }).catch((err) => console.warn('Erro ao deletar artigo no servidor:', err));
+    try {
+      await fetch(`/api/portal/article/${encodeURIComponent(articleId)}`, {
+        method: 'DELETE',
+      });
+    } catch (err) {
+      console.warn('Erro ao deletar artigo no servidor:', err);
+    }
   }
 }
 
 /**
  * Restaura todos os artigos padrão de fábrica
  */
-export function resetToFactoryArticles(): void {
+export async function resetToFactoryArticles(): Promise<void> {
   safeRemoveItem(ALL_ARTICLES_KEY);
   safeRemoveItem(DELETED_ARTICLE_IDS_KEY);
+  safeRemoveItem(CUSTOM_CATEGORIES_KEY);
   const combined = [...INITIAL_PSYCHOLOGY_ARTICLES, ...ACADEMIC_ARTICLES];
   saveAllManagedArticles(combined);
 
   if (isBrowser) {
-    fetch('/api/portal/reset', {
-      method: 'POST',
-    }).catch((err) => console.warn('Erro ao resetar dados no servidor:', err));
+    try {
+      await fetch('/api/portal/reset', {
+        method: 'POST',
+      });
+    } catch (err) {
+      console.warn('Erro ao resetar dados no servidor:', err);
+    }
   }
 }
 
@@ -304,19 +332,27 @@ export function getCustomRssFeeds(): CustomRssFeed[] {
   }
 }
 
-export function saveCustomRssFeeds(feeds: CustomRssFeed[]): void {
+export async function saveCustomRssFeeds(feeds: CustomRssFeed[]): Promise<CustomRssFeed[]> {
   try {
     safeSetItem(CUSTOM_FEEDS_KEY, JSON.stringify(feeds));
     if (isBrowser) {
-      fetch('/api/portal/feeds', {
+      const res = await fetch('/api/portal/feeds', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ feeds }),
-      }).catch((err) => console.warn('Erro ao salvar feeds no servidor:', err));
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.feeds)) {
+          safeSetItem(CUSTOM_FEEDS_KEY, JSON.stringify(data.feeds));
+          return data.feeds;
+        }
+      }
     }
   } catch (e) {
     console.warn('Erro ao salvar feeds RSS:', e);
   }
+  return feeds;
 }
 
 const SHOW_RADAR_BRIEFING_KEY = 'ract_show_radar_briefing_v1';

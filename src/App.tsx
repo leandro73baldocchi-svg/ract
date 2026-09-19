@@ -141,19 +141,17 @@ export default function App() {
     }
   };
 
-  const handleDataUpdated = () => {
-    setCustomCategories(getCustomCategories());
-    setManagedArticles(getAllManagedArticles());
-    setRssFeeds(getCustomRssFeeds());
-
-    // Sincroniza em tempo real com o servidor persistente
-    syncPortalWithServer().then((synced) => {
-      if (synced) {
-        setCustomCategories(synced.customCategories);
-        setManagedArticles(synced.managedArticles);
-        setRssFeeds(synced.customRssFeeds);
-      }
-    });
+  const handleDataUpdated = async () => {
+    const synced = await syncPortalWithServer();
+    if (synced) {
+      setCustomCategories(synced.customCategories);
+      setManagedArticles(synced.managedArticles);
+      setRssFeeds(synced.customRssFeeds);
+    } else {
+      setCustomCategories(getCustomCategories());
+      setManagedArticles(getAllManagedArticles());
+      setRssFeeds(getCustomRssFeeds());
+    }
   };
 
   const allCategoriesList = useMemo(() => {
@@ -210,16 +208,56 @@ export default function App() {
     };
   }, []);
 
-  // Initial load: sincroniza banco global com servidor e carrega notícias
+  // Sincronização e Polling em tempo real a cada 3 segundos + foco da tela:
+  // Garante que o que for criado/editado em um celular apareça imediatamente no outro
   useEffect(() => {
-    syncPortalWithServer().then((synced) => {
-      if (synced) {
-        setCustomCategories(synced.customCategories);
-        setManagedArticles(synced.managedArticles);
-        setRssFeeds(synced.customRssFeeds);
+    let isMounted = true;
+
+    const pullServerUpdates = async () => {
+      try {
+        const synced = await syncPortalWithServer();
+        if (synced && isMounted) {
+          setCustomCategories((prev) => {
+            const prevIds = prev.map((c) => c.id).join(',');
+            const newIds = synced.customCategories.map((c) => c.id).join(',');
+            return prevIds !== newIds ? synced.customCategories : prev;
+          });
+          setManagedArticles((prev) => {
+            const prevMap = prev.map((a) => `${a.id}:${a.titlePt || a.title}`).join('|');
+            const newMap = synced.managedArticles.map((a) => `${a.id}:${a.titlePt || a.title}`).join('|');
+            return prevMap !== newMap ? synced.managedArticles : prev;
+          });
+          setRssFeeds((prev) => {
+            const prevList = prev.map((f) => `${f.id}:${f.enabled}`).join('|');
+            const newList = synced.customRssFeeds.map((f) => `${f.id}:${f.enabled}`).join('|');
+            return prevList !== newList ? synced.customRssFeeds : prev;
+          });
+        }
+      } catch (e) {
+        // Silencioso em caso de offline
       }
-    });
+    };
+
+    pullServerUpdates();
     loadNewsFeed(false);
+
+    const intervalId = setInterval(pullServerUpdates, 3000);
+    const handleFocus = () => pullServerUpdates();
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        pullServerUpdates();
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      isMounted = false;
+      clearInterval(intervalId);
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('visibilitychange', handleVisibility);
+    };
   }, []);
 
   const loadNewsFeed = async (force: boolean = false) => {
