@@ -51,25 +51,25 @@ export async function fetchServerArticles(): Promise<NewsArticle[]> {
     });
 
     if (articles.length > 0) {
-      saveAllManagedArticles(articles); 
+      saveAllManagedArticles(articles);
       return articles;
     } else {
-      return []; 
+      return [];
     }
   } catch (err) {
-    console.error('ERRO CRÍTICO: Falha ao buscar no Firebase. Detalhes:', err);
+    console.error('ERRO CRÍTICO: Falha ao buscar no Firebase:', err);
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
-        return getAllManagedArticles(); 
+        return getAllManagedArticles();
     }
-    return []; 
+    return [];
   }
 }
 
 export async function fetchServerCategories(): Promise<CustomCategory[]> {
   try {
     const querySnapshot = await getDocs(collection(db, "categories"));
-    let categories: CustomCategory[] = [];
-    
+    const categories: CustomCategory[] = [];
+
     querySnapshot.forEach((docSnap) => {
       const cat = docSnap.data() as CustomCategory;
       if (cat.id !== 'all') {
@@ -87,7 +87,7 @@ export async function fetchServerCategories(): Promise<CustomCategory[]> {
     });
 
     const finalCategories: CustomCategory[] = [
-      { id: 'all', label: 'Todas as Áreas', order: 0 }, 
+      { id: 'all', label: 'Todas as Áreas', order: 0 },
       ...categories
     ];
 
@@ -104,7 +104,7 @@ export async function fetchServerCategories(): Promise<CustomCategory[]> {
       return DEFAULT_BASE_CATEGORIES;
     }
   } catch (err) {
-    console.error('ERRO CRÍTICO: Falha ao buscar categorias no Firebase:', err);
+    console.error('ERRO CRÍTICO: Falha ao buscar categorias:', err);
     return getCustomCategories();
   }
 }
@@ -145,12 +145,12 @@ export async function deleteCategoryFromServer(categoryId: string): Promise<Cust
 // -------------------------------------------------------------
 export async function fetchRssArticles(): Promise<NewsArticle[]> {
   const feeds = getCustomRssFeeds().filter(f => f.enabled);
-  
+
   const rssPromises = feeds.map(async (feed) => {
     try {
       const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feed.url)}`);
       const data = await res.json();
-      
+
       if (data.status === 'ok') {
         return data.items.map((item: any) => ({
           id: `rss-${feed.id}-${item.guid || item.link}`,
@@ -175,7 +175,7 @@ export async function fetchRssArticles(): Promise<NewsArticle[]> {
   });
 
   const results = await Promise.all(rssPromises);
-  return results.flat(); 
+  return results.flat();
 }
 
 // -------------------------------------------------------------
