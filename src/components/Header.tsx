@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { CategoryType, CustomCategory } from '../types';
-import { RefreshCw, Bookmark, Globe, Wifi, WifiOff, Search, X, Moon, Sun, Lock, Sparkles } from 'lucide-react';
+import { RefreshCw, Bookmark, Globe, Wifi, WifiOff, Search, X, Moon, Sun, Sparkles } from 'lucide-react';
 
 interface HeaderProps {
   date: string;
@@ -45,7 +45,7 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   return (
     <header className="border-b border-stone-300 dark:border-stone-800 bg-[#FCFCFB] dark:bg-[#151515] sticky top-0 z-40 shadow-[0_1px_3px_rgba(0,0,0,0.03)] dark:shadow-none transition-colors">
-      {/* 1. Top Informative Bar (Date, Status, Academic Journals Index) */}
+      {/* 1. Top Informative Bar */}
       <div className="border-b border-stone-200 dark:border-stone-800/80 bg-[#F7F7F5] dark:bg-[#111111] px-4 sm:px-8 py-1.5 text-[11px] font-mono-subtle text-stone-500 dark:text-stone-400 transition-colors">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2 sm:gap-3 truncate">
@@ -83,113 +83,103 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* 2. Main Title Masthead */}
       <div className="border-b border-stone-200 dark:border-stone-800 transition-colors">
-        <div className="max-w-6xl mx-auto px-4 sm:px-8 py-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-baseline gap-2">
-              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-stone-950 dark:text-stone-100 font-serif">
-                RADAR AUTÔNOMO DE CIÊNCIAS E TECNOLOGIA
-              </h1>
-              <span className="text-sm font-semibold tracking-wider font-mono-subtle text-stone-500 dark:text-stone-400">
-                (RACT)
-              </span>
+        <div className="max-w-6xl mx-auto px-4 sm:px-8 py-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          
+          {/* Logo and Titles Wrapper (OPÇÃO 1) */}
+          <div className="flex items-center gap-4">
+            
+            {/* Logo: Substitua este SVG pela sua tag <img /> quando tiver uma imagem */}
+          <div className="flex items-center gap-4">
+            
+            {/* O seu Logotipo Oficial */}
+            <div className="shrink-0 flex items-center justify-center w-14 h-14 bg-white dark:bg-stone-900 rounded-xl shadow-sm overflow-hidden border border-stone-200 dark:border-stone-800">
+              <img 
+                src="/logo.png" 
+                alt="Logo Radar Autônomo" 
+                className="w-full h-full object-cover"
+              />
             </div>
-            <p className="text-xs text-stone-600 dark:text-stone-400 mt-0.5 tracking-normal">
-              Agregador e analisador autônomo dos principais periódicos científicos mundiais com tradução instantânea e leitura offline.
-            </p>
+
+            {/* Texts */}
+            <div className="flex flex-col justify-center">
+              <div className="flex items-baseline gap-2">
+                <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-stone-950 dark:text-stone-100 font-serif leading-none">
+                  RADAR AUTÔNOMO DE CIÊNCIAS E TECNOLOGIA
+                </h1>
+                <span className="text-xs font-semibold tracking-wider font-mono-subtle text-stone-500 dark:text-stone-400">
+                  (RACT)
+                </span>
+              </div>
+              <p className="text-[11px] sm:text-xs text-stone-600 dark:text-stone-400 mt-1 tracking-normal max-w-2xl leading-snug">
+                Agregador e analisador autônomo dos principais periódicos científicos mundiais com tradução instantânea e leitura offline.
+              </p>
+            </div>
           </div>
 
-          {/* Quick Utility Controls */}
-          <div className="flex items-center gap-2 self-start md:self-auto shrink-0 flex-wrap">
-            {/* Dark Mode Toggle */}
+          {/* Quick Utility Controls (Botões da direita) */}
+          <div className="flex items-center gap-2 self-start lg:self-auto shrink-0 flex-wrap">
             <button
               onClick={onToggleDarkMode}
-              id="btn-toggle-dark-mode"
-              title={isDarkMode ? 'Alternar para Modo Claro' : 'Alternar para Modo Escuro'}
-              aria-label={isDarkMode ? 'Alternar para Modo Claro' : 'Alternar para Modo Escuro'}
-              className={`px-3 py-1.5 rounded text-xs font-medium border flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs ${
+              className={`px-3 py-1.5 rounded text-[11px] sm:text-xs font-medium border flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs ${
                 isDarkMode
                   ? 'bg-stone-850 text-amber-300 border-stone-700 hover:bg-stone-800'
                   : 'bg-white text-stone-700 border-stone-300 hover:bg-stone-100 hover:text-stone-900'
               }`}
             >
               {isDarkMode ? (
-                <>
-                  <Sun className="w-3.5 h-3.5 text-amber-300" />
-                  <span>Modo Claro</span>
-                </>
+                <><Sun className="w-3.5 h-3.5 text-amber-300" /> <span className="hidden sm:inline">Modo Claro</span></>
               ) : (
-                <>
-                  <Moon className="w-3.5 h-3.5 text-stone-700" />
-                  <span>Modo Escuro</span>
-                </>
+                <><Moon className="w-3.5 h-3.5 text-stone-700" /> <span className="hidden sm:inline">Modo Escuro</span></>
               )}
             </button>
 
-            {/* Automatic Translation Toggle */}
             <button
               onClick={onToggleAutoTranslate}
-              id="toggle-auto-translate"
-              title="Alternar entre tradução técnica em Português e o idioma original do periódico"
-              className={`px-3 py-1.5 rounded text-xs font-medium border flex items-center gap-1.5 transition-colors cursor-pointer ${
+              className={`px-3 py-1.5 rounded text-[11px] sm:text-xs font-medium border flex items-center gap-1.5 transition-colors cursor-pointer ${
                 autoTranslate
                   ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 border-stone-900 dark:border-stone-100 shadow-2xs'
                   : 'bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-200 border-stone-300 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-700'
               }`}
             >
               <Globe className="w-3.5 h-3.5" />
-              <span>Tradução:</span>
-              <span className="font-mono-subtle font-bold">
-                {autoTranslate ? 'PT-BR' : 'EN (Original)'}
-              </span>
+              <span className="hidden sm:inline">Tradução:</span>
+              <span className="font-mono-subtle font-bold">{autoTranslate ? 'PT-BR' : 'EN'}</span>
             </button>
 
-            {/* Radar Briefing Toggle */}
             <button
               onClick={onToggleRadarBriefing}
-              id="btn-toggle-radar"
-              title={showRadarBriefing ? 'Ocultar Síntese do Radar da página inicial' : 'Exibir Síntese do Radar'}
-              className={`px-3 py-1.5 rounded text-xs font-medium border flex items-center gap-1.5 transition-colors cursor-pointer ${
+              className={`px-3 py-1.5 rounded text-[11px] sm:text-xs font-medium border flex items-center gap-1.5 transition-colors cursor-pointer ${
                 showRadarBriefing
                   ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 border-stone-900 dark:border-stone-100 shadow-2xs'
                   : 'bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-200 border-stone-300 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-700'
               }`}
             >
               <Sparkles className="w-3.5 h-3.5" />
-              <span>Síntese do Radar</span>
+              <span className="hidden sm:inline">Síntese do Radar</span>
             </button>
 
-            {/* Offline Saved Articles Filter */}
             <button
               onClick={onToggleOfflineOnly}
-              id="btn-filter-offline"
-              title="Exibir apenas os artigos gravados para leitura offline"
-              className={`px-3 py-1.5 rounded text-xs font-medium border flex items-center gap-1.5 transition-colors cursor-pointer ${
+              className={`px-3 py-1.5 rounded text-[11px] sm:text-xs font-medium border flex items-center gap-1.5 transition-colors cursor-pointer ${
                 showOfflineOnly
                   ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 border-stone-900 dark:border-stone-100 shadow-2xs'
                   : 'bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-200 border-stone-300 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-700'
               }`}
             >
               <Bookmark className={`w-3.5 h-3.5 ${showOfflineOnly ? 'fill-current' : ''}`} />
-              <span>Leitura Offline</span>
+              <span className="hidden sm:inline">Offline</span>
               {savedCount > 0 && (
-                <span
-                  className={`text-[10px] px-1.5 py-0.2 rounded font-mono-subtle font-semibold ${
-                    showOfflineOnly
-                      ? 'bg-stone-800 dark:bg-stone-300 text-stone-100 dark:text-stone-900'
-                      : 'bg-stone-200 dark:bg-stone-700 text-stone-800 dark:text-stone-200'
-                  }`}
-                >
+                <span className={`text-[10px] px-1.5 py-0.5 rounded font-mono-subtle font-semibold ${
+                  showOfflineOnly ? 'bg-stone-800 dark:bg-stone-300 text-stone-100 dark:text-stone-900' : 'bg-stone-200 dark:bg-stone-700 text-stone-800 dark:text-stone-200'
+                }`}>
                   {savedCount}
                 </span>
               )}
             </button>
 
-            {/* Refresh / Sync */}
             <button
               onClick={onRefresh}
               disabled={isRefreshing || !isOnline}
-              id="btn-sync-feeds"
-              title={isOnline ? 'Sincronizar com os periódicos agora' : 'Offline - conecte-se para sincronizar'}
               className="p-1.5 rounded text-stone-700 dark:text-stone-300 hover:text-stone-950 dark:hover:text-white border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-800 hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors disabled:opacity-40 cursor-pointer"
             >
               <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
@@ -198,10 +188,10 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
 
-      {/* 3. Scientific Journal Academic Menu Bar (Positioned Right Below the Title Masthead) */}
+      {/* 3. Scientific Journal Academic Menu Bar */}
       <div className="bg-[#FAF9F7] dark:bg-[#1A1A1A] px-4 sm:px-8 transition-colors">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-2.5 py-2">
-          {/* Main Navigation Tabs */}
+          
           <nav className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5 text-xs">
             {categoriesList.map((cat) => {
               const isActive = activeCategory === cat.id && !showOfflineOnly;
@@ -221,7 +211,6 @@ export const Header: React.FC<HeaderProps> = ({
             })}
           </nav>
 
-          {/* Integrated Search Box */}
           <div className="relative w-full md:w-64 shrink-0">
             <Search className="w-3.5 h-3.5 text-stone-400 dark:text-stone-500 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
