@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { NewsArticle } from '../types';
 import { X, ExternalLink, Bookmark, Clock, CheckCircle, Share2, Globe, ArrowRight, ShoppingCart } from 'lucide-react';
+import { getAffiliateLinks, fetchServerAffiliates, AffiliateLink } from '../utils/customDataManager';
 
 interface ArticleModalProps {
   article: NewsArticle;
@@ -17,10 +18,17 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
   onToggleSaveOffline,
   onClose,
 }) => {
+  const [affiliates, setAffiliates] = useState<AffiliateLink[]>([]);
+  
+  useEffect(() => {
+    // Busca do cache primeiro, depois atualiza com o Firebase
+    setAffiliates(getAffiliateLinks());
+    fetchServerAffiliates().then(setAffiliates);
+  }, []);
+
   const displayTitle = autoTranslate ? (article.titlePt || article.title) : article.title;
   const displaySummary = autoTranslate ? (article.summaryPt || article.summary) : article.summary;
   
-  // Fake content generation for the demo reading experience
   const paragraphs = [
     displaySummary,
     "Esta descoberta marca um ponto de inflexão na compreensão atual da comunidade científica sobre o fenômeno. A metodologia rigorosa empregada pela equipe de pesquisa, combinada com instrumentos de medição de última geração, permitiu reduzir a margem de erro a níveis historicamente baixos.",
@@ -29,18 +37,16 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
     "Aplicações práticas da descoberta já estão sendo debatidas em comitês industriais e governamentais. A expectativa é que, num prazo de uma década, a tecnologia derivada deste estudo já esteja acessível comercialmente, impactando setores que vão desde a engenharia de materiais até a biotecnologia agrícola."
   ];
 
-  // Helper to get an affiliate link suggestion based on the category
+  // Identifica se tem um link específico para a área do artigo, ou pega o padrão 'default'
   const getAffiliateRecommendation = () => {
-    switch (article.sourceCategory) {
-      case 'astronomy': return { title: "Cosmos (Carl Sagan)", url: "https://link.amazon/B0fMGEaQJ" };
-      case 'physics': return { title: "Uma Breve História do Tempo (Stephen Hawking)", url: "https://link.amazon/B0aNE7lEG" };
-      case 'ai': return { title: "Inteligência Artificial: Uma Abordagem Moderna", url: "https://link.amazon/B0hxwMBGp" };
-      case 'biotech': return { title: "O Gene Egoísta (Richard Dawkins)", url: "https://amzn.to/SEU-LINK-AQUI" };
-      case 'health': return { title: "A Regra de Ouro (Medicina Moderna)", url: "https://amzn.to/SEU-LINK-AQUI" };
-      case 'tech': return { title: "A Nova Era Digital", url: "https://amzn.to/SEU-LINK-AQUI" };
-      case 'math': return { title: "O Homem que Calculava (Malba Tahan)", url: "https://amzn.to/SEU-LINK-AQUI" };
-      default: return { title: "Kindle: Para ler artigos científicos sem cansar a vista", url: "https://amzn.to/SEU-LINK-AQUI" };
-    }
+    const specific = affiliates.find(a => a.id === article.sourceCategory);
+    if (specific && specific.url) return specific;
+    
+    const defaultLink = affiliates.find(a => a.id === 'default');
+    if (defaultLink && defaultLink.url) return defaultLink;
+
+    // Se o usuário não configurou nada no painel, não mostra a caixa para não ficar em branco
+    return null;
   };
 
   const recommendedBook = getAffiliateRecommendation();
@@ -164,31 +170,33 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
               </div>
             )}
 
-            {/* NOVO: Bloco de Aprofundamento (Afiliado Amazon) */}
-            <div className="mt-12 bg-[#F9F9F8] dark:bg-[#1C1C1C] border border-stone-200 dark:border-stone-800 rounded-xl p-5 sm:p-6 text-center">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">
-                Aprofunde-se no Tema
-              </p>
-              <h4 className="font-editorial text-lg sm:text-xl font-bold text-stone-900 dark:text-stone-100 mb-2">
-                Recomendação RACT
-              </h4>
-              <p className="text-sm text-stone-600 dark:text-stone-400 mb-4 max-w-md mx-auto">
-                Deseja se aprofundar nas bases teóricas deste artigo? Recomendamos o livro fundamental: <br/>
-                <strong className="text-stone-900 dark:text-stone-200 mt-1 inline-block">{recommendedBook.title}</strong>
-              </p>
-              <a 
-                href={recommendedBook.url} 
-                target="_blank" 
-                rel="noreferrer"
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-amber-950 font-bold text-sm rounded-lg transition-colors cursor-pointer"
-              >
-                <ShoppingCart className="w-4 h-4" />
-                Ver Livro na Amazon
-              </a>
-              <p className="text-[9px] text-stone-400 dark:text-stone-600 mt-4 max-w-sm mx-auto leading-tight">
-                *O RACT pode receber uma pequena comissão por compras feitas através deste link, sem nenhum custo extra para você. Isso ajuda a manter o portal no ar.
-              </p>
-            </div>
+            {/* Bloco de Aprofundamento Dinâmico (Afiliado Amazon) */}
+            {recommendedBook && (
+              <div className="mt-12 bg-[#F9F9F8] dark:bg-[#1C1C1C] border border-stone-200 dark:border-stone-800 rounded-xl p-5 sm:p-6 text-center">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">
+                  Aprofunde-se no Tema
+                </p>
+                <h4 className="font-editorial text-lg sm:text-xl font-bold text-stone-900 dark:text-stone-100 mb-2">
+                  Recomendação RACT
+                </h4>
+                <p className="text-sm text-stone-600 dark:text-stone-400 mb-4 max-w-md mx-auto">
+                  Deseja se aprofundar nas bases teóricas desta área? Recomendamos este material: <br/>
+                  <strong className="text-stone-900 dark:text-stone-200 mt-1 inline-block">{recommendedBook.title}</strong>
+                </p>
+                <a 
+                  href={recommendedBook.url} 
+                  target="_blank" 
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-amber-950 font-bold text-sm rounded-lg transition-colors cursor-pointer"
+                >
+                  <ShoppingCart className="w-4 h-4" />
+                  Ver na Amazon
+                </a>
+                <p className="text-[9px] text-stone-400 dark:text-stone-600 mt-4 max-w-sm mx-auto leading-tight">
+                  *O RACT pode receber uma comissão por compras feitas através deste link, sem nenhum custo extra para você. Isso apoia o nosso projeto.
+                </p>
+              </div>
+            )}
 
             {/* Read Source Action */}
             {article.link && (
