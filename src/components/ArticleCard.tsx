@@ -32,9 +32,9 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
   // Helper to get an affiliate link suggestion based on the category
   const getAffiliateRecommendation = () => {
     switch (article.sourceCategory) {
-      case 'astronomy': return { title: "Cosmos (Carl Sagan)", url: "https://amzn.to/SEU-LINK-AQUI" };
-      case 'physics': return { title: "Uma Breve História do Tempo (Stephen Hawking)", url: "https://amzn.to/SEU-LINK-AQUI" };
-      case 'ai': return { title: "Inteligência Artificial: Uma Abordagem Moderna", url: "https://amzn.to/SEU-LINK-AQUI" };
+      case 'astronomy': return { title: "Cosmos (Carl Sagan)", url: "https://link.amazon/B0fMGEaQJ" };
+      case 'physics': return { title: "Uma Breve História do Tempo (Stephen Hawking)", url: "https://link.amazon/B0aNE7lEG" };
+      case 'ai': return { title: "Inteligência Artificial: Uma Abordagem Moderna", url: "https://link.amazon/B0hxwMBGp" };
       case 'biotech': return { title: "O Gene Egoísta (Richard Dawkins)", url: "https://amzn.to/SEU-LINK-AQUI" };
       case 'health': return { title: "A Regra de Ouro (Medicina Moderna)", url: "https://amzn.to/SEU-LINK-AQUI" };
       case 'tech': return { title: "A Nova Era Digital", url: "https://amzn.to/SEU-LINK-AQUI" };
