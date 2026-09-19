@@ -67,27 +67,37 @@ export async function fetchServerArticles(): Promise<NewsArticle[]> {
   }
 }
 
-export async function fetchServerCategories(): Promise<CustomCategory[]> {
+export async function fetchServerArticles(): Promise<NewsArticle[]> {
   try {
-    const querySnapshot = await getDocs(collection(db, "categories"));
-    const categories: CustomCategory[] = [];
+    const querySnapshot = await getDocs(collection(db, "articles"));
+    const articles: NewsArticle[] = [];
     querySnapshot.forEach((docSnap) => {
-      categories.push(docSnap.data() as CustomCategory);
+      articles.push(docSnap.data() as NewsArticle);
     });
 
-    if (categories.length > 0) {
-      saveCustomCategories(categories);
-      return categories;
+    if (articles.length > 0) {
+      // SALVA no cache local apenas para leitura offline (quando sem internet)
+      saveAllManagedArticles(articles); 
+      return articles;
     } else {
-      for (const cat of DEFAULT_BASE_CATEGORIES) {
-        await setDoc(doc(db, "categories", cat.id), cat);
+      // Se o banco estiver vazio, carrega os originais e salva no Firebase
+      for (const art of ACADEMIC_ARTICLES) {
+        await setDoc(doc(db, "articles", art.id), art);
       }
-      saveCustomCategories(DEFAULT_BASE_CATEGORIES);
-      return DEFAULT_BASE_CATEGORIES;
+      saveAllManagedArticles(ACADEMIC_ARTICLES);
+      return ACADEMIC_ARTICLES;
     }
   } catch (err) {
-    return getCustomCategories();
+    // SE DER ERRO AQUI: significa que a conexão Firebase está falhando
+    console.error('ERRO CRÍTICO: Falha ao buscar no Firebase. Detalhes:', err);
+    // Só usa o cache local se o usuário estiver literalmente sem internet
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        return getAllManagedArticles(); 
+    }
+    // Retorna vazio para forçar você a ver se o banco está respondendo
+    return []; 
   }
+}
 }
 
 export async function saveOrUpdateArticle(article: NewsArticle): Promise<NewsArticle[]> {
@@ -233,4 +243,41 @@ export async function fetchRssArticles(): Promise<NewsArticle[]> {
   // Junta o resultado de todos os feeds
   const results = await Promise.all(rssPromises);
   return results.flat(); 
+}
+
+
+export async function fetchServerCategories(): Promise<CustomCategory[]> {
+  try {
+    const querySnapshot = await getDocs(collection(db, "categories"));
+    let categories: CustomCategory[] = [];
+    
+    querySnapshot.forEach((docSnap) => {
+      const cat = docSnap.data() as CustomCategory;
+      // Impede que o "all" venha do banco duplicado
+      if (cat.id !== 'all') {
+          categories.push(cat);
+      }
+    });
+
+    // Injeta o "Todas as Áreas" obrigatoriamente no início da lista
+    const finalCategories = [{ id: 'all', label: 'Todas as Áreas' }, ...categories];
+
+    if (categories.length > 0) {
+      saveCustomCategories(finalCategories);
+      return finalCategories;
+    } else {
+      // Se o banco estiver vazio, sobe as áreas padrão
+      for (const cat of DEFAULT_BASE_CATEGORIES) {
+        // Não salva o 'all' no banco de dados para evitar confusão, ele é só da interface
+        if(cat.id !== 'all') {
+             await setDoc(doc(db, "categories", cat.id), cat);
+        }
+      }
+      saveCustomCategories(DEFAULT_BASE_CATEGORIES);
+      return DEFAULT_BASE_CATEGORIES;
+    }
+  } catch (err) {
+    console.error('ERRO CRÍTICO: Falha ao buscar categorias no Firebase:', err);
+    return getCustomCategories();
+  }
 }
