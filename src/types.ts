@@ -10,7 +10,16 @@ export type CategoryType =
   | 'geology'
   | 'tech'
   | 'ai'
-  | 'universities';
+  | 'universities'
+  | 'psychology'
+  | (string & {});
+
+export interface CustomCategory {
+  id: string;
+  label: string;
+  description?: string;
+  isCustom?: boolean;
+}
 
 export interface FullArticleContent {
   abstract: string;

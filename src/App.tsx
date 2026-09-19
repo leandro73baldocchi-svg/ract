@@ -9,8 +9,14 @@ import { DailyBriefingCard } from './components/DailyBriefingCard';
 import { ArticleCard } from './components/ArticleCard';
 import { ArticleDetailModal } from './components/ArticleDetailModal';
 import { UniversitiesView } from './components/UniversitiesView';
-import { NewsArticle, DailyBriefing, CategoryType } from './types';
+import { NewsArticle, DailyBriefing, CategoryType, CustomCategory } from './types';
 import { ACADEMIC_ARTICLES } from './data/academicArticles';
+import { AdminDashboardModal } from './components/AdminDashboardModal';
+import {
+  DEFAULT_BASE_CATEGORIES,
+  getCustomCategories,
+  getCustomArticles,
+} from './utils/customDataManager';
 import {
   getOfflineArticles,
   saveArticleOffline,
@@ -57,6 +63,63 @@ export default function App() {
 
   // Dark mode state
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => getDarkModePreference());
+
+  // Custom Categories & Custom Articles (Secret Admin Panel)
+  const [customCategories, setCustomCategories] = useState<CustomCategory[]>(() => getCustomCategories());
+  const [customArticles, setCustomArticles] = useState<NewsArticle[]>(() => getCustomArticles());
+  const [isAdminOpen, setIsAdminOpen] = useState<boolean>(false);
+
+  // Check URL parameter or hash: ONLY opens if explicitly typed in the browser's address bar
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const checkUrlForAdmin = () => {
+      const params = new URLSearchParams(window.location.search);
+      const hash = window.location.hash;
+      if (
+        params.get('admin') === 'true' ||
+        params.get('admin') === 'secreto' ||
+        params.get('gestao') === '1' ||
+        hash === '#admin' ||
+        hash === '#secreto'
+      ) {
+        setIsAdminOpen(true);
+      } else {
+        setIsAdminOpen(false);
+      }
+    };
+
+    checkUrlForAdmin();
+    window.addEventListener('popstate', checkUrlForAdmin);
+    window.addEventListener('hashchange', checkUrlForAdmin);
+    return () => {
+      window.removeEventListener('popstate', checkUrlForAdmin);
+      window.removeEventListener('hashchange', checkUrlForAdmin);
+    };
+  }, []);
+
+  const handleCloseAdmin = () => {
+    setIsAdminOpen(false);
+    // Clean URL without reloading page
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('admin');
+      url.searchParams.delete('gestao');
+      if (url.hash === '#admin' || url.hash === '#secreto') {
+        url.hash = '';
+      }
+      window.history.replaceState({}, '', url.pathname + (url.search ? url.search : ''));
+    }
+  };
+
+  const handleDataUpdated = () => {
+    setCustomCategories(getCustomCategories());
+    setCustomArticles(getCustomArticles());
+  };
+
+  const allCategoriesList = useMemo(() => {
+    return [...DEFAULT_BASE_CATEGORIES, ...customCategories];
+  }, [customCategories]);
 
   // Offline saved articles state
   const [offlineArticles, setOfflineArticles] = useState<NewsArticle[]>(() => getOfflineArticles());
@@ -194,13 +257,21 @@ export default function App() {
     return new Set(offlineArticles.map((a) => a.id));
   }, [offlineArticles]);
 
-  // Current dataset to display
+  // Current dataset to display (merging base articles with custom articles registered by user)
   const displaySource = useMemo(() => {
     if (showOfflineOnly || (!isOnline && articles.length === 0)) {
       return offlineArticles;
     }
-    return articles;
-  }, [showOfflineOnly, isOnline, articles, offlineArticles]);
+    // Combine base catalog with custom added articles (avoiding duplicates by id)
+    const combined = [...customArticles];
+    const customIds = new Set(customArticles.map((a) => a.id));
+    for (const art of articles) {
+      if (!customIds.has(art.id)) {
+        combined.push(art);
+      }
+    }
+    return combined;
+  }, [showOfflineOnly, isOnline, articles, customArticles, offlineArticles]);
 
   // Filtered articles
   const filteredArticles = useMemo(() => {
@@ -261,6 +332,7 @@ export default function App() {
         }}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
+        categoriesList={allCategoriesList}
       />
 
       {/* Main Workspace */}
@@ -458,6 +530,13 @@ export default function App() {
         isSavedOffline={selectedArticle ? savedIdsSet.has(selectedArticle.id) : false}
         onToggleSaveOffline={handleToggleSaveOffline}
         autoTranslateDefault={autoTranslate}
+      />
+
+      {/* Secret Admin Dashboard Modal */}
+      <AdminDashboardModal
+        isOpen={isAdminOpen}
+        onClose={handleCloseAdmin}
+        onDataUpdated={handleDataUpdated}
       />
     </div>
   );

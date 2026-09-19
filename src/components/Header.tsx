@@ -1,6 +1,6 @@
-import React from 'react';
-import { CategoryType } from '../types';
-import { RefreshCw, Bookmark, Globe, Wifi, WifiOff, Search, X, Moon, Sun } from 'lucide-react';
+import React, { useState } from 'react';
+import { CategoryType, CustomCategory } from '../types';
+import { RefreshCw, Bookmark, Globe, Wifi, WifiOff, Search, X, Moon, Sun, Lock } from 'lucide-react';
 
 interface HeaderProps {
   date: string;
@@ -18,22 +18,8 @@ interface HeaderProps {
   onSelectCategory: (category: CategoryType) => void;
   searchQuery: string;
   onSearchChange: (query: string) => void;
+  categoriesList: CustomCategory[];
 }
-
-const CATEGORIES: { id: CategoryType; label: string }[] = [
-  { id: 'all', label: 'Todas as Áreas' },
-  { id: 'biography', label: 'Biografias' },
-  { id: 'education', label: 'Educação' },
-  { id: 'biotech', label: 'Biotecnologia' },
-  { id: 'health', label: 'Saúde' },
-  { id: 'physics', label: 'Física' },
-  { id: 'math', label: 'Matemática' },
-  { id: 'astronomy', label: 'Astronomia' },
-  { id: 'geology', label: 'Geologia' },
-  { id: 'tech', label: 'Tecnologia' },
-  { id: 'ai', label: 'Inteligência Artificial' },
-  { id: 'universities', label: 'Universidades (Brasil & Mundo)' },
-];
 
 export const Header: React.FC<HeaderProps> = ({
   date,
@@ -51,6 +37,7 @@ export const Header: React.FC<HeaderProps> = ({
   onSelectCategory,
   searchQuery,
   onSearchChange,
+  categoriesList,
 }) => {
   return (
     <header className="border-b border-stone-300 dark:border-stone-800 bg-[#FCFCFB] dark:bg-[#151515] sticky top-0 z-40 shadow-[0_1px_3px_rgba(0,0,0,0.03)] dark:shadow-none transition-colors">
@@ -197,7 +184,7 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-2.5 py-2">
           {/* Main Navigation Tabs */}
           <nav className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5 text-xs">
-            {CATEGORIES.map((cat) => {
+            {categoriesList.map((cat) => {
               const isActive = activeCategory === cat.id && !showOfflineOnly;
               return (
                 <button
