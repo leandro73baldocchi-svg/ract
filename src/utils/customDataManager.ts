@@ -8,21 +8,10 @@ const ALL_ARTICLES_KEY = 'ract_all_managed_articles_v3';
 const CUSTOM_FEEDS_KEY = 'ract_custom_rss_feeds_v2';
 const ADMIN_PASSWORD_KEY = 'ract_admin_password_hash_v1';
 const SHOW_RADAR_BRIEFING_KEY = 'ract_show_radar_briefing_v1';
-const AFFILIATE_LINKS_KEY = 'ract_affiliates_v1';
+const AFFILIATE_LINKS_KEY = 'ract_affiliates_v2';
 
-export interface CustomRssFeed {
-  id: string;
-  name: string;
-  url: string;
-  category: string;
-  enabled: boolean;
-}
-
-export interface AffiliateLink {
-  id: string;
-  title: string;
-  url: string;
-}
+export interface CustomRssFeed { id: string; name: string; url: string; category: string; enabled: boolean; }
+export interface AffiliateLink { id: string; categoryId: string; title: string; url: string; }
 
 export const DEFAULT_BASE_CATEGORIES: CustomCategory[] = [
   { id: 'all', label: 'Todas as Áreas', order: 0 },
@@ -45,29 +34,14 @@ export const DEFAULT_RSS_FEEDS: CustomRssFeed[] = [
   { id: 'f-science', name: 'Science Magazine', url: 'https://www.science.org/rss/news_current.xml', category: 'health', enabled: true }
 ];
 
-// -------------------------------------------------------------
-// OPERAÇÕES NO FIREBASE
-// -------------------------------------------------------------
-
 export async function fetchServerArticles(): Promise<NewsArticle[]> {
   try {
     const querySnapshot = await getDocs(collection(db, "articles"));
     const articles: NewsArticle[] = [];
-    querySnapshot.forEach((docSnap) => {
-      articles.push(docSnap.data() as NewsArticle);
-    });
-
-    if (articles.length > 0) {
-      saveAllManagedArticles(articles);
-      return articles;
-    } else {
-      return [];
-    }
+    querySnapshot.forEach((docSnap) => { articles.push(docSnap.data() as NewsArticle); });
+    if (articles.length > 0) { saveAllManagedArticles(articles); return articles; } else { return []; }
   } catch (err) {
-    console.error('ERRO CRÍTICO: Falha ao buscar no Firebase:', err);
-    if (typeof navigator !== 'undefined' && !navigator.onLine) {
-        return getAllManagedArticles();
-    }
+    if (typeof navigator !== 'undefined' && !navigator.onLine) return getAllManagedArticles();
     return [];
   }
 }
@@ -76,53 +50,27 @@ export async function fetchServerCategories(): Promise<CustomCategory[]> {
   try {
     const querySnapshot = await getDocs(collection(db, "categories"));
     const categories: CustomCategory[] = [];
-
     querySnapshot.forEach((docSnap) => {
       const cat = docSnap.data() as CustomCategory;
-      if (cat.id !== 'all') {
-          categories.push({ ...cat, order: cat.order ?? 99 });
-      }
+      if (cat.id !== 'all') categories.push({ ...cat, order: cat.order ?? 99 });
     });
-
     categories.sort((a, b) => {
-      const orderA = a.order ?? 99;
-      const orderB = b.order ?? 99;
-      if (orderA !== orderB) {
-        return orderA - orderB;
-      }
+      const orderA = a.order ?? 99; const orderB = b.order ?? 99;
+      if (orderA !== orderB) return orderA - orderB;
       return a.label.localeCompare(b.label);
     });
-
-    const finalCategories: CustomCategory[] = [
-      { id: 'all', label: 'Todas as Áreas', order: 0 },
-      ...categories
-    ];
-
-    if (categories.length > 0) {
-      saveCustomCategories(finalCategories);
-      return finalCategories;
-    } else {
-      for (const cat of DEFAULT_BASE_CATEGORIES) {
-        if(cat.id !== 'all') {
-             await setDoc(doc(db, "categories", cat.id), { ...cat, order: cat.order ?? 99 });
-        }
-      }
-      saveCustomCategories(DEFAULT_BASE_CATEGORIES);
-      return DEFAULT_BASE_CATEGORIES;
+    const finalCategories: CustomCategory[] = [ { id: 'all', label: 'Todas as Áreas', order: 0 }, ...categories ];
+    if (categories.length > 0) { saveCustomCategories(finalCategories); return finalCategories; } 
+    else {
+      for (const cat of DEFAULT_BASE_CATEGORIES) { if(cat.id !== 'all') await setDoc(doc(db, "categories", cat.id), { ...cat, order: cat.order ?? 99 }); }
+      saveCustomCategories(DEFAULT_BASE_CATEGORIES); return DEFAULT_BASE_CATEGORIES;
     }
-  } catch (err) {
-    console.error('ERRO CRÍTICO: Falha ao buscar categorias:', err);
-    return getCustomCategories();
-  }
+  } catch (err) { return getCustomCategories(); }
 }
 
 export async function saveOrUpdateArticle(article: NewsArticle): Promise<NewsArticle[]> {
-  try {
-    await setDoc(doc(db, "articles", article.id), article);
-    return await fetchServerArticles();
-  } catch (err: any) {
-    throw new Error(`Erro ao salvar no Firebase: ${err.message}`);
-  }
+  await setDoc(doc(db, "articles", article.id), article);
+  return await fetchServerArticles();
 }
 
 export async function deleteManagedArticle(articleId: string): Promise<NewsArticle[]> {
@@ -131,9 +79,7 @@ export async function deleteManagedArticle(articleId: string): Promise<NewsArtic
 }
 
 export async function resetToFactoryArticles(): Promise<NewsArticle[]> {
-  for (const art of ACADEMIC_ARTICLES) {
-    await setDoc(doc(db, "articles", art.id), art);
-  }
+  for (const art of ACADEMIC_ARTICLES) await setDoc(doc(db, "articles", art.id), art);
   return await fetchServerArticles();
 }
 
@@ -152,16 +98,12 @@ export async function fetchServerAffiliates(): Promise<AffiliateLink[]> {
     const querySnapshot = await getDocs(collection(db, "affiliates"));
     const links: AffiliateLink[] = [];
     querySnapshot.forEach((docSnap) => {
-      links.push(docSnap.data() as AffiliateLink);
+      const data = docSnap.data();
+      links.push({ id: data.id || docSnap.id, categoryId: data.categoryId || docSnap.id, title: data.title, url: data.url });
     });
-    if (links.length > 0) {
-      saveAffiliateLinks(links);
-      return links;
-    }
+    if (links.length > 0) { saveAffiliateLinks(links); return links; }
     return [];
-  } catch (err) {
-    return getAffiliateLinks();
-  }
+  } catch (err) { return getAffiliateLinks(); }
 }
 
 export async function saveAffiliateToServer(link: AffiliateLink): Promise<AffiliateLink[]> {
@@ -169,162 +111,65 @@ export async function saveAffiliateToServer(link: AffiliateLink): Promise<Affili
   return await fetchServerAffiliates();
 }
 
+export async function deleteAffiliateFromServer(linkId: string): Promise<AffiliateLink[]> {
+  await deleteDoc(doc(db, "affiliates", linkId));
+  return await fetchServerAffiliates();
+}
+
 export async function fetchServerFeeds(): Promise<CustomRssFeed[]> {
   try {
     const querySnapshot = await getDocs(collection(db, "feeds"));
     const feeds: CustomRssFeed[] = [];
-    querySnapshot.forEach((docSnap) => {
-      feeds.push(docSnap.data() as CustomRssFeed);
-    });
-
-    if (feeds.length > 0) {
-      saveCustomRssFeeds(feeds);
-      return feeds;
-    } else {
-      for (const f of DEFAULT_RSS_FEEDS) {
-         await setDoc(doc(db, "feeds", f.id), f);
-      }
-      saveCustomRssFeeds(DEFAULT_RSS_FEEDS);
-      return DEFAULT_RSS_FEEDS;
+    querySnapshot.forEach((docSnap) => { feeds.push(docSnap.data() as CustomRssFeed); });
+    if (feeds.length > 0) { saveCustomRssFeeds(feeds); return feeds; } 
+    else {
+      for (const f of DEFAULT_RSS_FEEDS) await setDoc(doc(db, "feeds", f.id), f);
+      saveCustomRssFeeds(DEFAULT_RSS_FEEDS); return DEFAULT_RSS_FEEDS;
     }
-  } catch (err) {
-    console.error('Falha ao buscar feeds:', err);
-    return getCustomRssFeeds();
-  }
+  } catch (err) { return getCustomRssFeeds(); }
 }
 
 export async function saveFeedToServer(feed: CustomRssFeed): Promise<CustomRssFeed[]> {
-  await setDoc(doc(db, "feeds", feed.id), feed);
-  return await fetchServerFeeds();
+  await setDoc(doc(db, "feeds", feed.id), feed); return await fetchServerFeeds();
 }
 
 export async function deleteFeedFromServer(feedId: string): Promise<CustomRssFeed[]> {
-  await deleteDoc(doc(db, "feeds", feedId));
-  return await fetchServerFeeds();
+  await deleteDoc(doc(db, "feeds", feedId)); return await fetchServerFeeds();
 }
 
-// -------------------------------------------------------------
-// RSS FEEDS (O Tradutor Automático)
-// -------------------------------------------------------------
 export async function fetchRssArticles(): Promise<NewsArticle[]> {
-  const feeds = await fetchServerFeeds(); // Agora pega do Firebase!
+  const feeds = await fetchServerFeeds();
   const activeFeeds = feeds.filter(f => f.enabled);
-
   const rssPromises = activeFeeds.map(async (feed) => {
     try {
       const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feed.url)}`);
       const data = await res.json();
-
       if (data.status === 'ok') {
         return data.items.map((item: any) => ({
-          id: `rss-${feed.id}-${item.guid || item.link}`,
-          title: item.title,
-          titlePt: "",
+          id: `rss-${feed.id}-${item.guid || item.link}`, title: item.title, titlePt: "",
           summary: (item.description || "").replace(/(<([^>]+)>)/gi, "").substring(0, 250) + "...",
-          summaryPt: "",
-          source: feed.name,
-          sourceCategory: feed.category,
+          summaryPt: "", source: feed.name, sourceCategory: feed.category,
           date: item.pubDate?.split(' ')[0] || new Date().toISOString().split('T')[0],
-          url: item.link,
-          imageUrl: item.thumbnail || item.enclosure?.link || "https://images.unsplash.com/photo-1532094349884-543bc11b234d",
-          authors: item.author ? [item.author] : ["Redação"],
-          tags: ["RSS Automático", feed.category]
+          url: item.link, imageUrl: item.thumbnail || item.enclosure?.link || "https://images.unsplash.com/photo-1532094349884-543bc11b234d",
+          authors: item.author ? [item.author] : ["Redação"], tags: ["RSS Automático", feed.category]
         }));
       }
       return [];
-    } catch (err) {
-      console.warn(`Erro ao buscar RSS ${feed.name}:`, err);
-      return [];
-    }
+    } catch (err) { return []; }
   });
-
   const results = await Promise.all(rssPromises);
   return results.flat();
 }
 
-// -------------------------------------------------------------
-// CACHE LOCAL
-// -------------------------------------------------------------
-
-export function getCustomCategories(): CustomCategory[] {
-  try {
-    const raw = localStorage.getItem(CUSTOM_CATEGORIES_KEY);
-    if (!raw) return DEFAULT_BASE_CATEGORIES;
-    return JSON.parse(raw);
-  } catch (e) {
-    return DEFAULT_BASE_CATEGORIES;
-  }
-}
-
-export function saveCustomCategories(categories: CustomCategory[]): void {
-  localStorage.setItem(CUSTOM_CATEGORIES_KEY, JSON.stringify(categories));
-}
-
-export function getAllManagedArticles(): NewsArticle[] {
-  try {
-    const raw = localStorage.getItem(ALL_ARTICLES_KEY);
-    if (!raw) return ACADEMIC_ARTICLES;
-    return JSON.parse(raw);
-  } catch (e) {
-    return ACADEMIC_ARTICLES;
-  }
-}
-
-export function saveAllManagedArticles(articles: NewsArticle[]): void {
-  localStorage.setItem(ALL_ARTICLES_KEY, JSON.stringify(articles));
-}
-
-export function getDeletedArticleIds(): Set<string> {
-  return new Set();
-}
-
-export function saveDeletedArticleIds(_ids: Set<string>): void {}
-
-export function getCustomRssFeeds(): CustomRssFeed[] {
-  try {
-    const raw = localStorage.getItem(CUSTOM_FEEDS_KEY);
-    if (!raw) {
-      saveCustomRssFeeds(DEFAULT_RSS_FEEDS);
-      return DEFAULT_RSS_FEEDS;
-    }
-    return JSON.parse(raw);
-  } catch (e) {
-    return DEFAULT_RSS_FEEDS;
-  }
-}
-
-export function saveCustomRssFeeds(feeds: CustomRssFeed[]): void {
-  localStorage.setItem(CUSTOM_FEEDS_KEY, JSON.stringify(feeds));
-}
-
-export function getAffiliateLinks(): AffiliateLink[] {
-  try {
-    const raw = localStorage.getItem(AFFILIATE_LINKS_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch { return []; }
-}
-
-export function saveAffiliateLinks(links: AffiliateLink[]): void {
-  localStorage.setItem(AFFILIATE_LINKS_KEY, JSON.stringify(links));
-}
-
-export function getShowRadarBriefingPreference(): boolean {
-  try {
-    return localStorage.getItem(SHOW_RADAR_BRIEFING_KEY) === 'true';
-  } catch (e) {
-    return false;
-  }
-}
-
-export function setShowRadarBriefingPreference(show: boolean): void {
-  localStorage.setItem(SHOW_RADAR_BRIEFING_KEY, show ? 'true' : 'false');
-}
-
-export function checkAdminPassword(input: string): boolean {
-  const stored = localStorage.getItem(ADMIN_PASSWORD_KEY) || 'admin2026';
-  return input.trim() === stored || input.trim() === 'admin2026' || input.trim() === 'ciencia123';
-}
-
-export function setAdminPassword(newPassword: string): void {
-  localStorage.setItem(ADMIN_PASSWORD_KEY, newPassword.trim());
-}
+export function getCustomCategories(): CustomCategory[] { try { const raw = localStorage.getItem(CUSTOM_CATEGORIES_KEY); if (!raw) return DEFAULT_BASE_CATEGORIES; return JSON.parse(raw); } catch (e) { return DEFAULT_BASE_CATEGORIES; } }
+export function saveCustomCategories(categories: CustomCategory[]): void { localStorage.setItem(CUSTOM_CATEGORIES_KEY, JSON.stringify(categories)); }
+export function getAllManagedArticles(): NewsArticle[] { try { const raw = localStorage.getItem(ALL_ARTICLES_KEY); if (!raw) return ACADEMIC_ARTICLES; return JSON.parse(raw); } catch (e) { return ACADEMIC_ARTICLES; } }
+export function saveAllManagedArticles(articles: NewsArticle[]): void { localStorage.setItem(ALL_ARTICLES_KEY, JSON.stringify(articles)); }
+export function getCustomRssFeeds(): CustomRssFeed[] { try { const raw = localStorage.getItem(CUSTOM_FEEDS_KEY); if (!raw) { saveCustomRssFeeds(DEFAULT_RSS_FEEDS); return DEFAULT_RSS_FEEDS; } return JSON.parse(raw); } catch (e) { return DEFAULT_RSS_FEEDS; } }
+export function saveCustomRssFeeds(feeds: CustomRssFeed[]): void { localStorage.setItem(CUSTOM_FEEDS_KEY, JSON.stringify(feeds)); }
+export function getAffiliateLinks(): AffiliateLink[] { try { const raw = localStorage.getItem(AFFILIATE_LINKS_KEY); return raw ? JSON.parse(raw) : []; } catch { return []; } }
+export function saveAffiliateLinks(links: AffiliateLink[]): void { localStorage.setItem(AFFILIATE_LINKS_KEY, JSON.stringify(links)); }
+export function getShowRadarBriefingPreference(): boolean { try { return localStorage.getItem(SHOW_RADAR_BRIEFING_KEY) === 'true'; } catch (e) { return false; } }
+export function setShowRadarBriefingPreference(show: boolean): void { localStorage.setItem(SHOW_RADAR_BRIEFING_KEY, show ? 'true' : 'false'); }
+export function checkAdminPassword(input: string): boolean { const stored = localStorage.getItem(ADMIN_PASSWORD_KEY) || 'admin2026'; return input.trim() === stored || input.trim() === 'admin2026' || input.trim() === 'ciencia123'; }
+export function setAdminPassword(newPassword: string): void { localStorage.setItem(ADMIN_PASSWORD_KEY, newPassword.trim()); }
