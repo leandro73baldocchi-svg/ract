@@ -44,13 +44,16 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   const [passwordInput, setPasswordInput] = useState<string>('');
   const [authError, setAuthError] = useState<string | null>(null);
 
-  const [activeTab, setActiveTab] = useState<'articles' | 'categories' | 'feeds' | 'backup' | 'affiliates'>('articles');
+  // Active subtab
+  const [activeTab, setActiveTab] = useState<'articles' | 'categories' | 'feeds' | 'affiliates' | 'backup'>('articles');
 
+  // Articles State
   const [articlesList, setArticlesList] = useState<NewsArticle[]>(() => getAllManagedArticles());
   const [articleSearchQuery, setArticleSearchQuery] = useState<string>('');
   const [articleCategoryFilter, setArticleCategoryFilter] = useState<string>('all');
   const [artSuccessMsg, setArtSuccessMsg] = useState<string | null>(null);
 
+  // Categories State
   const [customCategories, setCustomCategories] = useState<CustomCategory[]>(() => getCustomCategories());
   const [newCatId, setNewCatId] = useState<string>('');
   const [newCatLabel, setNewCatLabel] = useState<string>('');
@@ -58,18 +61,21 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   const [isEditingCategory, setIsEditingCategory] = useState<boolean>(false);
   const [catSuccessMsg, setCatSuccessMsg] = useState<string | null>(null);
 
+  // RSS State
   const [rssFeeds, setRssFeeds] = useState<CustomRssFeed[]>(() => getCustomRssFeeds());
   const [feedName, setFeedName] = useState<string>('');
   const [feedUrl, setFeedUrl] = useState<string>('');
   const [feedCategory, setFeedCategory] = useState<string>('tech');
   const [feedSuccessMsg, setFeedSuccessMsg] = useState<string | null>(null);
 
+  // Affiliates State
   const [affiliatesList, setAffiliatesList] = useState<AffiliateLink[]>([]);
   const [affCatId, setAffCatId] = useState<string>('default');
   const [affTitle, setAffTitle] = useState<string>('');
   const [affUrl, setAffUrl] = useState<string>('');
   const [affSuccessMsg, setAffSuccessMsg] = useState<string | null>(null);
 
+  // Form Article State
   const [isEditingId, setIsEditingId] = useState<string | null>(null);
   const [articleForm, setArticleForm] = useState<{
     titlePt: string; titleEn: string; source: string; sourceCategory: string; author: string; link: string; summaryPt: string; keyTakeaway: string; tags: string; readTime: string; isPeerReviewed: boolean;
@@ -77,6 +83,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     titlePt: '', titleEn: '', source: '', sourceCategory: 'education', author: '', link: '', summaryPt: '', keyTakeaway: '', tags: '', readTime: '5 min', isPeerReviewed: true,
   });
 
+  // Password Change State
   const [newPassInput, setNewPassInput] = useState<string>('');
   const [passSuccessMsg, setPassSuccessMsg] = useState<string | null>(null);
 
@@ -114,6 +121,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     }
   };
 
+  // Funções de Artigos
   const handleStartEdit = (art: NewsArticle) => {
     setIsEditingId(art.id);
     setArticleForm({
@@ -165,6 +173,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     }
   };
 
+  // Funções de Categoria
   const handleEditCategory = (cat: CustomCategory) => {
     setNewCatId(cat.id); setNewCatLabel(cat.label); setNewCatOrder((cat.order ?? 99).toString()); setIsEditingCategory(true);
     document.getElementById('admin-scrollable-content')?.scrollTo({ top: 0, behavior: 'smooth' });
@@ -183,7 +192,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
       const updated = await saveCategoryToServer(newCat);
       setCustomCategories(updated);
       handleCancelEditCategory();
-      setCatSuccessMsg(`Área salva!`);
+      setCatSuccessMsg(`Área salva com sucesso!`);
       setTimeout(() => setCatSuccessMsg(null), 4000);
       onDataUpdated();
     } catch (err) { alert('Erro ao salvar área'); }
@@ -198,6 +207,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     }
   };
 
+  // Funções de RSS
   const handleAddRssFeed = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!feedName.trim() || !feedUrl.trim()) return;
@@ -206,7 +216,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
       const updated = await saveFeedToServer(newFeed);
       setRssFeeds(updated);
       setFeedName(''); setFeedUrl('');
-      setFeedSuccessMsg(`Fonte adicionada no Firebase!`);
+      setFeedSuccessMsg(`Fonte salva na nuvem!`);
       setTimeout(() => setFeedSuccessMsg(null), 4000);
     } catch (err) { alert('Erro ao salvar Feed'); }
   };
@@ -220,7 +230,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   };
 
   const handleDeleteFeed = async (id: string) => {
-    if (confirm('Remover fonte RSS de todos os aparelhos?')) {
+    if (confirm('Remover fonte RSS?')) {
       try {
         const updated = await deleteFeedFromServer(id);
         setRssFeeds(updated);
@@ -228,6 +238,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     }
   };
 
+  // Funções de Afiliados
   const handleSaveAffiliate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!affTitle.trim() || !affUrl.trim()) return;
@@ -236,7 +247,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
       const updated = await saveAffiliateToServer(newAffiliate);
       setAffiliatesList(updated);
       setAffTitle(''); setAffUrl('');
-      setAffSuccessMsg('Link de afiliado salvo na nuvem!');
+      setAffSuccessMsg('Link salvo!');
       setTimeout(() => setAffSuccessMsg(null), 4000);
     } catch (err) { alert('Erro ao salvar link'); }
   };
@@ -246,6 +257,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     document.getElementById('admin-scrollable-content')?.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // Funções de Backup e Senha
   const handleExportBackup = () => {
     const backupData = { version: '2.0', exportedAt: new Date().toISOString(), customCategories, articles: articlesList, rssFeeds };
     const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
@@ -277,6 +289,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     setTimeout(() => setPassSuccessMsg(null), 4000);
   };
 
+  // Variáveis para exibição
   const allAvailableCategories = customCategories && customCategories.length > 0 ? customCategories : DEFAULT_BASE_CATEGORIES;
   const displayedArticles = articlesList.filter((art) => {
     if (articleCategoryFilter !== 'all' && art.sourceCategory !== articleCategoryFilter) return false;
@@ -322,7 +335,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
               <button onClick={() => setActiveTab('feeds')} className={`pb-2.5 px-3 text-xs font-semibold flex items-center gap-1.5 border-b-2 cursor-pointer shrink-0 ${activeTab === 'feeds' ? 'border-stone-900 text-stone-900 dark:border-stone-100 dark:text-stone-100' : 'border-transparent text-stone-500'}`}><Rss className="w-3.5 h-3.5 text-blue-600" /><span>Fontes RSS</span></button>
               <button onClick={() => setActiveTab('categories')} className={`pb-2.5 px-3 text-xs font-semibold flex items-center gap-1.5 border-b-2 cursor-pointer shrink-0 ${activeTab === 'categories' ? 'border-stone-900 text-stone-900 dark:border-stone-100 dark:text-stone-100' : 'border-transparent text-stone-500'}`}><Layers className="w-3.5 h-3.5" /><span>Áreas</span></button>
               <button onClick={() => setActiveTab('affiliates')} className={`pb-2.5 px-3 text-xs font-semibold flex items-center gap-1.5 border-b-2 cursor-pointer shrink-0 ${activeTab === 'affiliates' ? 'border-amber-600 text-amber-700 dark:text-amber-400' : 'border-transparent text-stone-500'}`}><TrendingUp className="w-3.5 h-3.5 text-amber-600" /><span>Monetização</span></button>
-              <button onClick={() => setActiveTab('backup')} className={`pb-2.5 px-3 text-xs font-semibold flex items-center gap-1.5 border-b-2 cursor-pointer shrink-0 ${activeTab === 'backup' ? 'border-stone-900 text-stone-900 dark:border-stone-100 dark:text-stone-100' : 'border-transparent text-stone-500'}`}><Database className="w-3.5 h-3.5" /><span>Backup</span></button>
+              <button onClick={() => setActiveTab('backup')} className={`pb-2.5 px-3 text-xs font-semibold flex items-center gap-1.5 border-b-2 cursor-pointer shrink-0 ${activeTab === 'backup' ? 'border-stone-900 text-stone-900 dark:border-stone-100 dark:text-stone-100' : 'border-transparent text-stone-500'}`}><Database className="w-3.5 h-3.5" /><span>Configurações</span></button>
             </div>
 
             <div id="admin-scrollable-content" className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
@@ -343,11 +356,25 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                     </div>
                     <div className="flex justify-end"><button type="submit" className="px-4 py-2 bg-stone-900 text-white rounded-lg text-xs font-semibold cursor-pointer flex items-center gap-1.5"><Save className="w-3.5 h-3.5" /> Salvar</button></div>
                   </form>
+                  
+                  {/* SEARCH AND FILTER UI (RESTORED) */}
+                  <div className="flex flex-col sm:flex-row gap-2 pt-2">
+                    <div className="relative flex-1">
+                      <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-stone-400" />
+                      <input type="text" value={articleSearchQuery} onChange={(e) => setArticleSearchQuery(e.target.value)} placeholder="Filtrar por título, fonte ou autor..." className="w-full pl-8 pr-3 py-1.5 text-xs bg-white dark:bg-stone-900 border border-stone-300 dark:border-stone-700 rounded-lg" />
+                    </div>
+                    <select value={articleCategoryFilter} onChange={(e) => setArticleCategoryFilter(e.target.value)} className="px-3 py-1.5 text-xs bg-white dark:bg-stone-900 border border-stone-300 dark:border-stone-700 rounded-lg shrink-0">
+                      <option value="all">Todas as Áreas ({articlesList.length})</option>
+                      {allAvailableCategories.map((c) => (<option key={c.id} value={c.id}>{c.label}</option>))}
+                    </select>
+                    <button onClick={handleResetFactory} className="px-3 py-1.5 bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 rounded text-xs hover:bg-stone-200 transition-colors flex items-center gap-1"><RotateCcw className="w-3.5 h-3.5" /> Padrão</button>
+                  </div>
+
                   <div className="space-y-3">
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-stone-800 dark:text-stone-200">Catálogo ({displayedArticles.length})</h4>
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-stone-800 dark:text-stone-200">Catálogo Filtrado ({displayedArticles.length})</h4>
                     <div className="border border-stone-200 dark:border-stone-800 rounded-xl overflow-hidden bg-white dark:bg-stone-950 divide-y divide-stone-200 dark:divide-stone-800 max-h-[400px] overflow-y-auto">
                       {displayedArticles.map((art) => (
-                        <div key={art.id} className="p-3 flex justify-between gap-3 text-xs"><div className="min-w-0"><p className="font-bold truncate">{art.titlePt || art.title}</p></div><div className="flex gap-1.5"><button onClick={() => handleStartEdit(art)} className="p-1.5 rounded bg-stone-100 hover:bg-stone-200 cursor-pointer text-stone-600 dark:bg-stone-800 dark:text-stone-300"><Edit className="w-3.5 h-3.5" /></button><button onClick={() => handleDeleteArticle(art.id, art.titlePt || art.title)} className="p-1.5 rounded bg-rose-50 text-rose-500 hover:bg-rose-100 cursor-pointer dark:bg-rose-950"><Trash2 className="w-3.5 h-3.5" /></button></div></div>
+                        <div key={art.id} className="p-3 flex justify-between gap-3 text-xs"><div className="min-w-0"><p className="font-bold truncate">{art.titlePt || art.title}</p></div><div className="flex gap-1.5"><button onClick={() => handleStartEdit(art)} className="p-1.5 rounded bg-stone-100 hover:bg-stone-200 cursor-pointer text-stone-600 dark:bg-stone-800 dark:text-stone-300"><Edit className="w-3.5 h-3.5" /></button>{art.link && <a href={art.link} target="_blank" rel="noreferrer" className="p-1.5 rounded bg-stone-100 text-stone-500 hover:bg-stone-200 dark:bg-stone-800 dark:text-stone-400"><ExternalLink className="w-3.5 h-3.5" /></a>}<button onClick={() => handleDeleteArticle(art.id, art.titlePt || art.title)} className="p-1.5 rounded bg-rose-50 text-rose-500 hover:bg-rose-100 cursor-pointer dark:bg-rose-950"><Trash2 className="w-3.5 h-3.5" /></button></div></div>
                       ))}
                     </div>
                   </div>
@@ -425,13 +452,25 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                 </div>
               )}
 
-              {/* TAB: BACKUP */}
+              {/* TAB: CONFIG & BACKUP (RESTORED PASSWORD AND IMPORT UI) */}
               {activeTab === 'backup' && (
                 <div className="space-y-6">
                   <div className="p-4 bg-stone-50 border rounded-xl space-y-3 dark:bg-stone-900/60 dark:border-stone-800">
-                    <h4 className="text-xs font-bold uppercase flex gap-1.5"><Database className="w-3.5 h-3.5 text-emerald-600" /> Backup</h4>
-                    <div className="flex gap-3"><button onClick={handleExportBackup} className="px-3.5 py-2 bg-stone-900 text-white rounded-lg text-xs font-semibold flex gap-1.5 cursor-pointer"><Download className="w-3.5 h-3.5" /> Exportar</button></div>
+                    <h4 className="text-xs font-bold uppercase flex gap-1.5"><Database className="w-3.5 h-3.5 text-emerald-600" /> Backup Completo</h4>
+                    <div className="flex gap-3 flex-wrap">
+                      <button onClick={handleExportBackup} className="px-3.5 py-2 bg-stone-900 text-white rounded-lg text-xs font-semibold flex gap-1.5 cursor-pointer"><Download className="w-3.5 h-3.5" /> Exportar Backup</button>
+                      <label className="px-3.5 py-2 bg-white border border-stone-300 dark:bg-stone-800 dark:border-stone-700 rounded-lg text-xs font-semibold flex gap-1.5 cursor-pointer hover:bg-stone-100 dark:hover:bg-stone-700"><Upload className="w-3.5 h-3.5" /> Importar e Restaurar<input type="file" accept=".json" onChange={handleImportBackup} className="hidden" /></label>
+                    </div>
                   </div>
+
+                  <form onSubmit={handleChangePassword} className="p-4 bg-stone-50 border rounded-xl space-y-3 dark:bg-stone-900/60 dark:border-stone-800">
+                    <h4 className="text-xs font-bold uppercase flex gap-1.5"><Lock className="w-3.5 h-3.5 text-amber-600" /> Segurança do Admin</h4>
+                    {passSuccessMsg && <p className="text-xs text-emerald-600">{passSuccessMsg}</p>}
+                    <div className="max-w-xs space-y-2">
+                      <input type="password" value={newPassInput} onChange={(e) => setNewPassInput(e.target.value)} placeholder="Nova senha..." className="w-full px-3 py-1.5 text-xs bg-white dark:bg-stone-950 border rounded" />
+                      <button type="submit" className="px-3.5 py-1.5 bg-stone-900 text-white rounded text-xs font-semibold cursor-pointer">Trocar Senha de Acesso</button>
+                    </div>
+                  </form>
                 </div>
               )}
 
