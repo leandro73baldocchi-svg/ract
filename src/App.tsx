@@ -19,7 +19,10 @@ import {
   fetchServerCategories,
   getShowRadarBriefingPreference,
   setShowRadarBriefingPreference,
-  fetchRssArticles
+  fetchRssArticles,
+  getAffiliateLinks,
+  fetchServerAffiliates,
+  AffiliateLink
 } from './utils/customDataManager';
 import {
   getOfflineArticles,
@@ -30,10 +33,12 @@ import {
   getDarkModePreference,
   setDarkModePreference,
 } from './utils/offlineStorage';
-import { BookOpen, AlertCircle, WifiOff } from 'lucide-react';
+import { BookOpen, AlertCircle, WifiOff, ShoppingCart, TrendingUp, ExternalLink } from 'lucide-react';
 
 export default function App() {
   const [articles, setArticles] = useState<NewsArticle[]>(() => getAllManagedArticles());
+  const [affiliates, setAffiliates] = useState<AffiliateLink[]>(() => getAffiliateLinks());
+  
   const [briefing, setBriefing] = useState<DailyBriefing | null>(() => ({
     date: new Date().toLocaleDateString('pt-BR'),
     edition: "Edição Global Acadêmica",
@@ -68,7 +73,7 @@ export default function App() {
   // Dark mode state
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => getDarkModePreference());
 
-  // Show / Hide Radar Briefing card (Defaults to false/hidden so articles appear immediately)
+  // Show / Hide Radar Briefing card
   const [showRadarBriefing, setShowRadarBriefing] = useState<boolean>(() => getShowRadarBriefingPreference());
 
   const handleToggleRadarBriefing = () => {
@@ -79,9 +84,13 @@ export default function App() {
     });
   };
 
-  // Custom Categories & Articles (Synced directly with server)
+  // Custom Categories & Articles
   const [customCategories, setCustomCategories] = useState<CustomCategory[]>(() => getCustomCategories());
   const [isAdminOpen, setIsAdminOpen] = useState<boolean>(false);
+
+  useEffect(() => {
+    fetchServerAffiliates().then(setAffiliates);
+  }, []);
 
   // Check URL parameter or hash: ONLY opens if explicitly typed in the browser's address bar
   useEffect(() => {
@@ -121,7 +130,6 @@ export default function App() {
 
   const handleCloseAdmin = () => {
     setIsAdminOpen(false);
-    // Clean URL without reloading page
     if (typeof window !== 'undefined') {
       const url = new URL(window.location.href);
       url.searchParams.delete('admin');
@@ -134,12 +142,14 @@ export default function App() {
   };
 
   const handleDataUpdated = async () => {
-    const [arts, cats] = await Promise.all([
+    const [arts, cats, affs] = await Promise.all([
       fetchServerArticles(),
       fetchServerCategories(),
+      fetchServerAffiliates()
     ]);
     setArticles(arts);
     setCustomCategories(cats);
+    setAffiliates(affs);
   };
 
   const allCategoriesList = useMemo(() => {
@@ -152,7 +162,7 @@ export default function App() {
   // Offline saved articles state
   const [offlineArticles, setOfflineArticles] = useState<NewsArticle[]>(() => getOfflineArticles());
 
-  // Auto-translate preference state (defaults to true for Portuguese translation)
+  // Auto-translate preference state
   const [autoTranslate, setAutoTranslate] = useState<boolean>(() => getAutoTranslatePreference());
 
   // Real-time network status
@@ -160,7 +170,7 @@ export default function App() {
     typeof navigator !== 'undefined' ? navigator.onLine : true
   );
 
-  // Sync dark class on <html>, <body>, and document styles
+  // Sync dark class
   useEffect(() => {
     if (typeof document !== 'undefined') {
       if (isDarkMode) {
@@ -199,7 +209,6 @@ export default function App() {
     };
   }, []);
 
-  // Initial load and periodic auto-sync across all connected devices
   useEffect(() => {
     loadNewsFeed(false);
 
@@ -208,7 +217,6 @@ export default function App() {
     };
     window.addEventListener('focus', onFocus);
 
-    // Sincronização em segundo plano a cada 20s para atualizar novos artigos/áreas criados em outros aparelhos
     const interval = setInterval(() => {
       loadNewsFeed(false);
     }, 20000);
@@ -219,11 +227,10 @@ export default function App() {
     };
   }, []);
 
-const loadNewsFeed = async (force: boolean = false) => {
+  const loadNewsFeed = async (force: boolean = false) => {
     if (force) setIsRefreshing(true);
     setErrorNotice(null);
 
-    // If device is offline, rely directly on saved offline articles
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
       setLoading(false);
       setIsRefreshing(false);
@@ -231,38 +238,32 @@ const loadNewsFeed = async (force: boolean = false) => {
     }
 
     try {
-      // Agora ele busca também os artigos RSS (a quarta linha abaixo)
       const [articlesData, categoriesData, briefingRes, rssData] = await Promise.allSettled([
         fetchServerArticles(),
         fetchServerCategories(),
         fetch(`/api/daily-briefing${force ? '?force=true' : ''}`).then((r) => r.json()),
-        fetchRssArticles() // <--- BUSCA OS RSS AUTOMATICAMENTE
+        fetchRssArticles()
       ]);
 
       let combinedArticles: NewsArticle[] = [];
 
-      // Pega os seus artigos do Firebase
       if (articlesData.status === 'fulfilled' && Array.isArray(articlesData.value)) {
         combinedArticles = [...articlesData.value];
       }
 
-      // Pega os artigos dos RSS e mistura na mesma lista
       if (rssData.status === 'fulfilled' && Array.isArray(rssData.value)) {
         combinedArticles = [...combinedArticles, ...rssData.value];
       }
 
       setArticles(combinedArticles);
 
-      // Atualiza categorias
       if (categoriesData.status === 'fulfilled' && Array.isArray(categoriesData.value)) {
         setCustomCategories(categoriesData.value);
       }
 
-      // Atualiza o briefing (resumo diário)
       if (briefingRes.status === 'fulfilled' && briefingRes.value?.success) {
         setBriefing(briefingRes.value.briefing);
       } else {
-        // ... (Mantém o briefing padrão que já existia no seu código)
         setBriefing({
           date: new Date().toLocaleDateString('pt-BR'),
           edition: "Edição Global Acadêmica",
@@ -316,7 +317,6 @@ const loadNewsFeed = async (force: boolean = false) => {
     return new Set(offlineArticles.map((a) => a.id));
   }, [offlineArticles]);
 
-  // Current dataset to display (direct from centralized server)
   const displaySource = useMemo(() => {
     if (showOfflineOnly || (!isOnline && articles.length === 0)) {
       return offlineArticles;
@@ -324,15 +324,11 @@ const loadNewsFeed = async (force: boolean = false) => {
     return articles;
   }, [showOfflineOnly, isOnline, articles, offlineArticles]);
 
-  // Filtered articles
   const filteredArticles = useMemo(() => {
     return displaySource.filter((article) => {
-      // Category filter
       if (activeCategory !== 'all' && article.sourceCategory !== activeCategory) {
         return false;
       }
-
-      // Search filter
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const matchesTitlePt = (article.titlePt || '').toLowerCase().includes(q);
@@ -345,7 +341,6 @@ const loadNewsFeed = async (force: boolean = false) => {
           return false;
         }
       }
-
       return true;
     });
   }, [displaySource, activeCategory, searchQuery]);
@@ -363,7 +358,6 @@ const loadNewsFeed = async (force: boolean = false) => {
 
   return (
     <div className={`min-h-screen ${isDarkMode ? 'dark ' : ''}bg-[#FBFBFA] dark:bg-[#101010] text-[#1A1A1A] dark:text-[#E8E8E8] flex flex-col font-sans selection:bg-stone-200 dark:selection:bg-stone-800 transition-colors duration-200`}>
-      {/* Editorial Header with Menu Placed Immediately Below Masthead */}
       <Header
         date={formattedDate}
         isOnline={isOnline}
@@ -388,9 +382,7 @@ const loadNewsFeed = async (force: boolean = false) => {
         categoriesList={allCategoriesList}
       />
 
-      {/* Main Workspace */}
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-8 py-6 sm:py-8">
-        {/* Connection Notice if Offline */}
         {!isOnline && (
           <div className="mb-6 p-3 bg-stone-100 dark:bg-stone-900 border border-stone-300 dark:border-stone-800 rounded text-xs text-stone-800 dark:text-stone-200 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
@@ -403,23 +395,18 @@ const loadNewsFeed = async (force: boolean = false) => {
           </div>
         )}
 
-        {/* Temporary Error Notice */}
         {errorNotice && (
           <div className="mb-6 p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded text-xs text-amber-900 dark:text-amber-200 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <AlertCircle className="w-4 h-4 text-amber-700 dark:text-amber-400 shrink-0" />
               <span>{errorNotice}</span>
             </div>
-            <button
-              onClick={() => loadNewsFeed(true)}
-              className="text-amber-900 dark:text-amber-300 underline font-medium hover:text-black dark:hover:text-white cursor-pointer"
-            >
+            <button onClick={() => loadNewsFeed(true)} className="text-amber-900 dark:text-amber-300 underline font-medium hover:text-black dark:hover:text-white cursor-pointer">
               Tentar novamente
             </button>
           </div>
         )}
 
-        {/* Top Autonomous Executive Daily Briefing (Shown only if enabled and in all category) */}
         {!showOfflineOnly && activeCategory === 'all' && showRadarBriefing && (
           <DailyBriefingCard
             briefing={briefing}
@@ -429,7 +416,6 @@ const loadNewsFeed = async (force: boolean = false) => {
           />
         )}
 
-        {/* Offline View Header if filtered */}
         {showOfflineOnly && (
           <div className="mb-5 flex items-center justify-between text-xs text-stone-700 dark:text-stone-300 bg-stone-100 dark:bg-stone-900 px-3.5 py-2.5 rounded border border-stone-200 dark:border-stone-800">
             <div>
@@ -438,131 +424,119 @@ const loadNewsFeed = async (force: boolean = false) => {
                 {offlineArticles.length} {offlineArticles.length === 1 ? 'artigo salvo no dispositivo' : 'artigos salvos no dispositivo'}
               </span>
             </div>
-            <button
-              onClick={() => setShowOfflineOnly(false)}
-              className="font-medium text-stone-900 dark:text-stone-100 underline hover:text-stone-700 dark:hover:text-stone-300 cursor-pointer"
-            >
+            <button onClick={() => setShowOfflineOnly(false)} className="font-medium text-stone-900 dark:text-stone-100 underline hover:text-stone-700 dark:hover:text-stone-300 cursor-pointer">
               Voltar ao feed geral
             </button>
           </div>
         )}
 
-        {/* Universities Special Directory Section */}
         {!showOfflineOnly && activeCategory === 'universities' ? (
           <UniversitiesView />
         ) : (
           <>
-            {/* Current Category / Section Indicator */}
             <div className="mb-4 flex items-center justify-between text-xs font-mono-subtle text-stone-500 dark:text-stone-400 border-b border-stone-200 dark:border-stone-800 pb-2">
               <div className="flex items-center gap-2">
                 <span className="uppercase tracking-wider font-semibold text-stone-800 dark:text-stone-200">
-                  {showOfflineOnly
-                    ? 'Artigos Salvos Offline'
-                    : activeCategory === 'all'
-                    ? 'Todas as Publicações Científicas'
-                    : activeCategory === 'biography'
-                    ? 'Biografias e Vida & Obra'
-                    : activeCategory === 'education'
-                    ? 'Educação & Aprendizado'
-                    : activeCategory === 'biotech'
-                    ? 'Biotecnologia & Genômica'
-                    : activeCategory === 'health'
-                    ? 'Saúde & Medicina'
-                    : activeCategory === 'physics'
-                    ? 'Física & Quântica'
-                    : activeCategory === 'math'
-                    ? 'Matemática Pura & Aplicada'
-                    : activeCategory === 'astronomy'
-                    ? 'Astronomia & Cosmologia'
-                    : activeCategory === 'geology'
-                    ? 'Geologia & Ciências da Terra'
-                    : activeCategory === 'tech'
-                    ? 'Tecnologia & Computação'
-                    : activeCategory === 'ai'
-                    ? 'Inteligência Artificial & Dados'
-                    : 'Feed de Ciências'}
+                  {showOfflineOnly ? 'Artigos Salvos Offline' : activeCategory === 'all' ? 'Todas as Publicações Científicas' : 'Feed de Ciências'}
                 </span>
                 <span>•</span>
-                <span>{filteredArticles.length} {filteredArticles.length === 1 ? 'publicação disponível' : 'publicações disponíveis'}</span>
+                <span>{filteredArticles.length} {filteredArticles.length === 1 ? 'publicação' : 'publicações'}</span>
               </div>
-
               {searchQuery && (
-                <span className="text-stone-600 dark:text-stone-400">
-                  Filtro ativo: "{searchQuery}"
-                </span>
+                <span className="text-stone-600 dark:text-stone-400">Filtro ativo: "{searchQuery}"</span>
               )}
             </div>
 
-            {/* Articles Grid or Loading */}
-            {loading ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                {[1, 2, 3, 4, 5, 6].map((i) => (
-                  <div
-                    key={i}
-                    className="border border-stone-200 dark:border-stone-800 bg-white dark:bg-[#181818] rounded-lg p-5 animate-pulse h-56 flex flex-col justify-between"
-                  >
-                    <div>
-                      <div className="h-3 bg-stone-200 dark:bg-stone-800 rounded w-1/4 mb-3"></div>
-                      <div className="h-5 bg-stone-200 dark:bg-stone-800 rounded w-4/5 mb-2"></div>
-                      <div className="h-5 bg-stone-200 dark:bg-stone-800 rounded w-2/3 mb-4"></div>
-                      <div className="h-3 bg-stone-100 dark:bg-stone-850 rounded w-full mb-1"></div>
-                      <div className="h-3 bg-stone-100 dark:bg-stone-850 rounded w-5/6"></div>
-                    </div>
-                    <div className="h-4 bg-stone-200 dark:bg-stone-800 rounded w-1/3 mt-4"></div>
+            {/* DIVISÃO DE TELA: NOTÍCIAS (ESQUERDA) | VITRINE AMAZON (DIREITA) */}
+            <div className="flex flex-col lg:flex-row gap-6 items-start">
+              
+              {/* Lado Esquerdo: Área de Notícias */}
+              <div className="flex-1 w-full min-w-0">
+                {loading ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    {[1, 2, 3, 4].map((i) => (
+                      <div key={i} className="border border-stone-200 dark:border-stone-800 bg-white dark:bg-[#181818] rounded-lg p-5 animate-pulse h-56 flex flex-col justify-between">
+                        <div>
+                          <div className="h-3 bg-stone-200 dark:bg-stone-800 rounded w-1/4 mb-3"></div>
+                          <div className="h-5 bg-stone-200 dark:bg-stone-800 rounded w-4/5 mb-2"></div>
+                          <div className="h-5 bg-stone-200 dark:bg-stone-800 rounded w-2/3 mb-4"></div>
+                          <div className="h-3 bg-stone-100 dark:bg-stone-850 rounded w-full mb-1"></div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                ) : filteredArticles.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    {filteredArticles.map((article) => (
+                      <ArticleCard
+                        key={article.id}
+                        article={article}
+                        autoTranslate={autoTranslate}
+                        isSavedOffline={savedIdsSet.has(article.id)}
+                        onToggleSaveOffline={handleToggleSaveOffline}
+                        onOpenArticle={setSelectedArticle}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="border border-stone-200 dark:border-stone-800 bg-white dark:bg-[#181818] rounded-lg p-10 text-center max-w-md mx-auto my-12">
+                    <BookOpen className="w-8 h-8 text-stone-400 dark:text-stone-600 mx-auto mb-3" />
+                    <h3 className="font-editorial text-lg font-bold text-stone-900 dark:text-stone-100 mb-1">
+                      {showOfflineOnly ? 'Nenhum artigo salvo' : 'Nenhuma publicação encontrada'}
+                    </h3>
+                    {searchQuery && (
+                      <button onClick={() => setSearchQuery('')} className="mt-4 px-3.5 py-1.5 rounded text-xs font-medium bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 cursor-pointer">
+                        Limpar Busca
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
-            ) : filteredArticles.length > 0 ? (
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                  {filteredArticles.map((article) => (
-                    <ArticleCard
-                      key={article.id}
-                      article={article}
-                      autoTranslate={autoTranslate}
-                      isSavedOffline={savedIdsSet.has(article.id)}
-                      onToggleSaveOffline={handleToggleSaveOffline}
-                      onOpenArticle={setSelectedArticle}
-                    />
-                  ))}
-                </div>
-              </div>
-            ) : (
-              /* Empty State */
-              <div className="border border-stone-200 dark:border-stone-800 bg-white dark:bg-[#181818] rounded-lg p-10 text-center max-w-md mx-auto my-12">
-                <BookOpen className="w-8 h-8 text-stone-400 dark:text-stone-600 mx-auto mb-3" />
-                <h3 className="font-editorial text-lg font-bold text-stone-900 dark:text-stone-100 mb-1">
-                  {showOfflineOnly
-                    ? 'Nenhum artigo salvo para leitura offline'
-                    : 'Nenhuma publicação encontrada nesta área'}
-                </h3>
-                <p className="text-stone-500 dark:text-stone-400 text-xs mb-4 leading-relaxed">
-                  {showOfflineOnly
-                    ? 'Clique no botão "Salvar Offline" em qualquer artigo do feed para lê-lo a qualquer momento, mesmo sem internet.'
-                    : 'Ajuste os filtros de categoria ou altere o termo de busca pesquisado.'}
-                </p>
-                {showOfflineOnly ? (
-                  <button
-                    onClick={() => setShowOfflineOnly(false)}
-                    className="px-3.5 py-1.5 rounded text-xs font-medium bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors cursor-pointer"
-                  >
-                    Ver feed com todos os artigos
-                  </button>
-                ) : searchQuery ? (
-                  <button
-                    onClick={() => setSearchQuery('')}
-                    className="px-3.5 py-1.5 rounded text-xs font-medium bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 hover:bg-stone-800 dark:hover:bg-stone-200 transition-colors cursor-pointer"
-                  >
-                    Limpar Busca
-                  </button>
-                ) : null}
-              </div>
-            )}
+
+              {/* Lado Direito: VITRINE LATERAL DA AMAZON */}
+              {!showOfflineOnly && affiliates.length > 0 && (
+                <aside className="w-full lg:w-72 shrink-0 space-y-4 lg:sticky lg:top-24">
+                  <div className="bg-[#FDFDFC] dark:bg-[#121212] border border-stone-200 dark:border-stone-800 rounded-xl p-5 shadow-sm">
+                    <div className="flex items-center gap-2 mb-4 pb-3 border-b border-stone-100 dark:border-stone-800/60">
+                      <TrendingUp className="w-4 h-4 text-amber-600 dark:text-amber-500" />
+                      <h3 className="font-bold text-sm text-stone-900 dark:text-stone-100 uppercase tracking-wider">
+                        Vitrine RACT
+                      </h3>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      {affiliates.map(aff => (
+                        <a 
+                          key={aff.id} 
+                          href={aff.url} 
+                          target="_blank" 
+                          rel="noreferrer" 
+                          className="group block p-3 bg-white dark:bg-[#1A1A1A] border border-stone-200 dark:border-stone-800 rounded-lg hover:border-amber-400 dark:hover:border-amber-600 hover:shadow-md transition-all cursor-pointer"
+                        >
+                          <p className="text-[9px] font-bold text-amber-600 dark:text-amber-500 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                            <ShoppingCart className="w-3 h-3" /> Recomendação
+                          </p>
+                          <p className="font-bold text-stone-900 dark:text-stone-100 text-[13px] mb-1.5 group-hover:text-amber-700 dark:group-hover:text-amber-400 transition-colors leading-snug">
+                            {aff.title}
+                          </p>
+                          <p className="text-[10px] text-stone-500 dark:text-stone-400 flex items-center gap-1">
+                            Ver na Amazon <ExternalLink className="w-3 h-3" />
+                          </p>
+                        </a>
+                      ))}
+                    </div>
+                    
+                    <p className="text-[9px] text-stone-400 dark:text-stone-600 mt-5 leading-tight text-center">
+                      *Ao adquirir um item recomendado nesta vitrine, você apoia diretamente a manutenção do portal RACT sem nenhum custo adicional.
+                    </p>
+                  </div>
+                </aside>
+              )}
+            </div>
           </>
         )}
       </main>
 
-      {/* Minimal Editorial Footer */}
       <footer className="border-t border-stone-200 dark:border-stone-800 bg-white dark:bg-[#151515] py-6 text-xs text-stone-500 dark:text-stone-400 font-mono-subtle mt-12 transition-colors">
         <div className="max-w-6xl mx-auto px-4 sm:px-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
           <div>
@@ -571,12 +545,11 @@ const loadNewsFeed = async (force: boolean = false) => {
             <span className="block sm:inline mt-0.5 sm:mt-0">Leitura offline & Tradução contínua</span>
           </div>
           <div className="text-stone-400 dark:text-stone-500 text-[11px]">
-            Fontes: Nature • Science • CERN • Harvard • Cambridge • Oxford • Bolonha • MIT • USP • UNICAMP • ONU • PISA • NASA • Wired
+            Fontes: Nature • Science • CERN • Harvard • Cambridge • Oxford • MIT • USP • UNICAMP • NASA
           </div>
         </div>
       </footer>
 
-      {/* Article Reader Modal */}
       <ArticleDetailModal
         article={selectedArticle}
         isOpen={!!selectedArticle}
@@ -586,7 +559,6 @@ const loadNewsFeed = async (force: boolean = false) => {
         autoTranslateDefault={autoTranslate}
       />
 
-      {/* Secret Admin Dashboard Modal */}
       <AdminDashboardModal
         isOpen={isAdminOpen}
         onClose={handleCloseAdmin}
