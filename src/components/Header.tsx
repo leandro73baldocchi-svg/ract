@@ -103,10 +103,10 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Quick Utility Controls */}
           <div className="flex items-center gap-2 self-start lg:self-auto shrink-0 flex-wrap">
             
-            {/* BOTÕES EXCLUSIVOS PARA MOBILE (Abrem os modais) */}
+            {/* BOTÕES DE MONETIZAÇÃO E NEWSLETTER (AGORA VISÍVEIS EM TODAS AS TELAS) */}
             <button 
               onClick={onOpenMobileVitrine}
-              className="lg:hidden px-3 py-1.5 rounded text-[11px] sm:text-xs font-bold border flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800"
+              className="px-3 py-1.5 rounded text-[11px] sm:text-xs font-bold border flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800"
             >
               <ShoppingCart className="w-3.5 h-3.5" />
               <span>Ofertas</span>
@@ -114,12 +114,12 @@ export const Header: React.FC<HeaderProps> = ({
 
             <button 
               onClick={onOpenMobileNewsletter}
-              className="lg:hidden px-3 py-1.5 rounded text-[11px] sm:text-xs font-bold border flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-800"
+              className="px-3 py-1.5 rounded text-[11px] sm:text-xs font-bold border flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-800"
             >
               <Mail className="w-3.5 h-3.5" />
               <span>Assinar</span>
             </button>
-            {/* FIM BOTÕES MOBILE */}
+            {/* FIM BOTÕES */}
 
             <a href="https://livepix.gg/leandrosarno" target="_blank" rel="noreferrer" className="px-3 py-1.5 rounded text-[11px] sm:text-xs font-bold border flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-600 hover:text-white dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800 dark:hover:bg-emerald-600 dark:hover:text-white">
               <Coffee className="w-3.5 h-3.5" />
