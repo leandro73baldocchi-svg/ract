@@ -1,6 +1,6 @@
 import React from 'react';
 import { CategoryType, CustomCategory } from '../types';
-import { RefreshCw, Bookmark, Globe, WifiOff, Search, X, Moon, Sun, Sparkles, Coffee, ShoppingCart, Mail } from 'lucide-react';
+import { RefreshCw, Bookmark, Globe, WifiOff, Search, X, Moon, Sun, Coffee, ShoppingCart, Mail } from 'lucide-react';
 
 interface HeaderProps {
   date: string;
@@ -14,8 +14,6 @@ interface HeaderProps {
   onToggleAutoTranslate: () => void;
   isDarkMode: boolean;
   onToggleDarkMode: () => void;
-  showRadarBriefing: boolean;
-  onToggleRadarBriefing: () => void;
   activeCategory: CategoryType;
   onSelectCategory: (category: CategoryType) => void;
   searchQuery: string;
@@ -37,8 +35,6 @@ export const Header: React.FC<HeaderProps> = ({
   onToggleAutoTranslate,
   isDarkMode,
   onToggleDarkMode,
-  showRadarBriefing,
-  onToggleRadarBriefing,
   activeCategory,
   onSelectCategory,
   searchQuery,
@@ -50,7 +46,6 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <header className="border-b border-stone-300 dark:border-stone-800 bg-[#FCFCFB] dark:bg-[#151515] sticky top-0 z-40 shadow-[0_1px_3px_rgba(0,0,0,0.03)] dark:shadow-none transition-colors">
       
-      {/* 1. Top Informative Bar */}
       <div className="border-b border-stone-200 dark:border-stone-800/80 bg-[#F7F7F5] dark:bg-[#111111] px-4 sm:px-8 py-1.5 text-[11px] font-mono-subtle text-stone-500 dark:text-stone-400 transition-colors">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2 sm:gap-3 truncate">
@@ -79,11 +74,9 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
 
-      {/* 2. Main Title Masthead */}
       <div className="border-b border-stone-200 dark:border-stone-800 transition-colors">
         <div className="max-w-6xl mx-auto px-4 sm:px-8 py-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           
-          {/* LADO ESQUERDO: LOGO E TÍTULO (Formatado como o original, sem amarras) */}
           <div className="flex items-center gap-4">
             <div className="shrink-0 flex items-center justify-center w-[80px] h-[80px] bg-white dark:bg-stone-900 rounded-xl shadow-sm overflow-hidden border border-stone-200 dark:border-stone-800">
               <img src="/logo.png" alt="Logo Radar Autônomo" className="w-full h-full object-contain p-1" />
@@ -103,60 +96,41 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           </div>
 
-          {/* LADO DIREITO: BOTÕES EM DUAS LINHAS */}
           <div className="flex flex-col gap-2.5 shrink-0 mt-2 lg:mt-0">
-            
-            {/* LINHA 1: CTA & MONETIZAÇÃO */}
             <div className="flex items-center gap-2 flex-wrap lg:justify-end">
               <button onClick={onOpenMobileVitrine} className="px-3 py-1.5 rounded text-[11px] sm:text-xs font-bold border flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800">
-                <ShoppingCart className="w-3.5 h-3.5" />
-                <span>Ofertas</span>
+                <ShoppingCart className="w-3.5 h-3.5" /><span>Ofertas</span>
               </button>
-
               <button onClick={onOpenMobileNewsletter} className="px-3 py-1.5 rounded text-[11px] sm:text-xs font-bold border flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-800">
-                <Mail className="w-3.5 h-3.5" />
-                <span>Assinar</span>
+                <Mail className="w-3.5 h-3.5" /><span>Assinar</span>
               </button>
-
               <a href="https://livepix.gg/leandrosarno" target="_blank" rel="noreferrer" className="px-3 py-1.5 rounded text-[11px] sm:text-xs font-bold border flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-600 hover:text-white dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800 dark:hover:bg-emerald-600 dark:hover:text-white">
-                <Coffee className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Apoiar Projeto</span>
+                <Coffee className="w-3.5 h-3.5" /><span className="hidden sm:inline">Apoiar Projeto</span>
               </a>
             </div>
 
-            {/* LINHA 2: CONTROLES DO SISTEMA */}
             <div className="flex items-center gap-2 flex-wrap lg:justify-end">
               <button onClick={onToggleDarkMode} className={`px-3 py-1.5 rounded text-[11px] sm:text-xs font-medium border flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs ${isDarkMode ? 'bg-stone-850 text-amber-300 border-stone-700 hover:bg-stone-800' : 'bg-white text-stone-700 border-stone-300 hover:bg-stone-100 hover:text-stone-900'}`}>
                 {isDarkMode ? (<><Sun className="w-3.5 h-3.5 text-amber-300" /> <span className="hidden sm:inline">Claro</span></>) : (<><Moon className="w-3.5 h-3.5 text-stone-700" /> <span className="hidden sm:inline">Escuro</span></>)}
               </button>
-
               <button onClick={onToggleAutoTranslate} className={`px-3 py-1.5 rounded text-[11px] sm:text-xs font-medium border flex items-center gap-1.5 transition-colors cursor-pointer ${autoTranslate ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 border-stone-900 dark:border-stone-100 shadow-2xs' : 'bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-200 border-stone-300 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-700'}`}>
                 <Globe className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Tradução:</span>
                 <span className="font-mono-subtle font-bold">{autoTranslate ? 'PT-BR' : 'EN'}</span>
               </button>
-
-              <button onClick={onToggleRadarBriefing} className={`px-3 py-1.5 rounded text-[11px] sm:text-xs font-medium border flex items-center gap-1.5 transition-colors cursor-pointer ${showRadarBriefing ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 border-stone-900 dark:border-stone-100 shadow-2xs' : 'bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-200 border-stone-300 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-700'}`}>
-                <Sparkles className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Síntese</span>
-              </button>
-
               <button onClick={onToggleOfflineOnly} className={`px-3 py-1.5 rounded text-[11px] sm:text-xs font-medium border flex items-center gap-1.5 transition-colors cursor-pointer ${showOfflineOnly ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 border-stone-900 dark:border-stone-100 shadow-2xs' : 'bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-200 border-stone-300 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-700'}`}>
                 <Bookmark className={`w-3.5 h-3.5 ${showOfflineOnly ? 'fill-current' : ''}`} />
                 <span className="hidden sm:inline">Offline</span>
                 {savedCount > 0 && (<span className={`text-[10px] px-1.5 py-0.5 rounded font-mono-subtle font-semibold ${showOfflineOnly ? 'bg-stone-800 dark:bg-stone-300 text-stone-100 dark:text-stone-900' : 'bg-stone-200 dark:bg-stone-700 text-stone-800 dark:text-stone-200'}`}>{savedCount}</span>)}
               </button>
-
               <button onClick={onRefresh} disabled={isRefreshing || !isOnline} className="p-1.5 rounded text-stone-700 dark:text-stone-300 hover:text-stone-950 dark:hover:text-white border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-800 hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors disabled:opacity-40 cursor-pointer">
                 <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
               </button>
             </div>
-
           </div>
         </div>
       </div>
 
-      {/* 3. Menu Bar */}
       <div className="bg-[#FAF9F7] dark:bg-[#1A1A1A] px-4 sm:px-8 transition-colors">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-2.5 py-2">
           <nav className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5 text-xs">
