@@ -124,11 +124,11 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-6 bg-black/60 backdrop-blur-xs overflow-y-auto print:static print:bg-white print:p-0 print:block"
+      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-6 bg-black/60 backdrop-blur-xs overflow-y-auto print:static print:block print:p-0 print:bg-white"
       onClick={onClose}
     >
       <div
-        className="printable-article bg-white dark:bg-[#161616] border border-stone-300 dark:border-stone-800 rounded-lg max-w-4xl w-full my-auto shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150 transition-colors print:shadow-none print:border-none print:rounded-none print:w-full print:max-w-none print:dark:bg-white"
+        className="printable-article bg-white dark:bg-[#161616] border border-stone-300 dark:border-stone-800 rounded-lg max-w-4xl w-full my-auto shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150 transition-colors print:m-0 print:overflow-visible print:shadow-none print:border-none print:rounded-none print:w-full print:max-w-none print:dark:bg-white print:block"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="no-print border-b border-stone-200 dark:border-stone-800 px-5 sm:px-8 py-3.5 flex items-center justify-between bg-[#FBFBFA] dark:bg-[#121212] transition-colors print:hidden">
@@ -182,7 +182,7 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
             )}
           </div>
 
-          <header className="space-y-4">
+          <header className="space-y-4 print:pt-4">
             <div className="flex items-center gap-2 text-xs font-mono-subtle text-stone-500 dark:text-stone-400 uppercase tracking-wider print:text-black">
               <span>{article.source}</span><span>•</span><span>{article.pubDate}</span>
               {article.doi && (<><span>•</span><span>DOI: {article.doi}</span></>)}
