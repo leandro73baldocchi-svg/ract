@@ -83,16 +83,19 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="border-b border-stone-200 dark:border-stone-800 transition-colors">
         <div className="max-w-6xl mx-auto px-4 sm:px-8 py-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           
+          {/* LADO ESQUERDO: LOGO E TÍTULO (Formatado como o original, sem amarras) */}
           <div className="flex items-center gap-4">
             <div className="shrink-0 flex items-center justify-center w-[80px] h-[80px] bg-white dark:bg-stone-900 rounded-xl shadow-sm overflow-hidden border border-stone-200 dark:border-stone-800">
               <img src="/logo.png" alt="Logo Radar Autônomo" className="w-full h-full object-contain p-1" />
             </div>
-            <div className="flex flex-col justify-center min-w-0">
+            <div className="flex flex-col justify-center">
               <div className="flex items-baseline gap-2">
-                <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-stone-950 dark:text-stone-100 font-serif leading-none truncate">
+                <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-stone-950 dark:text-stone-100 font-serif leading-none">
                   RADAR AUTÔNOMO DE CIÊNCIAS E TECNOLOGIA
                 </h1>
-                <span className="text-xs font-semibold tracking-wider font-mono-subtle text-stone-500 dark:text-stone-400 shrink-0">(RACT)</span>
+                <span className="text-xs font-semibold tracking-wider font-mono-subtle text-stone-500 dark:text-stone-400">
+                  (RACT)
+                </span>
               </div>
               <p className="text-[11px] sm:text-xs text-stone-600 dark:text-stone-400 mt-1 tracking-normal max-w-2xl leading-snug">
                 Agregador e analisador autônomo dos principais periódicos científicos mundiais com tradução instantânea e leitura offline.
@@ -100,8 +103,8 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           </div>
 
-          {/* Quick Utility Controls - AGORA DIVIDIDOS EM DUAS LINHAS LÓGICAS */}
-          <div className="flex flex-col gap-2.5 self-start lg:self-auto shrink-0 w-full lg:w-auto mt-2 lg:mt-0">
+          {/* LADO DIREITO: BOTÕES EM DUAS LINHAS */}
+          <div className="flex flex-col gap-2.5 shrink-0 mt-2 lg:mt-0">
             
             {/* LINHA 1: CTA & MONETIZAÇÃO */}
             <div className="flex items-center gap-2 flex-wrap lg:justify-end">
