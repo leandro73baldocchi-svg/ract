@@ -35,7 +35,7 @@ export default function App() {
   const [autoTranslate, setAutoTranslate] = useState<boolean>(() => getAutoTranslatePreference());
   const [isOnline, setIsOnline] = useState<boolean>(typeof navigator !== 'undefined' ? navigator.onLine : true);
 
-  // Estados para os Modais Mobile
+  // Estados Modais Mobile
   const [isMobileVitrineOpen, setIsMobileVitrineOpen] = useState<boolean>(false);
   const [isMobileNewsletterOpen, setIsMobileNewsletterOpen] = useState<boolean>(false);
 
@@ -91,14 +91,13 @@ export default function App() {
 
   return (
     <div className={`min-h-screen ${isDarkMode ? 'dark ' : ''}bg-[#FBFBFA] dark:bg-[#101010] text-[#1A1A1A] flex flex-col font-sans transition-colors duration-200`}>
-      <Header 
-        date={new Date().toLocaleDateString('pt-BR')} 
-        isOnline={isOnline} isRefreshing={isRefreshing} onRefresh={() => loadNewsFeed(true)} savedCount={offlineArticles.length} showOfflineOnly={showOfflineOnly} onToggleOfflineOnly={() => setShowOfflineOnly(prev => !prev)} autoTranslate={autoTranslate} onToggleAutoTranslate={() => { setAutoTranslate(!autoTranslate); setAutoTranslatePreference(!autoTranslate); }} isDarkMode={isDarkMode} onToggleDarkMode={() => { setIsDarkMode(!isDarkMode); setDarkModePreference(!isDarkMode); }} showRadarBriefing={showRadarBriefing} onToggleRadarBriefing={() => { setShowRadarBriefing(!showRadarBriefing); setShowRadarBriefingPreference(!showRadarBriefing); }} activeCategory={activeCategory} onSelectCategory={(cat) => { setActiveCategory(cat); setShowOfflineOnly(false); }} searchQuery={searchQuery} onSearchChange={setSearchQuery} categoriesList={allCategoriesList} 
-        onOpenMobileVitrine={() => setIsMobileVitrineOpen(true)}
-        onOpenMobileNewsletter={() => setIsMobileNewsletterOpen(true)}
-      />
+      {/* Esconder cabeçalho na impressão */}
+      <div className="print:hidden">
+        <Header date={new Date().toLocaleDateString('pt-BR')} isOnline={isOnline} isRefreshing={isRefreshing} onRefresh={() => loadNewsFeed(true)} savedCount={offlineArticles.length} showOfflineOnly={showOfflineOnly} onToggleOfflineOnly={() => setShowOfflineOnly(prev => !prev)} autoTranslate={autoTranslate} onToggleAutoTranslate={() => { setAutoTranslate(!autoTranslate); setAutoTranslatePreference(!autoTranslate); }} isDarkMode={isDarkMode} onToggleDarkMode={() => { setIsDarkMode(!isDarkMode); setDarkModePreference(!isDarkMode); }} showRadarBriefing={showRadarBriefing} onToggleRadarBriefing={() => { setShowRadarBriefing(!showRadarBriefing); setShowRadarBriefingPreference(!showRadarBriefing); }} activeCategory={activeCategory} onSelectCategory={(cat) => { setActiveCategory(cat); setShowOfflineOnly(false); }} searchQuery={searchQuery} onSearchChange={setSearchQuery} categoriesList={allCategoriesList} onOpenMobileVitrine={() => setIsMobileVitrineOpen(true)} onOpenMobileNewsletter={() => setIsMobileNewsletterOpen(true)} />
+      </div>
 
-      <main className="flex-1 max-w-6xl w-full mx-auto px-4 py-6">
+      {/* Esconder o corpo do site na impressão */}
+      <main className="flex-1 max-w-6xl w-full mx-auto px-4 py-6 print:hidden">
         {!showOfflineOnly && activeCategory === 'universities' ? ( <UniversitiesView /> ) : (
           <>
             <div className="mb-4 flex items-center justify-between text-xs text-stone-500 border-b pb-2">
@@ -106,7 +105,6 @@ export default function App() {
             </div>
 
             <div className="flex flex-col lg:flex-row gap-6 items-start">
-              {/* Esquerda: Notícias */}
               <div className="flex-1 w-full min-w-0">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   {filteredArticles.map((article) => (
@@ -115,7 +113,6 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Direita: Vitrine RACT e Newsletter (NO DESKTOP) */}
               {!showOfflineOnly && (
                 <aside className="hidden lg:block w-72 shrink-0 sticky top-24 space-y-6">
                   {affiliates.length > 0 && (
@@ -152,28 +149,23 @@ export default function App() {
         )}
       </main>
 
-      <footer className="border-t border-stone-200 dark:border-stone-800 bg-white dark:bg-[#151515] py-6 text-xs text-stone-500 dark:text-stone-400 font-mono-subtle mt-12 transition-colors">
+      <footer className="border-t border-stone-200 dark:border-stone-800 bg-white dark:bg-[#151515] py-6 text-xs text-stone-500 dark:text-stone-400 font-mono-subtle mt-12 transition-colors print:hidden">
         <div className="max-w-6xl mx-auto px-4 sm:px-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
           <div><strong className="text-stone-700 dark:text-stone-300">RADAR AUTÔNOMO DE CIÊNCIAS E TECNOLOGIA (RACT)</strong></div>
         </div>
       </footer>
 
-      {/* ========================================= */}
       {/* MODAL 1: VITRINE MOBILE */}
-      {/* ========================================= */}
       {isMobileVitrineOpen && (
-        <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200 print:hidden">
           <div className="bg-[#FDFDFC] dark:bg-[#121212] w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl max-h-[90vh] flex flex-col shadow-2xl animate-in slide-in-from-bottom-8">
             <div className="px-5 py-4 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between bg-stone-50 dark:bg-[#181818] rounded-t-2xl shrink-0">
-              <div className="flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-amber-600" />
-                <h3 className="font-bold text-base text-stone-900 dark:text-stone-100 uppercase tracking-wider">Vitrine RACT</h3>
-              </div>
+              <div className="flex items-center gap-2"><TrendingUp className="w-5 h-5 text-amber-600" /><h3 className="font-bold text-base text-stone-900 dark:text-stone-100 uppercase tracking-wider">Vitrine RACT</h3></div>
               <button onClick={() => setIsMobileVitrineOpen(false)} className="p-2 rounded-full text-stone-500 hover:bg-stone-200 dark:hover:bg-stone-800 cursor-pointer"><X className="w-5 h-5" /></button>
             </div>
             <div className="p-5 overflow-y-auto space-y-3">
               {affiliates.length === 0 ? (
-                <p className="text-center text-sm text-stone-500 py-10">Nenhuma oferta disponível no momento.</p>
+                <p className="text-center text-sm text-stone-500 py-10">Nenhuma oferta disponível.</p>
               ) : (
                 affiliates.map(aff => (
                   <a key={aff.id} href={aff.url} target="_blank" rel="noreferrer" className="group block p-4 bg-white dark:bg-[#1A1A1A] border border-stone-200 dark:border-stone-800 rounded-xl active:border-amber-400 transition-all cursor-pointer">
@@ -188,20 +180,14 @@ export default function App() {
         </div>
       )}
 
-      {/* ========================================= */}
       {/* MODAL 2: NEWSLETTER MOBILE */}
-      {/* ========================================= */}
       {isMobileNewsletterOpen && (
-        <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200 print:hidden">
           <div className="bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl max-h-[90vh] flex flex-col shadow-2xl animate-in slide-in-from-bottom-8 overflow-hidden">
             <div className="px-5 py-4 border-b border-stone-200 flex items-center justify-between bg-stone-50 shrink-0">
-              <div className="flex items-center gap-2">
-                <Mail className="w-5 h-5 text-blue-600" />
-                <h3 className="font-bold text-base text-stone-900 uppercase tracking-wider">Assinar Newsletter</h3>
-              </div>
+              <div className="flex items-center gap-2"><Mail className="w-5 h-5 text-blue-600" /><h3 className="font-bold text-base text-stone-900 uppercase tracking-wider">Assinar Newsletter</h3></div>
               <button onClick={() => setIsMobileNewsletterOpen(false)} className="p-2 rounded-full text-stone-500 hover:bg-stone-200 cursor-pointer"><X className="w-5 h-5" /></button>
             </div>
-            {/* IFRAME DO BREVO NO MOBILE */}
             <div className="bg-white overflow-y-auto">
               <iframe width="100%" height="350" src="https://f1baa2a4.sibforms.com/v2/serve/MUIFAIZama2f8WtOuv76-bvEFDjzQiq_QO67UcmlC7k_-Fnm2TZCFOypjijlOvo8K9TQzN56nAggcuIb4CQ0cHWKhVXvGi3Vzez5t5celarPJq9FRvApWgefr_Tzq5kO3XLLQpyhP78FypQkIvgw4Cz5MQ0nOL-ppT6HjScbGqiCzdAgUUDMjldQeJm2la52v-t4XhUD70u8TDAaTg==" frameBorder="0" scrolling="auto" allowFullScreen style={{ display: 'block', margin: '0 auto', maxWidth: '100%' }}></iframe>
             </div>
@@ -209,6 +195,7 @@ export default function App() {
         </div>
       )}
 
+      {/* O Artigo (O Único elemento que fica visível na impressão) */}
       <ArticleDetailModal article={selectedArticle} isOpen={!!selectedArticle} onClose={() => setSelectedArticle(null)} isSavedOffline={selectedArticle ? savedIdsSet.has(selectedArticle.id) : false} onToggleSaveOffline={handleToggleSaveOffline} autoTranslateDefault={autoTranslate} />
       <AdminDashboardModal isOpen={isAdminOpen} onClose={handleCloseAdmin} onDataUpdated={handleDataUpdated} />
       <Analytics />
