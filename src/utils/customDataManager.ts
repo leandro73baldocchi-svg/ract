@@ -7,7 +7,6 @@ const CUSTOM_CATEGORIES_KEY = 'ract_custom_categories_v2';
 const ALL_ARTICLES_KEY = 'ract_all_managed_articles_v3';
 const CUSTOM_FEEDS_KEY = 'ract_custom_rss_feeds_v2';
 const ADMIN_PASSWORD_KEY = 'ract_admin_password_hash_v1';
-const SHOW_RADAR_BRIEFING_KEY = 'ract_show_radar_briefing_v1';
 const AFFILIATE_LINKS_KEY = 'ract_affiliates_v2';
 
 export interface CustomRssFeed { id: string; name: string; url: string; category: string; enabled: boolean; }
@@ -39,7 +38,8 @@ export async function fetchServerArticles(): Promise<NewsArticle[]> {
     const querySnapshot = await getDocs(collection(db, "articles"));
     const articles: NewsArticle[] = [];
     querySnapshot.forEach((docSnap) => { articles.push(docSnap.data() as NewsArticle); });
-    if (articles.length > 0) { saveAllManagedArticles(articles); return articles; } else { return []; }
+    saveAllManagedArticles(articles); 
+    return articles; 
   } catch (err) {
     if (typeof navigator !== 'undefined' && !navigator.onLine) return getAllManagedArticles();
     return [];
@@ -49,33 +49,39 @@ export async function fetchServerArticles(): Promise<NewsArticle[]> {
 export async function fetchServerCategories(): Promise<CustomCategory[]> {
   try {
     const querySnapshot = await getDocs(collection(db, "categories"));
-    const categories: CustomCategory[] = [];
-    querySnapshot.forEach((docSnap) => {
-      const cat = docSnap.data() as CustomCategory;
-      if (cat.id !== 'all') categories.push({ ...cat, order: cat.order ?? 99 });
+    const serverCats: CustomCategory[] = [];
+    querySnapshot.forEach((docSnap) => { serverCats.push(docSnap.data() as CustomCategory); });
+    
+    // MÁGICA "CLOUD TRUTH": O Firebase sobrepõe as configurações padrão e ignora o cache antigo.
+    let mergedCategories = DEFAULT_BASE_CATEGORIES.map(defaultCat => {
+      const found = serverCats.find(s => s.id === defaultCat.id);
+      return found ? { ...defaultCat, ...found } : defaultCat;
     });
-    categories.sort((a, b) => {
+
+    serverCats.forEach(sc => {
+      if (!mergedCategories.find(mc => mc.id === sc.id)) { mergedCategories.push(sc); }
+    });
+
+    const allCat = mergedCategories.find(c => c.id === 'all') || { id: 'all', label: 'Todas as Áreas', order: 0 };
+    const otherCats = mergedCategories.filter(c => c.id !== 'all');
+    otherCats.sort((a, b) => {
       const orderA = a.order ?? 99; const orderB = b.order ?? 99;
       if (orderA !== orderB) return orderA - orderB;
       return a.label.localeCompare(b.label);
     });
-    const finalCategories: CustomCategory[] = [ { id: 'all', label: 'Todas as Áreas', order: 0 }, ...categories ];
-    if (categories.length > 0) { saveCustomCategories(finalCategories); return finalCategories; } 
-    else {
-      for (const cat of DEFAULT_BASE_CATEGORIES) { if(cat.id !== 'all') await setDoc(doc(db, "categories", cat.id), { ...cat, order: cat.order ?? 99 }); }
-      saveCustomCategories(DEFAULT_BASE_CATEGORIES); return DEFAULT_BASE_CATEGORIES;
-    }
+
+    const finalCategories = [allCat, ...otherCats];
+    saveCustomCategories(finalCategories);
+    return finalCategories;
   } catch (err) { return getCustomCategories(); }
 }
 
 export async function saveOrUpdateArticle(article: NewsArticle): Promise<NewsArticle[]> {
-  await setDoc(doc(db, "articles", article.id), article);
-  return await fetchServerArticles();
+  await setDoc(doc(db, "articles", article.id), article); return await fetchServerArticles();
 }
 
 export async function deleteManagedArticle(articleId: string): Promise<NewsArticle[]> {
-  await deleteDoc(doc(db, "articles", articleId));
-  return await fetchServerArticles();
+  await deleteDoc(doc(db, "articles", articleId)); return await fetchServerArticles();
 }
 
 export async function resetToFactoryArticles(): Promise<NewsArticle[]> {
@@ -84,13 +90,11 @@ export async function resetToFactoryArticles(): Promise<NewsArticle[]> {
 }
 
 export async function saveCategoryToServer(category: CustomCategory): Promise<CustomCategory[]> {
-  await setDoc(doc(db, "categories", category.id), category);
-  return await fetchServerCategories();
+  await setDoc(doc(db, "categories", category.id), category); return await fetchServerCategories();
 }
 
 export async function deleteCategoryFromServer(categoryId: string): Promise<CustomCategory[]> {
-  await deleteDoc(doc(db, "categories", categoryId));
-  return await fetchServerCategories();
+  await deleteDoc(doc(db, "categories", categoryId)); return await fetchServerCategories();
 }
 
 export async function fetchServerAffiliates(): Promise<AffiliateLink[]> {
@@ -101,19 +105,16 @@ export async function fetchServerAffiliates(): Promise<AffiliateLink[]> {
       const data = docSnap.data();
       links.push({ id: data.id || docSnap.id, categoryId: data.categoryId || docSnap.id, title: data.title, url: data.url });
     });
-    if (links.length > 0) { saveAffiliateLinks(links); return links; }
-    return [];
+    saveAffiliateLinks(links); return links;
   } catch (err) { return getAffiliateLinks(); }
 }
 
 export async function saveAffiliateToServer(link: AffiliateLink): Promise<AffiliateLink[]> {
-  await setDoc(doc(db, "affiliates", link.id), link);
-  return await fetchServerAffiliates();
+  await setDoc(doc(db, "affiliates", link.id), link); return await fetchServerAffiliates();
 }
 
 export async function deleteAffiliateFromServer(linkId: string): Promise<AffiliateLink[]> {
-  await deleteDoc(doc(db, "affiliates", linkId));
-  return await fetchServerAffiliates();
+  await deleteDoc(doc(db, "affiliates", linkId)); return await fetchServerAffiliates();
 }
 
 export async function fetchServerFeeds(): Promise<CustomRssFeed[]> {
@@ -157,8 +158,7 @@ export async function fetchRssArticles(): Promise<NewsArticle[]> {
       return [];
     } catch (err) { return []; }
   });
-  const results = await Promise.all(rssPromises);
-  return results.flat();
+  const results = await Promise.all(rssPromises); return results.flat();
 }
 
 export function getCustomCategories(): CustomCategory[] { try { const raw = localStorage.getItem(CUSTOM_CATEGORIES_KEY); if (!raw) return DEFAULT_BASE_CATEGORIES; return JSON.parse(raw); } catch (e) { return DEFAULT_BASE_CATEGORIES; } }
@@ -169,7 +169,5 @@ export function getCustomRssFeeds(): CustomRssFeed[] { try { const raw = localSt
 export function saveCustomRssFeeds(feeds: CustomRssFeed[]): void { localStorage.setItem(CUSTOM_FEEDS_KEY, JSON.stringify(feeds)); }
 export function getAffiliateLinks(): AffiliateLink[] { try { const raw = localStorage.getItem(AFFILIATE_LINKS_KEY); return raw ? JSON.parse(raw) : []; } catch { return []; } }
 export function saveAffiliateLinks(links: AffiliateLink[]): void { localStorage.setItem(AFFILIATE_LINKS_KEY, JSON.stringify(links)); }
-export function getShowRadarBriefingPreference(): boolean { try { return localStorage.getItem(SHOW_RADAR_BRIEFING_KEY) === 'true'; } catch (e) { return false; } }
-export function setShowRadarBriefingPreference(show: boolean): void { localStorage.setItem(SHOW_RADAR_BRIEFING_KEY, show ? 'true' : 'false'); }
 export function checkAdminPassword(input: string): boolean { const stored = localStorage.getItem(ADMIN_PASSWORD_KEY) || 'admin2026'; return input.trim() === stored || input.trim() === 'admin2026' || input.trim() === 'ciencia123'; }
 export function setAdminPassword(newPassword: string): void { localStorage.setItem(ADMIN_PASSWORD_KEY, newPassword.trim()); }
