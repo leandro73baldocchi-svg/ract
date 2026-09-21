@@ -6,36 +6,31 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Analytics } from '@vercel/analytics/react';
 import { Header } from './components/Header';
-import { DailyBriefingCard } from './components/DailyBriefingCard';
 import { ArticleCard } from './components/ArticleCard';
 import { ArticleDetailModal } from './components/ArticleDetailModal';
 import { UniversitiesView } from './components/UniversitiesView';
-import { NewsArticle, DailyBriefing, CategoryType, CustomCategory } from './types';
+import { NewsArticle, CategoryType, CustomCategory } from './types';
 import { AdminDashboardModal } from './components/AdminDashboardModal';
-import { DEFAULT_BASE_CATEGORIES, getCustomCategories, getAllManagedArticles, fetchServerArticles, fetchServerCategories, getShowRadarBriefingPreference, setShowRadarBriefingPreference, fetchRssArticles, getAffiliateLinks, fetchServerAffiliates, AffiliateLink } from './utils/customDataManager';
+import { DEFAULT_BASE_CATEGORIES, getCustomCategories, getAllManagedArticles, fetchServerArticles, fetchServerCategories, fetchRssArticles, getAffiliateLinks, fetchServerAffiliates, AffiliateLink } from './utils/customDataManager';
 import { getOfflineArticles, saveArticleOffline, removeArticleOffline, getAutoTranslatePreference, setAutoTranslatePreference, getDarkModePreference, setDarkModePreference } from './utils/offlineStorage';
-import { BookOpen, AlertCircle, WifiOff, ShoppingCart, TrendingUp, ExternalLink, Mail, X } from 'lucide-react';
+import { Bookmark, ShoppingCart, TrendingUp, ExternalLink, Mail, X } from 'lucide-react';
 
 export default function App() {
   const [articles, setArticles] = useState<NewsArticle[]>(() => getAllManagedArticles());
   const [affiliates, setAffiliates] = useState<AffiliateLink[]>(() => getAffiliateLinks());
-  const [briefing, setBriefing] = useState<DailyBriefing | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [activeCategory, setActiveCategory] = useState<CategoryType>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [showOfflineOnly, setShowOfflineOnly] = useState<boolean>(false);
   const [selectedArticle, setSelectedArticle] = useState<NewsArticle | null>(null);
-  const [errorNotice, setErrorNotice] = useState<string | null>(null);
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => getDarkModePreference());
-  const [showRadarBriefing, setShowRadarBriefing] = useState<boolean>(() => getShowRadarBriefingPreference());
   const [customCategories, setCustomCategories] = useState<CustomCategory[]>(() => getCustomCategories());
   const [isAdminOpen, setIsAdminOpen] = useState<boolean>(false);
   const [offlineArticles, setOfflineArticles] = useState<NewsArticle[]>(() => getOfflineArticles());
   const [autoTranslate, setAutoTranslate] = useState<boolean>(() => getAutoTranslatePreference());
   const [isOnline, setIsOnline] = useState<boolean>(typeof navigator !== 'undefined' ? navigator.onLine : true);
 
-  // Estados Modais Mobile
   const [isMobileVitrineOpen, setIsMobileVitrineOpen] = useState<boolean>(false);
   const [isMobileNewsletterOpen, setIsMobileNewsletterOpen] = useState<boolean>(false);
 
@@ -72,7 +67,7 @@ export default function App() {
   useEffect(() => { loadNewsFeed(false); const interval = setInterval(() => loadNewsFeed(false), 30000); return () => clearInterval(interval); }, []);
 
   const loadNewsFeed = async (force: boolean = false) => {
-    if (force) setIsRefreshing(true); setErrorNotice(null);
+    if (force) setIsRefreshing(true);
     if (typeof navigator !== 'undefined' && !navigator.onLine) { setLoading(false); setIsRefreshing(false); return; }
     try {
       const [articlesData, categoriesData, rssData] = await Promise.allSettled([fetchServerArticles(), fetchServerCategories(), fetchRssArticles()]);
@@ -91,12 +86,10 @@ export default function App() {
 
   return (
     <div className={`min-h-screen ${isDarkMode ? 'dark ' : ''}bg-[#FBFBFA] dark:bg-[#101010] text-[#1A1A1A] flex flex-col font-sans transition-colors duration-200`}>
-      {/* Esconder cabeçalho na impressão */}
       <div className="print:hidden">
-        <Header date={new Date().toLocaleDateString('pt-BR')} isOnline={isOnline} isRefreshing={isRefreshing} onRefresh={() => loadNewsFeed(true)} savedCount={offlineArticles.length} showOfflineOnly={showOfflineOnly} onToggleOfflineOnly={() => setShowOfflineOnly(prev => !prev)} autoTranslate={autoTranslate} onToggleAutoTranslate={() => { setAutoTranslate(!autoTranslate); setAutoTranslatePreference(!autoTranslate); }} isDarkMode={isDarkMode} onToggleDarkMode={() => { setIsDarkMode(!isDarkMode); setDarkModePreference(!isDarkMode); }} showRadarBriefing={showRadarBriefing} onToggleRadarBriefing={() => { setShowRadarBriefing(!showRadarBriefing); setShowRadarBriefingPreference(!showRadarBriefing); }} activeCategory={activeCategory} onSelectCategory={(cat) => { setActiveCategory(cat); setShowOfflineOnly(false); }} searchQuery={searchQuery} onSearchChange={setSearchQuery} categoriesList={allCategoriesList} onOpenMobileVitrine={() => setIsMobileVitrineOpen(true)} onOpenMobileNewsletter={() => setIsMobileNewsletterOpen(true)} />
+        <Header date={new Date().toLocaleDateString('pt-BR')} isOnline={isOnline} isRefreshing={isRefreshing} onRefresh={() => loadNewsFeed(true)} savedCount={offlineArticles.length} showOfflineOnly={showOfflineOnly} onToggleOfflineOnly={() => setShowOfflineOnly(prev => !prev)} autoTranslate={autoTranslate} onToggleAutoTranslate={() => { setAutoTranslate(!autoTranslate); setAutoTranslatePreference(!autoTranslate); }} isDarkMode={isDarkMode} onToggleDarkMode={() => { setIsDarkMode(!isDarkMode); setDarkModePreference(!isDarkMode); }} activeCategory={activeCategory} onSelectCategory={(cat) => { setActiveCategory(cat); setShowOfflineOnly(false); }} searchQuery={searchQuery} onSearchChange={setSearchQuery} categoriesList={allCategoriesList} onOpenMobileVitrine={() => setIsMobileVitrineOpen(true)} onOpenMobileNewsletter={() => setIsMobileNewsletterOpen(true)} />
       </div>
 
-      {/* Esconder o corpo do site na impressão */}
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 py-6 print:hidden">
         {!showOfflineOnly && activeCategory === 'universities' ? ( <UniversitiesView /> ) : (
           <>
@@ -155,7 +148,6 @@ export default function App() {
         </div>
       </footer>
 
-      {/* MODAL 1: VITRINE MOBILE */}
       {isMobileVitrineOpen && (
         <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200 print:hidden">
           <div className="bg-[#FDFDFC] dark:bg-[#121212] w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl max-h-[90vh] flex flex-col shadow-2xl animate-in slide-in-from-bottom-8">
@@ -180,7 +172,6 @@ export default function App() {
         </div>
       )}
 
-      {/* MODAL 2: NEWSLETTER MOBILE */}
       {isMobileNewsletterOpen && (
         <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200 print:hidden">
           <div className="bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl max-h-[90vh] flex flex-col shadow-2xl animate-in slide-in-from-bottom-8 overflow-hidden">
@@ -195,7 +186,6 @@ export default function App() {
         </div>
       )}
 
-      {/* O Artigo (O Único elemento que fica visível na impressão) */}
       <ArticleDetailModal article={selectedArticle} isOpen={!!selectedArticle} onClose={() => setSelectedArticle(null)} isSavedOffline={selectedArticle ? savedIdsSet.has(selectedArticle.id) : false} onToggleSaveOffline={handleToggleSaveOffline} autoTranslateDefault={autoTranslate} />
       <AdminDashboardModal isOpen={isAdminOpen} onClose={handleCloseAdmin} onDataUpdated={handleDataUpdated} />
       <Analytics />
