@@ -14,7 +14,7 @@ import { NewsArticle, DailyBriefing, CategoryType, CustomCategory } from './type
 import { AdminDashboardModal } from './components/AdminDashboardModal';
 import { DEFAULT_BASE_CATEGORIES, getCustomCategories, getAllManagedArticles, fetchServerArticles, fetchServerCategories, getShowRadarBriefingPreference, setShowRadarBriefingPreference, fetchRssArticles, getAffiliateLinks, fetchServerAffiliates, AffiliateLink } from './utils/customDataManager';
 import { getOfflineArticles, saveArticleOffline, removeArticleOffline, getAutoTranslatePreference, setAutoTranslatePreference, getDarkModePreference, setDarkModePreference } from './utils/offlineStorage';
-import { BookOpen, AlertCircle, WifiOff, ShoppingCart, TrendingUp, ExternalLink } from 'lucide-react';
+import { BookOpen, AlertCircle, WifiOff, ShoppingCart, TrendingUp, ExternalLink, Mail } from 'lucide-react';
 
 export default function App() {
   const [articles, setArticles] = useState<NewsArticle[]>(() => getAllManagedArticles());
@@ -106,30 +106,59 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Direita: Vitrine RACT com Scroll e Links Universais */}
-              {!showOfflineOnly && affiliates.length > 0 && (
-                <aside className="w-full lg:w-72 shrink-0 lg:sticky lg:top-24">
-                  <div className="bg-[#FDFDFC] dark:bg-[#121212] border border-stone-200 dark:border-stone-800 rounded-xl p-5 shadow-sm">
-                    <div className="flex items-center gap-2 mb-4 pb-3 border-b">
-                      <TrendingUp className="w-4 h-4 text-amber-600" />
-                      <h3 className="font-bold text-sm uppercase tracking-wider dark:text-stone-100">Vitrine RACT</h3>
+              {/* Direita: Vitrine RACT e Newsletter (Só aparece se estiver online) */}
+              {!showOfflineOnly && (
+                <aside className="w-full lg:w-72 shrink-0 lg:sticky lg:top-24 space-y-6">
+                  
+                  {/* Bloco 1: Vitrine RACT (Só renderiza se tiver links cadastrados) */}
+                  {affiliates.length > 0 && (
+                    <div className="bg-[#FDFDFC] dark:bg-[#121212] border border-stone-200 dark:border-stone-800 rounded-xl p-5 shadow-sm">
+                      <div className="flex items-center gap-2 mb-4 pb-3 border-b">
+                        <TrendingUp className="w-4 h-4 text-amber-600" />
+                        <h3 className="font-bold text-sm uppercase tracking-wider dark:text-stone-100">Vitrine RACT</h3>
+                      </div>
+                      
+                      <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
+                        {affiliates.map(aff => (
+                          <a key={aff.id} href={aff.url} target="_blank" rel="noreferrer" className="group block p-3 bg-white dark:bg-[#1A1A1A] border rounded-lg hover:border-amber-400 hover:shadow-md transition-all cursor-pointer">
+                            <p className="text-[9px] font-bold text-amber-600 uppercase tracking-wider mb-1.5 flex gap-1.5"><ShoppingCart className="w-3 h-3" /> Recomendação</p>
+                            <p className="font-bold text-[13px] mb-1.5 group-hover:text-amber-700 dark:text-stone-100 leading-snug">{aff.title}</p>
+                            <p className="text-[10px] text-stone-500 flex gap-1">Ver Oferta <ExternalLink className="w-3 h-3" /></p>
+                          </a>
+                        ))}
+                      </div>
+                      
+                      <p className="text-[9px] text-stone-400 mt-5 pt-4 border-t text-center leading-tight">
+                        *Ao adquirir um item nesta vitrine, você apoia diretamente a manutenção do portal sem nenhum custo adicional.
+                      </p>
                     </div>
-                    
-                    {/* ESTA É A ÁREA DE SCROLL (PODE TER 100 LIVROS AQUI DENTRO) */}
-                    <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
-                      {affiliates.map(aff => (
-                        <a key={aff.id} href={aff.url} target="_blank" rel="noreferrer" className="group block p-3 bg-white dark:bg-[#1A1A1A] border rounded-lg hover:border-amber-400 hover:shadow-md transition-all cursor-pointer">
-                          <p className="text-[9px] font-bold text-amber-600 uppercase tracking-wider mb-1.5 flex gap-1.5"><ShoppingCart className="w-3 h-3" /> Recomendação</p>
-                          <p className="font-bold text-[13px] mb-1.5 group-hover:text-amber-700 dark:text-stone-100 leading-snug">{aff.title}</p>
-                          <p className="text-[10px] text-stone-500 flex gap-1">Ver Oferta <ExternalLink className="w-3 h-3" /></p>
-                        </a>
-                      ))}
+                  )}
+
+                  {/* Bloco 2: Newsletter (Brevo) */}
+                  <div className="bg-[#FDFDFC] dark:bg-[#121212] border border-stone-200 dark:border-stone-800 rounded-xl overflow-hidden shadow-sm">
+                    <div className="p-4 border-b border-stone-100 dark:border-stone-800/60 bg-stone-50 dark:bg-[#181818]">
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <Mail className="w-4 h-4 text-blue-600 dark:text-blue-500" />
+                        <h3 className="font-bold text-sm text-stone-900 dark:text-stone-100 uppercase tracking-wider">Newsletter</h3>
+                      </div>
+                      <p className="text-xs text-stone-500 dark:text-stone-400 leading-snug">
+                        Receba as principais publicações científicas direto no seu e-mail.
+                      </p>
                     </div>
-                    
-                    <p className="text-[9px] text-stone-400 mt-5 pt-4 border-t text-center leading-tight">
-                      *Ao adquirir um item nesta vitrine, você apoia diretamente a manutenção do portal sem nenhum custo adicional.
-                    </p>
+                    {/* A caixa do Iframe precisa ter fundo branco para não estourar as cores do Brevo no modo Escuro */}
+                    <div className="bg-white">
+                      <iframe 
+                        width="100%" 
+                        height="320" 
+                        src="https://f1baa2a4.sibforms.com/v2/serve/MUIFAIZama2f8WtOuv76-bvEFDjzQiq_QO67UcmlC7k_-Fnm2TZCFOypjijlOvo8K9TQzN56nAggcuIb4CQ0cHWKhVXvGi3Vzez5t5celarPJq9FRvApWgefr_Tzq5kO3XLLQpyhP78FypQkIvgw4Cz5MQ0nOL-ppT6HjScbGqiCzdAgUUDMjldQeJm2la52v-t4XhUD70u8TDAaTg==" 
+                        frameBorder="0" 
+                        scrolling="auto" 
+                        allowFullScreen 
+                        style={{ display: 'block', margin: '0 auto', maxWidth: '100%' }}
+                      ></iframe>
+                    </div>
                   </div>
+
                 </aside>
               )}
             </div>
