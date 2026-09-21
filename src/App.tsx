@@ -14,7 +14,7 @@ import { NewsArticle, DailyBriefing, CategoryType, CustomCategory } from './type
 import { AdminDashboardModal } from './components/AdminDashboardModal';
 import { DEFAULT_BASE_CATEGORIES, getCustomCategories, getAllManagedArticles, fetchServerArticles, fetchServerCategories, getShowRadarBriefingPreference, setShowRadarBriefingPreference, fetchRssArticles, getAffiliateLinks, fetchServerAffiliates, AffiliateLink } from './utils/customDataManager';
 import { getOfflineArticles, saveArticleOffline, removeArticleOffline, getAutoTranslatePreference, setAutoTranslatePreference, getDarkModePreference, setDarkModePreference } from './utils/offlineStorage';
-import { BookOpen, AlertCircle, WifiOff, ShoppingCart, TrendingUp, ExternalLink, Mail } from 'lucide-react';
+import { BookOpen, AlertCircle, WifiOff, ShoppingCart, TrendingUp, ExternalLink, Mail, X } from 'lucide-react';
 
 export default function App() {
   const [articles, setArticles] = useState<NewsArticle[]>(() => getAllManagedArticles());
@@ -34,6 +34,10 @@ export default function App() {
   const [offlineArticles, setOfflineArticles] = useState<NewsArticle[]>(() => getOfflineArticles());
   const [autoTranslate, setAutoTranslate] = useState<boolean>(() => getAutoTranslatePreference());
   const [isOnline, setIsOnline] = useState<boolean>(typeof navigator !== 'undefined' ? navigator.onLine : true);
+
+  // Estados para os Modais Mobile
+  const [isMobileVitrineOpen, setIsMobileVitrineOpen] = useState<boolean>(false);
+  const [isMobileNewsletterOpen, setIsMobileNewsletterOpen] = useState<boolean>(false);
 
   useEffect(() => { fetchServerAffiliates().then(setAffiliates); }, []);
 
@@ -87,7 +91,12 @@ export default function App() {
 
   return (
     <div className={`min-h-screen ${isDarkMode ? 'dark ' : ''}bg-[#FBFBFA] dark:bg-[#101010] text-[#1A1A1A] flex flex-col font-sans transition-colors duration-200`}>
-      <Header date={new Date().toLocaleDateString('pt-BR')} isOnline={isOnline} isRefreshing={isRefreshing} onRefresh={() => loadNewsFeed(true)} savedCount={offlineArticles.length} showOfflineOnly={showOfflineOnly} onToggleOfflineOnly={() => setShowOfflineOnly(prev => !prev)} autoTranslate={autoTranslate} onToggleAutoTranslate={() => { setAutoTranslate(!autoTranslate); setAutoTranslatePreference(!autoTranslate); }} isDarkMode={isDarkMode} onToggleDarkMode={() => { setIsDarkMode(!isDarkMode); setDarkModePreference(!isDarkMode); }} showRadarBriefing={showRadarBriefing} onToggleRadarBriefing={() => { setShowRadarBriefing(!showRadarBriefing); setShowRadarBriefingPreference(!showRadarBriefing); }} activeCategory={activeCategory} onSelectCategory={(cat) => { setActiveCategory(cat); setShowOfflineOnly(false); }} searchQuery={searchQuery} onSearchChange={setSearchQuery} categoriesList={allCategoriesList} />
+      <Header 
+        date={new Date().toLocaleDateString('pt-BR')} 
+        isOnline={isOnline} isRefreshing={isRefreshing} onRefresh={() => loadNewsFeed(true)} savedCount={offlineArticles.length} showOfflineOnly={showOfflineOnly} onToggleOfflineOnly={() => setShowOfflineOnly(prev => !prev)} autoTranslate={autoTranslate} onToggleAutoTranslate={() => { setAutoTranslate(!autoTranslate); setAutoTranslatePreference(!autoTranslate); }} isDarkMode={isDarkMode} onToggleDarkMode={() => { setIsDarkMode(!isDarkMode); setDarkModePreference(!isDarkMode); }} showRadarBriefing={showRadarBriefing} onToggleRadarBriefing={() => { setShowRadarBriefing(!showRadarBriefing); setShowRadarBriefingPreference(!showRadarBriefing); }} activeCategory={activeCategory} onSelectCategory={(cat) => { setActiveCategory(cat); setShowOfflineOnly(false); }} searchQuery={searchQuery} onSearchChange={setSearchQuery} categoriesList={allCategoriesList} 
+        onOpenMobileVitrine={() => setIsMobileVitrineOpen(true)}
+        onOpenMobileNewsletter={() => setIsMobileNewsletterOpen(true)}
+      />
 
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 py-6">
         {!showOfflineOnly && activeCategory === 'universities' ? ( <UniversitiesView /> ) : (
@@ -106,59 +115,36 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Direita: Vitrine RACT e Newsletter (Só aparece se estiver online) */}
+              {/* Direita: Vitrine RACT e Newsletter (NO DESKTOP) */}
               {!showOfflineOnly && (
-                <aside className="w-full lg:w-72 shrink-0 lg:sticky lg:top-24 space-y-6">
-                  
-                  {/* Bloco 1: Vitrine RACT (Só renderiza se tiver links cadastrados) */}
+                <aside className="hidden lg:block w-72 shrink-0 sticky top-24 space-y-6">
                   {affiliates.length > 0 && (
                     <div className="bg-[#FDFDFC] dark:bg-[#121212] border border-stone-200 dark:border-stone-800 rounded-xl p-5 shadow-sm">
-                      <div className="flex items-center gap-2 mb-4 pb-3 border-b">
+                      <div className="flex items-center gap-2 mb-4 pb-3 border-b border-stone-100 dark:border-stone-800">
                         <TrendingUp className="w-4 h-4 text-amber-600" />
                         <h3 className="font-bold text-sm uppercase tracking-wider dark:text-stone-100">Vitrine RACT</h3>
                       </div>
-                      
                       <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
                         {affiliates.map(aff => (
-                          <a key={aff.id} href={aff.url} target="_blank" rel="noreferrer" className="group block p-3 bg-white dark:bg-[#1A1A1A] border rounded-lg hover:border-amber-400 hover:shadow-md transition-all cursor-pointer">
+                          <a key={aff.id} href={aff.url} target="_blank" rel="noreferrer" className="group block p-3 bg-white dark:bg-[#1A1A1A] border border-stone-200 dark:border-stone-800 rounded-lg hover:border-amber-400 hover:shadow-md transition-all cursor-pointer">
                             <p className="text-[9px] font-bold text-amber-600 uppercase tracking-wider mb-1.5 flex gap-1.5"><ShoppingCart className="w-3 h-3" /> Recomendação</p>
                             <p className="font-bold text-[13px] mb-1.5 group-hover:text-amber-700 dark:text-stone-100 leading-snug">{aff.title}</p>
                             <p className="text-[10px] text-stone-500 flex gap-1">Ver Oferta <ExternalLink className="w-3 h-3" /></p>
                           </a>
                         ))}
                       </div>
-                      
-                      <p className="text-[9px] text-stone-400 mt-5 pt-4 border-t text-center leading-tight">
-                        *Ao adquirir um item nesta vitrine, você apoia diretamente a manutenção do portal sem nenhum custo adicional.
-                      </p>
                     </div>
                   )}
-
-                  {/* Bloco 2: Newsletter (Brevo) */}
                   <div className="bg-[#FDFDFC] dark:bg-[#121212] border border-stone-200 dark:border-stone-800 rounded-xl overflow-hidden shadow-sm">
-                    <div className="p-4 border-b border-stone-100 dark:border-stone-800/60 bg-stone-50 dark:bg-[#181818]">
+                    <div className="p-4 border-b border-stone-100 dark:border-stone-800 bg-stone-50 dark:bg-[#181818]">
                       <div className="flex items-center gap-2 mb-1.5">
                         <Mail className="w-4 h-4 text-blue-600 dark:text-blue-500" />
                         <h3 className="font-bold text-sm text-stone-900 dark:text-stone-100 uppercase tracking-wider">Newsletter</h3>
                       </div>
-                      <p className="text-xs text-stone-500 dark:text-stone-400 leading-snug">
-                        Receba as principais publicações científicas direto no seu e-mail.
-                      </p>
+                      <p className="text-xs text-stone-500 dark:text-stone-400 leading-snug">Receba as principais publicações científicas direto no seu e-mail.</p>
                     </div>
-                    {/* A caixa do Iframe precisa ter fundo branco para não estourar as cores do Brevo no modo Escuro */}
-                    <div className="bg-white">
-                      <iframe 
-                        width="100%" 
-                        height="320" 
-                        src="https://f1baa2a4.sibforms.com/v2/serve/MUIFAIZama2f8WtOuv76-bvEFDjzQiq_QO67UcmlC7k_-Fnm2TZCFOypjijlOvo8K9TQzN56nAggcuIb4CQ0cHWKhVXvGi3Vzez5t5celarPJq9FRvApWgefr_Tzq5kO3XLLQpyhP78FypQkIvgw4Cz5MQ0nOL-ppT6HjScbGqiCzdAgUUDMjldQeJm2la52v-t4XhUD70u8TDAaTg==" 
-                        frameBorder="0" 
-                        scrolling="auto" 
-                        allowFullScreen 
-                        style={{ display: 'block', margin: '0 auto', maxWidth: '100%' }}
-                      ></iframe>
-                    </div>
+                    <div className="bg-white"><iframe width="100%" height="320" src="https://f1baa2a4.sibforms.com/v2/serve/MUIFAIZama2f8WtOuv76-bvEFDjzQiq_QO67UcmlC7k_-Fnm2TZCFOypjijlOvo8K9TQzN56nAggcuIb4CQ0cHWKhVXvGi3Vzez5t5celarPJq9FRvApWgefr_Tzq5kO3XLLQpyhP78FypQkIvgw4Cz5MQ0nOL-ppT6HjScbGqiCzdAgUUDMjldQeJm2la52v-t4XhUD70u8TDAaTg==" frameBorder="0" scrolling="auto" allowFullScreen style={{ display: 'block', margin: '0 auto', maxWidth: '100%' }}></iframe></div>
                   </div>
-
                 </aside>
               )}
             </div>
@@ -168,21 +154,63 @@ export default function App() {
 
       <footer className="border-t border-stone-200 dark:border-stone-800 bg-white dark:bg-[#151515] py-6 text-xs text-stone-500 dark:text-stone-400 font-mono-subtle mt-12 transition-colors">
         <div className="max-w-6xl mx-auto px-4 sm:px-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
-          <div>
-            <strong className="text-stone-700 dark:text-stone-300">RADAR AUTÔNOMO DE CIÊNCIAS E TECNOLOGIA (RACT)</strong>
-            <span className="hidden sm:inline mx-2">•</span>
-            <span className="block sm:inline mt-0.5 sm:mt-0">Leitura offline & Tradução contínua</span>
-          </div>
-          <div className="text-stone-400 dark:text-stone-500 text-[11px]">
-            Fontes: Nature • Science • CERN • Harvard • Cambridge • Oxford • MIT • USP • UNICAMP • NASA
-          </div>
+          <div><strong className="text-stone-700 dark:text-stone-300">RADAR AUTÔNOMO DE CIÊNCIAS E TECNOLOGIA (RACT)</strong></div>
         </div>
       </footer>
 
+      {/* ========================================= */}
+      {/* MODAL 1: VITRINE MOBILE */}
+      {/* ========================================= */}
+      {isMobileVitrineOpen && (
+        <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-[#FDFDFC] dark:bg-[#121212] w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl max-h-[90vh] flex flex-col shadow-2xl animate-in slide-in-from-bottom-8">
+            <div className="px-5 py-4 border-b border-stone-200 dark:border-stone-800 flex items-center justify-between bg-stone-50 dark:bg-[#181818] rounded-t-2xl shrink-0">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-amber-600" />
+                <h3 className="font-bold text-base text-stone-900 dark:text-stone-100 uppercase tracking-wider">Vitrine RACT</h3>
+              </div>
+              <button onClick={() => setIsMobileVitrineOpen(false)} className="p-2 rounded-full text-stone-500 hover:bg-stone-200 dark:hover:bg-stone-800 cursor-pointer"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="p-5 overflow-y-auto space-y-3">
+              {affiliates.length === 0 ? (
+                <p className="text-center text-sm text-stone-500 py-10">Nenhuma oferta disponível no momento.</p>
+              ) : (
+                affiliates.map(aff => (
+                  <a key={aff.id} href={aff.url} target="_blank" rel="noreferrer" className="group block p-4 bg-white dark:bg-[#1A1A1A] border border-stone-200 dark:border-stone-800 rounded-xl active:border-amber-400 transition-all cursor-pointer">
+                    <p className="text-[10px] font-bold text-amber-600 uppercase tracking-wider mb-2 flex items-center gap-1.5"><ShoppingCart className="w-3.5 h-3.5" /> Recomendação Especial</p>
+                    <p className="font-bold text-sm text-stone-900 dark:text-stone-100 mb-2 leading-snug">{aff.title}</p>
+                    <p className="text-[11px] font-semibold text-stone-500 flex items-center gap-1 bg-stone-100 dark:bg-stone-800 w-fit px-2 py-1 rounded">Ver Oferta <ExternalLink className="w-3 h-3" /></p>
+                  </a>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================= */}
+      {/* MODAL 2: NEWSLETTER MOBILE */}
+      {/* ========================================= */}
+      {isMobileNewsletterOpen && (
+        <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl max-h-[90vh] flex flex-col shadow-2xl animate-in slide-in-from-bottom-8 overflow-hidden">
+            <div className="px-5 py-4 border-b border-stone-200 flex items-center justify-between bg-stone-50 shrink-0">
+              <div className="flex items-center gap-2">
+                <Mail className="w-5 h-5 text-blue-600" />
+                <h3 className="font-bold text-base text-stone-900 uppercase tracking-wider">Assinar Newsletter</h3>
+              </div>
+              <button onClick={() => setIsMobileNewsletterOpen(false)} className="p-2 rounded-full text-stone-500 hover:bg-stone-200 cursor-pointer"><X className="w-5 h-5" /></button>
+            </div>
+            {/* IFRAME DO BREVO NO MOBILE */}
+            <div className="bg-white overflow-y-auto">
+              <iframe width="100%" height="350" src="https://f1baa2a4.sibforms.com/v2/serve/MUIFAIZama2f8WtOuv76-bvEFDjzQiq_QO67UcmlC7k_-Fnm2TZCFOypjijlOvo8K9TQzN56nAggcuIb4CQ0cHWKhVXvGi3Vzez5t5celarPJq9FRvApWgefr_Tzq5kO3XLLQpyhP78FypQkIvgw4Cz5MQ0nOL-ppT6HjScbGqiCzdAgUUDMjldQeJm2la52v-t4XhUD70u8TDAaTg==" frameBorder="0" scrolling="auto" allowFullScreen style={{ display: 'block', margin: '0 auto', maxWidth: '100%' }}></iframe>
+            </div>
+          </div>
+        </div>
+      )}
+
       <ArticleDetailModal article={selectedArticle} isOpen={!!selectedArticle} onClose={() => setSelectedArticle(null)} isSavedOffline={selectedArticle ? savedIdsSet.has(selectedArticle.id) : false} onToggleSaveOffline={handleToggleSaveOffline} autoTranslateDefault={autoTranslate} />
       <AdminDashboardModal isOpen={isAdminOpen} onClose={handleCloseAdmin} onDataUpdated={handleDataUpdated} />
-      
-      {/* O Motor de Análise do Vercel rodando em segundo plano */}
       <Analytics />
     </div>
   );
