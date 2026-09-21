@@ -87,12 +87,12 @@ export const Header: React.FC<HeaderProps> = ({
             <div className="shrink-0 flex items-center justify-center w-[80px] h-[80px] bg-white dark:bg-stone-900 rounded-xl shadow-sm overflow-hidden border border-stone-200 dark:border-stone-800">
               <img src="/logo.png" alt="Logo Radar Autônomo" className="w-full h-full object-contain p-1" />
             </div>
-            <div className="flex flex-col justify-center">
+            <div className="flex flex-col justify-center min-w-0">
               <div className="flex items-baseline gap-2">
-                <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-stone-950 dark:text-stone-100 font-serif leading-none">
+                <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-stone-950 dark:text-stone-100 font-serif leading-none truncate">
                   RADAR AUTÔNOMO DE CIÊNCIAS E TECNOLOGIA
                 </h1>
-                <span className="text-xs font-semibold tracking-wider font-mono-subtle text-stone-500 dark:text-stone-400">(RACT)</span>
+                <span className="text-xs font-semibold tracking-wider font-mono-subtle text-stone-500 dark:text-stone-400 shrink-0">(RACT)</span>
               </div>
               <p className="text-[11px] sm:text-xs text-stone-600 dark:text-stone-400 mt-1 tracking-normal max-w-2xl leading-snug">
                 Agregador e analisador autônomo dos principais periódicos científicos mundiais com tradução instantânea e leitura offline.
@@ -100,56 +100,55 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           </div>
 
-          {/* Quick Utility Controls */}
-          <div className="flex items-center gap-2 self-start lg:self-auto shrink-0 flex-wrap">
+          {/* Quick Utility Controls - AGORA DIVIDIDOS EM DUAS LINHAS LÓGICAS */}
+          <div className="flex flex-col gap-2.5 self-start lg:self-auto shrink-0 w-full lg:w-auto mt-2 lg:mt-0">
             
-            {/* BOTÕES DE MONETIZAÇÃO E NEWSLETTER (AGORA VISÍVEIS EM TODAS AS TELAS) */}
-            <button 
-              onClick={onOpenMobileVitrine}
-              className="px-3 py-1.5 rounded text-[11px] sm:text-xs font-bold border flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800"
-            >
-              <ShoppingCart className="w-3.5 h-3.5" />
-              <span>Ofertas</span>
-            </button>
+            {/* LINHA 1: CTA & MONETIZAÇÃO */}
+            <div className="flex items-center gap-2 flex-wrap lg:justify-end">
+              <button onClick={onOpenMobileVitrine} className="px-3 py-1.5 rounded text-[11px] sm:text-xs font-bold border flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800">
+                <ShoppingCart className="w-3.5 h-3.5" />
+                <span>Ofertas</span>
+              </button>
 
-            <button 
-              onClick={onOpenMobileNewsletter}
-              className="px-3 py-1.5 rounded text-[11px] sm:text-xs font-bold border flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-800"
-            >
-              <Mail className="w-3.5 h-3.5" />
-              <span>Assinar</span>
-            </button>
-            {/* FIM BOTÕES */}
+              <button onClick={onOpenMobileNewsletter} className="px-3 py-1.5 rounded text-[11px] sm:text-xs font-bold border flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-800">
+                <Mail className="w-3.5 h-3.5" />
+                <span>Assinar</span>
+              </button>
 
-            <a href="https://livepix.gg/leandrosarno" target="_blank" rel="noreferrer" className="px-3 py-1.5 rounded text-[11px] sm:text-xs font-bold border flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-600 hover:text-white dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800 dark:hover:bg-emerald-600 dark:hover:text-white">
-              <Coffee className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Apoiar Projeto</span>
-            </a>
+              <a href="https://livepix.gg/leandrosarno" target="_blank" rel="noreferrer" className="px-3 py-1.5 rounded text-[11px] sm:text-xs font-bold border flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-600 hover:text-white dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800 dark:hover:bg-emerald-600 dark:hover:text-white">
+                <Coffee className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Apoiar Projeto</span>
+              </a>
+            </div>
 
-            <button onClick={onToggleDarkMode} className={`px-3 py-1.5 rounded text-[11px] sm:text-xs font-medium border flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs ${isDarkMode ? 'bg-stone-850 text-amber-300 border-stone-700 hover:bg-stone-800' : 'bg-white text-stone-700 border-stone-300 hover:bg-stone-100 hover:text-stone-900'}`}>
-              {isDarkMode ? (<><Sun className="w-3.5 h-3.5 text-amber-300" /> <span className="hidden sm:inline">Claro</span></>) : (<><Moon className="w-3.5 h-3.5 text-stone-700" /> <span className="hidden sm:inline">Escuro</span></>)}
-            </button>
+            {/* LINHA 2: CONTROLES DO SISTEMA */}
+            <div className="flex items-center gap-2 flex-wrap lg:justify-end">
+              <button onClick={onToggleDarkMode} className={`px-3 py-1.5 rounded text-[11px] sm:text-xs font-medium border flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs ${isDarkMode ? 'bg-stone-850 text-amber-300 border-stone-700 hover:bg-stone-800' : 'bg-white text-stone-700 border-stone-300 hover:bg-stone-100 hover:text-stone-900'}`}>
+                {isDarkMode ? (<><Sun className="w-3.5 h-3.5 text-amber-300" /> <span className="hidden sm:inline">Claro</span></>) : (<><Moon className="w-3.5 h-3.5 text-stone-700" /> <span className="hidden sm:inline">Escuro</span></>)}
+              </button>
 
-            <button onClick={onToggleAutoTranslate} className={`px-3 py-1.5 rounded text-[11px] sm:text-xs font-medium border flex items-center gap-1.5 transition-colors cursor-pointer ${autoTranslate ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 border-stone-900 dark:border-stone-100 shadow-2xs' : 'bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-200 border-stone-300 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-700'}`}>
-              <Globe className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Tradução:</span>
-              <span className="font-mono-subtle font-bold">{autoTranslate ? 'PT-BR' : 'EN'}</span>
-            </button>
+              <button onClick={onToggleAutoTranslate} className={`px-3 py-1.5 rounded text-[11px] sm:text-xs font-medium border flex items-center gap-1.5 transition-colors cursor-pointer ${autoTranslate ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 border-stone-900 dark:border-stone-100 shadow-2xs' : 'bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-200 border-stone-300 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-700'}`}>
+                <Globe className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Tradução:</span>
+                <span className="font-mono-subtle font-bold">{autoTranslate ? 'PT-BR' : 'EN'}</span>
+              </button>
 
-            <button onClick={onToggleRadarBriefing} className={`px-3 py-1.5 rounded text-[11px] sm:text-xs font-medium border flex items-center gap-1.5 transition-colors cursor-pointer ${showRadarBriefing ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 border-stone-900 dark:border-stone-100 shadow-2xs' : 'bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-200 border-stone-300 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-700'}`}>
-              <Sparkles className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Síntese</span>
-            </button>
+              <button onClick={onToggleRadarBriefing} className={`px-3 py-1.5 rounded text-[11px] sm:text-xs font-medium border flex items-center gap-1.5 transition-colors cursor-pointer ${showRadarBriefing ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 border-stone-900 dark:border-stone-100 shadow-2xs' : 'bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-200 border-stone-300 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-700'}`}>
+                <Sparkles className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Síntese</span>
+              </button>
 
-            <button onClick={onToggleOfflineOnly} className={`px-3 py-1.5 rounded text-[11px] sm:text-xs font-medium border flex items-center gap-1.5 transition-colors cursor-pointer ${showOfflineOnly ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 border-stone-900 dark:border-stone-100 shadow-2xs' : 'bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-200 border-stone-300 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-700'}`}>
-              <Bookmark className={`w-3.5 h-3.5 ${showOfflineOnly ? 'fill-current' : ''}`} />
-              <span className="hidden sm:inline">Offline</span>
-              {savedCount > 0 && (<span className={`text-[10px] px-1.5 py-0.5 rounded font-mono-subtle font-semibold ${showOfflineOnly ? 'bg-stone-800 dark:bg-stone-300 text-stone-100 dark:text-stone-900' : 'bg-stone-200 dark:bg-stone-700 text-stone-800 dark:text-stone-200'}`}>{savedCount}</span>)}
-            </button>
+              <button onClick={onToggleOfflineOnly} className={`px-3 py-1.5 rounded text-[11px] sm:text-xs font-medium border flex items-center gap-1.5 transition-colors cursor-pointer ${showOfflineOnly ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 border-stone-900 dark:border-stone-100 shadow-2xs' : 'bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-200 border-stone-300 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-700'}`}>
+                <Bookmark className={`w-3.5 h-3.5 ${showOfflineOnly ? 'fill-current' : ''}`} />
+                <span className="hidden sm:inline">Offline</span>
+                {savedCount > 0 && (<span className={`text-[10px] px-1.5 py-0.5 rounded font-mono-subtle font-semibold ${showOfflineOnly ? 'bg-stone-800 dark:bg-stone-300 text-stone-100 dark:text-stone-900' : 'bg-stone-200 dark:bg-stone-700 text-stone-800 dark:text-stone-200'}`}>{savedCount}</span>)}
+              </button>
 
-            <button onClick={onRefresh} disabled={isRefreshing || !isOnline} className="p-1.5 rounded text-stone-700 dark:text-stone-300 hover:text-stone-950 dark:hover:text-white border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-800 hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors disabled:opacity-40 cursor-pointer">
-              <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-            </button>
+              <button onClick={onRefresh} disabled={isRefreshing || !isOnline} className="p-1.5 rounded text-stone-700 dark:text-stone-300 hover:text-stone-950 dark:hover:text-white border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-800 hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors disabled:opacity-40 cursor-pointer">
+                <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              </button>
+            </div>
+
           </div>
         </div>
       </div>
