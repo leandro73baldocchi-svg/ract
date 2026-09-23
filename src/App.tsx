@@ -13,7 +13,7 @@ import { NewsArticle, CategoryType, CustomCategory } from './types';
 import { AdminDashboardModal } from './components/AdminDashboardModal';
 import { DEFAULT_BASE_CATEGORIES, getCustomCategories, getAllManagedArticles, fetchServerArticles, fetchServerCategories, fetchRssArticles, getAffiliateLinks, fetchServerAffiliates, AffiliateLink, fetchServerSponsors, SponsorBanner } from './utils/customDataManager';
 import { getOfflineArticles, saveArticleOffline, removeArticleOffline, getAutoTranslatePreference, setAutoTranslatePreference, getDarkModePreference, setDarkModePreference } from './utils/offlineStorage';
-import { Bookmark, ShoppingCart, TrendingUp, ExternalLink, Mail, X } from 'lucide-react';
+import { Bookmark, ShoppingCart, TrendingUp, ExternalLink, Mail, X, PlusCircle } from 'lucide-react';
 
 export default function App() {
   const [articles, setArticles] = useState<NewsArticle[]>(() => getAllManagedArticles());
@@ -21,6 +21,9 @@ export default function App() {
   
   const [sponsors, setSponsors] = useState<SponsorBanner[]>([]);
   const [currentSponsorIndex, setCurrentSponsorIndex] = useState(0);
+
+  // NOVO: Controle de Paginação (Mostra 12 de cada vez)
+  const [visibleCount, setVisibleCount] = useState<number>(12);
 
   const [loading, setLoading] = useState<boolean>(false);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
@@ -51,6 +54,11 @@ export default function App() {
     return () => clearInterval(interval);
   }, [sponsors.length]);
 
+  // NOVO: Volta para 12 artigos sempre que o usuário pesquisar ou mudar de categoria
+  useEffect(() => {
+    setVisibleCount(12);
+  }, [activeCategory, searchQuery, showOfflineOnly]);
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const checkUrlForAdmin = () => {
@@ -68,6 +76,7 @@ export default function App() {
     const [arts, cats, affs, spon] = await Promise.all([fetchServerArticles(), fetchServerCategories(), fetchServerAffiliates(), fetchServerSponsors()]); 
     setArticles(arts); setCustomCategories(cats); setAffiliates(affs); setSponsors(spon);
     setCurrentSponsorIndex(0);
+    loadNewsFeed(true); // Força um recarregamento completo para reordenar a tela principal
   };
 
   const allCategoriesList = useMemo(() => customCategories?.length > 0 ? customCategories : DEFAULT_BASE_CATEGORIES, [customCategories]);
@@ -93,9 +102,37 @@ export default function App() {
     try {
       const [articlesData, categoriesData, rssData] = await Promise.allSettled([fetchServerArticles(), fetchServerCategories(), fetchRssArticles()]);
       let combinedArticles: NewsArticle[] = [];
-      if (articlesData.status === 'fulfilled' && Array.isArray(articlesData.value)) combinedArticles = [...articlesData.value];
-      if (rssData.status === 'fulfilled' && Array.isArray(rssData.value)) combinedArticles = [...combinedArticles, ...rssData.value];
-      setArticles(combinedArticles);
+      
+      if (articlesData.status === 'fulfilled' && Array.isArray(articlesData.value)) {
+        combinedArticles = [...articlesData.value];
+      }
+      if (rssData.status === 'fulfilled' && Array.isArray(rssData.value)) {
+        combinedArticles = [...combinedArticles, ...rssData.value];
+      }
+
+      // CORREÇÃO: Remove Artigos Duplicados (garante a consistência nos celulares)
+      const uniqueArticlesMap = new Map<string, NewsArticle>();
+      combinedArticles.forEach(art => uniqueArticlesMap.set(art.id, art));
+      let uniqueArticles = Array.from(uniqueArticlesMap.values());
+
+      // CORREÇÃO: Força a Ordenação Cronológica (Os mais novos sempre no topo)
+      uniqueArticles.sort((a, b) => {
+        const getTimestamp = (art: NewsArticle) => {
+          if (art.id.startsWith('art-')) {
+            const time = parseInt(art.id.replace('art-', ''));
+            if (!isNaN(time) && time > 1000000000000) return time;
+          }
+          if (art.date) {
+            const dateTime = new Date(art.date).getTime();
+            if (!isNaN(dateTime)) return dateTime;
+          }
+          return 0; // Artigos velhos ou com ID quebrado caem pro fundo da tela
+        };
+        return getTimestamp(b) - getTimestamp(a);
+      });
+
+      setArticles(uniqueArticles);
+
       if (categoriesData.status === 'fulfilled' && Array.isArray(categoriesData.value)) setCustomCategories(categoriesData.value);
     } catch (err) { console.warn('Erro sync', err); } finally { setLoading(false); setIsRefreshing(false); }
   };
@@ -103,7 +140,18 @@ export default function App() {
   const handleToggleSaveOffline = (article: NewsArticle) => { const isSaved = offlineArticles.some((a) => a.id === article.id); if (isSaved) { removeArticleOffline(article.id); setOfflineArticles(getOfflineArticles()); } else { saveArticleOffline(article); setOfflineArticles(getOfflineArticles()); } };
   const savedIdsSet = useMemo(() => new Set(offlineArticles.map((a) => a.id)), [offlineArticles]);
   const displaySource = useMemo(() => showOfflineOnly || (!isOnline && articles.length === 0) ? offlineArticles : articles, [showOfflineOnly, isOnline, articles, offlineArticles]);
-  const filteredArticles = useMemo(() => displaySource.filter((article) => { if (activeCategory !== 'all' && article.sourceCategory !== activeCategory) return false; if (searchQuery.trim()) { const q = searchQuery.toLowerCase(); return (article.titlePt || '').toLowerCase().includes(q) || article.title.toLowerCase().includes(q) || (article.summaryPt || article.summary).toLowerCase().includes(q) || article.source.toLowerCase().includes(q); } return true; }), [displaySource, activeCategory, searchQuery]);
+  
+  const filteredArticles = useMemo(() => displaySource.filter((article) => { 
+    if (activeCategory !== 'all' && article.sourceCategory !== activeCategory) return false; 
+    if (searchQuery.trim()) { 
+      const q = searchQuery.toLowerCase(); 
+      return (article.titlePt || '').toLowerCase().includes(q) || article.title.toLowerCase().includes(q) || (article.summaryPt || article.summary).toLowerCase().includes(q) || article.source.toLowerCase().includes(q); 
+    } 
+    return true; 
+  }), [displaySource, activeCategory, searchQuery]);
+
+  // NOVO: Paginação visual baseada no botão "Carregar mais"
+  const displayedArticles = useMemo(() => filteredArticles.slice(0, visibleCount), [filteredArticles, visibleCount]);
 
   return (
     <div className={`min-h-screen ${isDarkMode ? 'dark ' : ''}bg-[#FBFBFA] dark:bg-[#101010] text-[#1A1A1A] flex flex-col font-sans transition-colors duration-200`}>
@@ -121,10 +169,23 @@ export default function App() {
             <div className="flex flex-col lg:flex-row gap-6 items-start">
               <div className="flex-1 w-full min-w-0">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  {filteredArticles.map((article) => (
+                  {displayedArticles.map((article) => (
                     <ArticleCard key={article.id} article={article} autoTranslate={autoTranslate} isSavedOffline={savedIdsSet.has(article.id)} onToggleSaveOffline={handleToggleSaveOffline} onOpenArticle={setSelectedArticle} />
                   ))}
                 </div>
+                
+                {/* NOVO: BOTÃO DE CARREGAR MAIS ARTIGOS */}
+                {filteredArticles.length > visibleCount && (
+                  <div className="mt-10 flex justify-center pb-6">
+                    <button 
+                      onClick={() => setVisibleCount(prev => prev + 12)}
+                      className="px-6 py-3 bg-white dark:bg-stone-900 border border-stone-300 dark:border-stone-700 text-stone-800 dark:text-stone-200 font-bold text-xs uppercase tracking-wider rounded-full shadow-sm hover:bg-stone-100 dark:hover:bg-stone-800 transition-all cursor-pointer flex items-center gap-2"
+                    >
+                      <PlusCircle className="w-4 h-4" />
+                      Carregar mais publicações ({filteredArticles.length - visibleCount} restantes)
+                    </button>
+                  </div>
+                )}
               </div>
 
               {!showOfflineOnly && (
@@ -169,7 +230,7 @@ export default function App() {
                       </div>
                     )}
                     
-                    {/* BOTÃO FIXO E DEFINITIVO PARA ANUNCIAR */}
+                    {/* BOTÃO FIXO DE PATROCÍNIO */}
                     <a 
                       href="mailto:leandro73baldocchi@gmail.com?subject=Orçamento%20para%20Anúncio%20no%20RACT" 
                       className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800 dark:hover:bg-blue-900/50 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-colors cursor-pointer"
