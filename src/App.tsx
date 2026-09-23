@@ -22,7 +22,6 @@ export default function App() {
   const [sponsors, setSponsors] = useState<SponsorBanner[]>([]);
   const [currentSponsorIndex, setCurrentSponsorIndex] = useState(0);
 
-  // NOVO: Controle de Paginação (Mostra 12 de cada vez)
   const [visibleCount, setVisibleCount] = useState<number>(12);
 
   const [loading, setLoading] = useState<boolean>(false);
@@ -54,7 +53,6 @@ export default function App() {
     return () => clearInterval(interval);
   }, [sponsors.length]);
 
-  // NOVO: Volta para 12 artigos sempre que o usuário pesquisar ou mudar de categoria
   useEffect(() => {
     setVisibleCount(12);
   }, [activeCategory, searchQuery, showOfflineOnly]);
@@ -76,7 +74,7 @@ export default function App() {
     const [arts, cats, affs, spon] = await Promise.all([fetchServerArticles(), fetchServerCategories(), fetchServerAffiliates(), fetchServerSponsors()]); 
     setArticles(arts); setCustomCategories(cats); setAffiliates(affs); setSponsors(spon);
     setCurrentSponsorIndex(0);
-    loadNewsFeed(true); // Força um recarregamento completo para reordenar a tela principal
+    loadNewsFeed(true);
   };
 
   const allCategoriesList = useMemo(() => customCategories?.length > 0 ? customCategories : DEFAULT_BASE_CATEGORIES, [customCategories]);
@@ -110,12 +108,10 @@ export default function App() {
         combinedArticles = [...combinedArticles, ...rssData.value];
       }
 
-      // CORREÇÃO: Remove Artigos Duplicados (garante a consistência nos celulares)
       const uniqueArticlesMap = new Map<string, NewsArticle>();
       combinedArticles.forEach(art => uniqueArticlesMap.set(art.id, art));
       let uniqueArticles = Array.from(uniqueArticlesMap.values());
 
-      // CORREÇÃO: Força a Ordenação Cronológica (Os mais novos sempre no topo)
       uniqueArticles.sort((a, b) => {
         const getTimestamp = (art: NewsArticle) => {
           if (art.id.startsWith('art-')) {
@@ -126,7 +122,7 @@ export default function App() {
             const dateTime = new Date(art.date).getTime();
             if (!isNaN(dateTime)) return dateTime;
           }
-          return 0; // Artigos velhos ou com ID quebrado caem pro fundo da tela
+          return 0;
         };
         return getTimestamp(b) - getTimestamp(a);
       });
@@ -150,7 +146,6 @@ export default function App() {
     return true; 
   }), [displaySource, activeCategory, searchQuery]);
 
-  // NOVO: Paginação visual baseada no botão "Carregar mais"
   const displayedArticles = useMemo(() => filteredArticles.slice(0, visibleCount), [filteredArticles, visibleCount]);
 
   return (
@@ -168,13 +163,50 @@ export default function App() {
 
             <div className="flex flex-col lg:flex-row gap-6 items-start">
               <div className="flex-1 w-full min-w-0">
+                
+                {/* NOVO: CARROSSEL DE PATROCINADORES NO CELULAR (Some no PC) */}
+                <div className="block lg:hidden mb-6 bg-[#FDFDFC] dark:bg-[#121212] border border-stone-200 dark:border-stone-800 rounded-xl p-3.5 shadow-sm flex flex-col items-center justify-center text-center">
+                  <span className="text-[9px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">
+                    Apoio & Patrocínio
+                  </span>
+                  {sponsors.length === 0 ? (
+                    <div className="w-full h-[160px] bg-stone-50 dark:bg-[#1A1A1A] rounded flex flex-col items-center justify-center border-2 border-dashed border-stone-300 dark:border-stone-700">
+                      <div className="text-stone-400 dark:text-stone-600 font-bold text-sm mb-1">Espaço Patrocinador</div>
+                    </div>
+                  ) : (
+                    <a 
+                      href={sponsors[currentSponsorIndex].linkUrl} 
+                      target="_blank" 
+                      rel="noreferrer" 
+                      key={`mob-${sponsors[currentSponsorIndex].id}`}
+                      className="w-full relative block overflow-hidden rounded border border-stone-200 dark:border-stone-800 hover:border-blue-400 transition-colors animate-in fade-in zoom-in-[0.98] duration-500"
+                    >
+                      <img 
+                        src={sponsors[currentSponsorIndex].imageUrl} 
+                        alt={sponsors[currentSponsorIndex].title} 
+                        className="w-full h-[160px] sm:h-[200px] object-cover" 
+                      />
+                    </a>
+                  )}
+                  {sponsors.length > 1 && (
+                    <div className="flex items-center gap-1.5 mt-2.5">
+                      {sponsors.map((_, idx) => (
+                        <span key={idx} className={`block w-1.5 h-1.5 rounded-full transition-colors ${idx === currentSponsorIndex ? 'bg-blue-600 dark:bg-blue-500' : 'bg-stone-200 dark:bg-stone-700'}`}></span>
+                      ))}
+                    </div>
+                  )}
+                  <a href="mailto:leandro73baldocchi@gmail.com?subject=Orçamento%20para%20Anúncio%20no%20RACT" className="mt-3 w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer">
+                    <Mail className="w-3.5 h-3.5" /> Anuncie no RACT
+                  </a>
+                </div>
+                {/* FIM DO CARROSSEL MOBILE */}
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   {displayedArticles.map((article) => (
                     <ArticleCard key={article.id} article={article} autoTranslate={autoTranslate} isSavedOffline={savedIdsSet.has(article.id)} onToggleSaveOffline={handleToggleSaveOffline} onOpenArticle={setSelectedArticle} />
                   ))}
                 </div>
                 
-                {/* NOVO: BOTÃO DE CARREGAR MAIS ARTIGOS */}
                 {filteredArticles.length > visibleCount && (
                   <div className="mt-10 flex justify-center pb-6">
                     <button 
@@ -191,7 +223,7 @@ export default function App() {
               {!showOfflineOnly && (
                 <aside className="hidden lg:block w-72 shrink-0 space-y-6">
                   
-                  {/* CARROSSEL DE PATROCINADORES */}
+                  {/* CARROSSEL DE PATROCINADORES NO DESKTOP (Some no celular) */}
                   <div className="bg-[#FDFDFC] dark:bg-[#121212] border border-stone-200 dark:border-stone-800 rounded-xl p-4 shadow-sm flex flex-col items-center justify-center text-center transition-colors">
                     <span className="text-[9px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-3">
                       Apoio & Patrocínio
@@ -207,7 +239,7 @@ export default function App() {
                         href={sponsors[currentSponsorIndex].linkUrl} 
                         target="_blank" 
                         rel="noreferrer" 
-                        key={sponsors[currentSponsorIndex].id}
+                        key={`desk-${sponsors[currentSponsorIndex].id}`}
                         className="w-full relative block overflow-hidden rounded border border-stone-200 dark:border-stone-800 hover:border-blue-400 dark:hover:border-blue-600 transition-colors animate-in fade-in zoom-in-[0.98] duration-500"
                         title={sponsors[currentSponsorIndex].title}
                       >
@@ -230,7 +262,6 @@ export default function App() {
                       </div>
                     )}
                     
-                    {/* BOTÃO FIXO DE PATROCÍNIO */}
                     <a 
                       href="mailto:leandro73baldocchi@gmail.com?subject=Orçamento%20para%20Anúncio%20no%20RACT" 
                       className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800 dark:hover:bg-blue-900/50 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-colors cursor-pointer"
