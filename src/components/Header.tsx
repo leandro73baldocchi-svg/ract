@@ -1,6 +1,6 @@
 import React from 'react';
 import { CategoryType, CustomCategory } from '../types';
-import { RefreshCw, Bookmark, Globe, WifiOff, Search, X, Moon, Sun, Coffee, ShoppingCart, Mail } from 'lucide-react';
+import { RefreshCw, Bookmark, Globe, WifiOff, Search, X, Moon, Sun, Sparkles, Coffee, ShoppingCart, Mail } from 'lucide-react';
 
 interface HeaderProps {
   date: string;
@@ -98,14 +98,21 @@ export const Header: React.FC<HeaderProps> = ({
 
           <div className="flex flex-col gap-2.5 shrink-0 mt-2 lg:mt-0">
             <div className="flex items-center gap-2 flex-wrap lg:justify-end">
+              
+              {/* BOTÕES PADRONIZADOS PARA O MOBILE (hidden sm:inline) */}
               <button onClick={onOpenMobileVitrine} className="px-3 py-1.5 rounded text-[11px] sm:text-xs font-bold border flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800">
-                <ShoppingCart className="w-3.5 h-3.5" /><span>Ofertas</span>
+                <ShoppingCart className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Ofertas</span>
               </button>
+
               <button onClick={onOpenMobileNewsletter} className="px-3 py-1.5 rounded text-[11px] sm:text-xs font-bold border flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-800">
-                <Mail className="w-3.5 h-3.5" /><span>Assinar</span>
+                <Mail className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Assinar</span>
               </button>
+
               <a href="https://livepix.gg/leandrosarno" target="_blank" rel="noreferrer" className="px-3 py-1.5 rounded text-[11px] sm:text-xs font-bold border flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-600 hover:text-white dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800 dark:hover:bg-emerald-600 dark:hover:text-white">
-                <Coffee className="w-3.5 h-3.5" /><span className="hidden sm:inline">Apoiar Projeto</span>
+                <Coffee className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Apoiar Projeto</span>
               </a>
             </div>
 
