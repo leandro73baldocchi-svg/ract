@@ -19,7 +19,6 @@ export default function App() {
   const [articles, setArticles] = useState<NewsArticle[]>(() => getAllManagedArticles());
   const [affiliates, setAffiliates] = useState<AffiliateLink[]>(() => getAffiliateLinks());
   
-  // NOVO: Estado dos Patrocinadores e do Carrossel
   const [sponsors, setSponsors] = useState<SponsorBanner[]>([]);
   const [currentSponsorIndex, setCurrentSponsorIndex] = useState(0);
 
@@ -44,7 +43,6 @@ export default function App() {
     fetchServerSponsors().then(setSponsors);
   }, []);
 
-  // NOVO: Lógica do Carrossel Automático (Gira a cada 6 segundos)
   useEffect(() => {
     if (sponsors.length <= 1) return;
     const interval = setInterval(() => {
@@ -69,7 +67,7 @@ export default function App() {
   const handleDataUpdated = async () => { 
     const [arts, cats, affs, spon] = await Promise.all([fetchServerArticles(), fetchServerCategories(), fetchServerAffiliates(), fetchServerSponsors()]); 
     setArticles(arts); setCustomCategories(cats); setAffiliates(affs); setSponsors(spon);
-    setCurrentSponsorIndex(0); // Reseta o carrossel se um patrocinador novo for adicionado
+    setCurrentSponsorIndex(0);
   };
 
   const allCategoriesList = useMemo(() => customCategories?.length > 0 ? customCategories : DEFAULT_BASE_CATEGORIES, [customCategories]);
@@ -132,7 +130,6 @@ export default function App() {
               {!showOfflineOnly && (
                 <aside className="hidden lg:block w-72 shrink-0 space-y-6">
                   
-                  {/* NOVO: CARROSSEL DE PATROCINADORES */}
                   <div className="bg-[#FDFDFC] dark:bg-[#121212] border border-stone-200 dark:border-stone-800 rounded-xl p-4 shadow-sm flex flex-col items-center justify-center text-center group transition-colors">
                     <span className="text-[9px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">
                       Apoio & Patrocínio
@@ -148,7 +145,7 @@ export default function App() {
                         href={sponsors[currentSponsorIndex].linkUrl} 
                         target="_blank" 
                         rel="noreferrer" 
-                        key={sponsors[currentSponsorIndex].id} // O key faz a animação recarregar
+                        key={sponsors[currentSponsorIndex].id}
                         className="w-full relative block overflow-hidden rounded border border-stone-200 dark:border-stone-800 hover:border-blue-400 dark:hover:border-blue-600 transition-colors animate-in fade-in zoom-in-[0.98] duration-500"
                         title={sponsors[currentSponsorIndex].title}
                       >
@@ -160,7 +157,6 @@ export default function App() {
                       </a>
                     )}
 
-                    {/* Bolinhas (Dots) indicadoras do Carrossel (só mostra se houver mais de 1) */}
                     {sponsors.length > 1 && (
                       <div className="flex items-center gap-1.5 mt-3">
                         {sponsors.map((_, idx) => (
@@ -172,11 +168,14 @@ export default function App() {
                       </div>
                     )}
                     
-                    <a href="mailto:seu-email@dominio.com" className="text-[10px] text-blue-600 dark:text-blue-400 mt-2 font-medium opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer inline-block">
+                    {/* AQUI ESTÁ O LINK DO E-MAIL CONFIGURADO */}
+                    <a 
+                      href="mailto:leandro73baldocchi@gmail.com?subject=Orçamento%20para%20Anúncio%20no%20RACT" 
+                      className="text-[10px] text-blue-600 dark:text-blue-400 mt-2 font-medium opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer inline-block"
+                    >
                       Anuncie no RACT &rarr;
                     </a>
                   </div>
-                  {/* FIM DO CARROSSEL DE PATROCINADOR */}
 
                   {affiliates.length > 0 && (
                     <div className="bg-[#FDFDFC] dark:bg-[#121212] border border-stone-200 dark:border-stone-800 rounded-xl p-5 shadow-sm">
