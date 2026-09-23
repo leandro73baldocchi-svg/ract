@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { NewsArticle } from '../types';
-import { Bookmark, ExternalLink, ArrowRight } from 'lucide-react';
+import { Bookmark, ExternalLink, ArrowRight, RefreshCw } from 'lucide-react';
 
 interface ArticleCardProps {
   article: NewsArticle;
@@ -17,8 +17,66 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
   onToggleSaveOffline,
   onOpenArticle,
 }) => {
-  const displayTitle = autoTranslate ? (article.titlePt || article.title) : article.title;
-  const displaySummary = autoTranslate ? (article.summaryPt || article.summary) : article.summary;
+  // Motor Bilíngue Autônomo
+  const [translatedTitle, setTranslatedTitle] = useState<string>('');
+  const [translatedSummary, setTranslatedSummary] = useState<string>('');
+  const [isTranslating, setIsTranslating] = useState<boolean>(false);
+
+  useEffect(() => {
+    // Se o usuário não quer tradução, ou se já existe um texto em português salvo, não precisa traduzir nada.
+    if (!autoTranslate) return;
+    if (article.titlePt && article.summaryPt) return;
+
+    let isMounted = true;
+
+    const translateText = async () => {
+      setIsTranslating(true);
+      try {
+        // Traduzindo o Título
+        const resTitle = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=pt&dt=t&q=${encodeURIComponent(article.title)}`);
+        const dataTitle = await resTitle.json();
+        const ptTitle = dataTitle[0].map((t: any) => t[0]).join('');
+
+        // Traduzindo o Resumo
+        const resSummary = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=pt&dt=t&q=${encodeURIComponent(article.summary)}`);
+        const dataSummary = await resSummary.json();
+        const ptSummary = dataSummary[0].map((t: any) => t[0]).join('');
+
+        if (isMounted) {
+          setTranslatedTitle(ptTitle);
+          setTranslatedSummary(ptSummary);
+        }
+      } catch (error) {
+        console.error('Erro no motor de tradução do Cartão:', error);
+      } finally {
+        if (isMounted) setIsTranslating(false);
+      }
+    };
+
+    translateText();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [article.title, article.summary, autoTranslate, article.titlePt, article.summaryPt]);
+
+  // Decidindo o que mostrar na tela baseado nas regras
+  let displayTitle = article.title;
+  let displaySummary = article.summary;
+
+  if (autoTranslate) {
+    if (article.titlePt) {
+      displayTitle = article.titlePt;
+    } else if (translatedTitle) {
+      displayTitle = translatedTitle;
+    }
+
+    if (article.summaryPt) {
+      displaySummary = article.summaryPt;
+    } else if (translatedSummary) {
+      displaySummary = translatedSummary;
+    }
+  }
 
   return (
     <article className="border border-stone-200/90 dark:border-stone-800 bg-white dark:bg-[#181818] rounded-md p-5 sm:p-6 flex flex-col justify-between hover:border-stone-400 dark:hover:border-stone-600 hover:shadow-xs transition-all duration-150">
@@ -68,9 +126,12 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
         {/* Title */}
         <h3
           onClick={() => onOpenArticle(article)}
-          className="font-editorial text-lg sm:text-xl font-bold text-stone-900 dark:text-stone-100 leading-snug cursor-pointer hover:text-stone-700 dark:hover:text-stone-300 transition-colors mb-2.5"
+          className="font-editorial text-lg sm:text-xl font-bold text-stone-900 dark:text-stone-100 leading-snug cursor-pointer hover:text-stone-700 dark:hover:text-stone-300 transition-colors mb-2.5 flex items-start gap-2"
         >
-          {displayTitle}
+          {isTranslating && !article.titlePt ? (
+            <RefreshCw className="w-4 h-4 mt-1 animate-spin text-stone-300 shrink-0" />
+          ) : null}
+          <span>{displayTitle}</span>
         </h3>
 
         {/* Summary */}
@@ -93,7 +154,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
           onClick={() => onOpenArticle(article)}
           className="inline-flex items-center gap-1 font-semibold text-stone-900 dark:text-stone-200 hover:text-stone-700 dark:hover:text-white transition-colors cursor-pointer"
         >
-          <span>Ler Artigo</span>
+          <span>Ler Artigo Completo</span>
           <ArrowRight className="w-3.5 h-3.5" />
         </button>
 
@@ -109,7 +170,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
             }`}
           >
             <Bookmark className={`w-3 h-3 ${isSavedOffline ? 'fill-current' : ''}`} />
-            <span>{isSavedOffline ? 'Salvo Offline' : 'Salvar Offline'}</span>
+            <span className="hidden sm:inline">{isSavedOffline ? 'Salvo Offline' : 'Salvar Offline'}</span>
           </button>
 
           {/* External link to journal */}
