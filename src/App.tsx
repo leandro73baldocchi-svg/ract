@@ -130,7 +130,8 @@ export default function App() {
               {!showOfflineOnly && (
                 <aside className="hidden lg:block w-72 shrink-0 space-y-6">
                   
-                  <div className="bg-[#FDFDFC] dark:bg-[#121212] border border-stone-200 dark:border-stone-800 rounded-xl p-4 shadow-sm flex flex-col items-center justify-center text-center group transition-colors">
+                  {/* CARROSSEL DE PATROCINADORES */}
+                  <div className="bg-[#FDFDFC] dark:bg-[#121212] border border-stone-200 dark:border-stone-800 rounded-xl p-4 shadow-sm flex flex-col items-center justify-center text-center transition-colors">
                     <span className="text-[9px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">
                       Apoio & Patrocínio
                     </span>
@@ -168,10 +169,10 @@ export default function App() {
                       </div>
                     )}
                     
-                    {/* AQUI ESTÁ O LINK DO E-MAIL CONFIGURADO */}
+                    {/* LINK DE E-MAIL AGORA SEMPRE VISÍVEL */}
                     <a 
                       href="mailto:leandro73baldocchi@gmail.com?subject=Orçamento%20para%20Anúncio%20no%20RACT" 
-                      className="text-[10px] text-blue-600 dark:text-blue-400 mt-2 font-medium opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer inline-block"
+                      className="text-[10px] text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 mt-2 font-semibold transition-colors cursor-pointer inline-block"
                     >
                       Anuncie no RACT &rarr;
                     </a>
