@@ -132,7 +132,7 @@ export default function App() {
                   
                   {/* CARROSSEL DE PATROCINADORES */}
                   <div className="bg-[#FDFDFC] dark:bg-[#121212] border border-stone-200 dark:border-stone-800 rounded-xl p-4 shadow-sm flex flex-col items-center justify-center text-center transition-colors">
-                    <span className="text-[9px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">
+                    <span className="text-[9px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-3">
                       Apoio & Patrocínio
                     </span>
                     
@@ -169,12 +169,12 @@ export default function App() {
                       </div>
                     )}
                     
-                    {/* LINK DE E-MAIL AGORA SEMPRE VISÍVEL */}
+                    {/* BOTÃO FIXO E DEFINITIVO PARA ANUNCIAR */}
                     <a 
                       href="mailto:leandro73baldocchi@gmail.com?subject=Orçamento%20para%20Anúncio%20no%20RACT" 
-                      className="text-[10px] text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 mt-2 font-semibold transition-colors cursor-pointer inline-block"
+                      className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800 dark:hover:bg-blue-900/50 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-colors cursor-pointer"
                     >
-                      Anuncie no RACT &rarr;
+                      <Mail className="w-4 h-4" /> Anuncie no RACT
                     </a>
                   </div>
 
