@@ -107,7 +107,26 @@ export default function App() {
               </div>
 
               {!showOfflineOnly && (
-                <aside className="hidden lg:block w-72 shrink-0 sticky top-24 space-y-6">
+                <aside className="hidden lg:block w-72 shrink-0 space-y-6">
+                  
+                  {/* NOVO: ESPAÇO PARA BANNER DE PATROCINADOR */}
+                  <div className="bg-[#FDFDFC] dark:bg-[#121212] border border-stone-200 dark:border-stone-800 rounded-xl p-4 shadow-sm flex flex-col items-center justify-center text-center cursor-pointer group hover:border-blue-300 dark:hover:border-blue-700 transition-colors">
+                    <span className="text-[9px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">
+                      Espaço Patrocinado
+                    </span>
+                    
+                    {/* Placeholder do Banner (No futuro podemos trocar por uma tag <img>) */}
+                    <div className="w-full h-[250px] bg-stone-50 dark:bg-[#1A1A1A] rounded flex flex-col items-center justify-center border-2 border-dashed border-stone-300 dark:border-stone-700">
+                      <div className="text-stone-400 dark:text-stone-600 font-bold text-lg mb-1">300 x 250</div>
+                      <div className="text-stone-400 dark:text-stone-600 text-xs">Banner Patrocinador</div>
+                    </div>
+                    
+                    <p className="text-[10px] text-blue-600 dark:text-blue-400 mt-3 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                      Anuncie no RACT &rarr;
+                    </p>
+                  </div>
+                  {/* FIM DO ESPAÇO DE PATROCINADOR */}
+
                   {affiliates.length > 0 && (
                     <div className="bg-[#FDFDFC] dark:bg-[#121212] border border-stone-200 dark:border-stone-800 rounded-xl p-5 shadow-sm">
                       <div className="flex items-center gap-2 mb-4 pb-3 border-b border-stone-100 dark:border-stone-800">
@@ -125,6 +144,7 @@ export default function App() {
                       </div>
                     </div>
                   )}
+                  
                   <div className="bg-[#FDFDFC] dark:bg-[#121212] border border-stone-200 dark:border-stone-800 rounded-xl overflow-hidden shadow-sm">
                     <div className="p-4 border-b border-stone-100 dark:border-stone-800 bg-stone-50 dark:bg-[#181818]">
                       <div className="flex items-center gap-2 mb-1.5">
