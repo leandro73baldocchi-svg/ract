@@ -11,13 +11,18 @@ import { ArticleDetailModal } from './components/ArticleDetailModal';
 import { UniversitiesView } from './components/UniversitiesView';
 import { NewsArticle, CategoryType, CustomCategory } from './types';
 import { AdminDashboardModal } from './components/AdminDashboardModal';
-import { DEFAULT_BASE_CATEGORIES, getCustomCategories, getAllManagedArticles, fetchServerArticles, fetchServerCategories, fetchRssArticles, getAffiliateLinks, fetchServerAffiliates, AffiliateLink } from './utils/customDataManager';
+import { DEFAULT_BASE_CATEGORIES, getCustomCategories, getAllManagedArticles, fetchServerArticles, fetchServerCategories, fetchRssArticles, getAffiliateLinks, fetchServerAffiliates, AffiliateLink, fetchServerSponsors, SponsorBanner } from './utils/customDataManager';
 import { getOfflineArticles, saveArticleOffline, removeArticleOffline, getAutoTranslatePreference, setAutoTranslatePreference, getDarkModePreference, setDarkModePreference } from './utils/offlineStorage';
 import { Bookmark, ShoppingCart, TrendingUp, ExternalLink, Mail, X } from 'lucide-react';
 
 export default function App() {
   const [articles, setArticles] = useState<NewsArticle[]>(() => getAllManagedArticles());
   const [affiliates, setAffiliates] = useState<AffiliateLink[]>(() => getAffiliateLinks());
+  
+  // NOVO: Estado dos Patrocinadores e do Carrossel
+  const [sponsors, setSponsors] = useState<SponsorBanner[]>([]);
+  const [currentSponsorIndex, setCurrentSponsorIndex] = useState(0);
+
   const [loading, setLoading] = useState<boolean>(false);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [activeCategory, setActiveCategory] = useState<CategoryType>('all');
@@ -34,7 +39,19 @@ export default function App() {
   const [isMobileVitrineOpen, setIsMobileVitrineOpen] = useState<boolean>(false);
   const [isMobileNewsletterOpen, setIsMobileNewsletterOpen] = useState<boolean>(false);
 
-  useEffect(() => { fetchServerAffiliates().then(setAffiliates); }, []);
+  useEffect(() => { 
+    fetchServerAffiliates().then(setAffiliates); 
+    fetchServerSponsors().then(setSponsors);
+  }, []);
+
+  // NOVO: Lógica do Carrossel Automático (Gira a cada 6 segundos)
+  useEffect(() => {
+    if (sponsors.length <= 1) return;
+    const interval = setInterval(() => {
+      setCurrentSponsorIndex((prev) => (prev + 1) % sponsors.length);
+    }, 6000);
+    return () => clearInterval(interval);
+  }, [sponsors.length]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -48,7 +65,13 @@ export default function App() {
   }, []);
 
   const handleCloseAdmin = () => { setIsAdminOpen(false); if (typeof window !== 'undefined') window.history.replaceState({}, '', window.location.pathname); };
-  const handleDataUpdated = async () => { const [arts, cats, affs] = await Promise.all([fetchServerArticles(), fetchServerCategories(), fetchServerAffiliates()]); setArticles(arts); setCustomCategories(cats); setAffiliates(affs); };
+  
+  const handleDataUpdated = async () => { 
+    const [arts, cats, affs, spon] = await Promise.all([fetchServerArticles(), fetchServerCategories(), fetchServerAffiliates(), fetchServerSponsors()]); 
+    setArticles(arts); setCustomCategories(cats); setAffiliates(affs); setSponsors(spon);
+    setCurrentSponsorIndex(0); // Reseta o carrossel se um patrocinador novo for adicionado
+  };
+
   const allCategoriesList = useMemo(() => customCategories?.length > 0 ? customCategories : DEFAULT_BASE_CATEGORIES, [customCategories]);
 
   useEffect(() => {
@@ -109,23 +132,51 @@ export default function App() {
               {!showOfflineOnly && (
                 <aside className="hidden lg:block w-72 shrink-0 space-y-6">
                   
-                  {/* NOVO: ESPAÇO PARA BANNER DE PATROCINADOR */}
-                  <div className="bg-[#FDFDFC] dark:bg-[#121212] border border-stone-200 dark:border-stone-800 rounded-xl p-4 shadow-sm flex flex-col items-center justify-center text-center cursor-pointer group hover:border-blue-300 dark:hover:border-blue-700 transition-colors">
+                  {/* NOVO: CARROSSEL DE PATROCINADORES */}
+                  <div className="bg-[#FDFDFC] dark:bg-[#121212] border border-stone-200 dark:border-stone-800 rounded-xl p-4 shadow-sm flex flex-col items-center justify-center text-center group transition-colors">
                     <span className="text-[9px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">
-                      Espaço Patrocinado
+                      Apoio & Patrocínio
                     </span>
                     
-                    {/* Placeholder do Banner (No futuro podemos trocar por uma tag <img>) */}
-                    <div className="w-full h-[250px] bg-stone-50 dark:bg-[#1A1A1A] rounded flex flex-col items-center justify-center border-2 border-dashed border-stone-300 dark:border-stone-700">
-                      <div className="text-stone-400 dark:text-stone-600 font-bold text-lg mb-1">300 x 250</div>
-                      <div className="text-stone-400 dark:text-stone-600 text-xs">Banner Patrocinador</div>
-                    </div>
+                    {sponsors.length === 0 ? (
+                      <div className="w-full h-[250px] bg-stone-50 dark:bg-[#1A1A1A] rounded flex flex-col items-center justify-center border-2 border-dashed border-stone-300 dark:border-stone-700 hover:border-blue-300 dark:hover:border-blue-700 transition-colors cursor-pointer">
+                        <div className="text-stone-400 dark:text-stone-600 font-bold text-lg mb-1">300 x 250</div>
+                        <div className="text-stone-400 dark:text-stone-600 text-xs">Seja um Patrocinador</div>
+                      </div>
+                    ) : (
+                      <a 
+                        href={sponsors[currentSponsorIndex].linkUrl} 
+                        target="_blank" 
+                        rel="noreferrer" 
+                        key={sponsors[currentSponsorIndex].id} // O key faz a animação recarregar
+                        className="w-full relative block overflow-hidden rounded border border-stone-200 dark:border-stone-800 hover:border-blue-400 dark:hover:border-blue-600 transition-colors animate-in fade-in zoom-in-[0.98] duration-500"
+                        title={sponsors[currentSponsorIndex].title}
+                      >
+                        <img 
+                          src={sponsors[currentSponsorIndex].imageUrl} 
+                          alt={sponsors[currentSponsorIndex].title} 
+                          className="w-full h-[250px] object-cover" 
+                        />
+                      </a>
+                    )}
+
+                    {/* Bolinhas (Dots) indicadoras do Carrossel (só mostra se houver mais de 1) */}
+                    {sponsors.length > 1 && (
+                      <div className="flex items-center gap-1.5 mt-3">
+                        {sponsors.map((_, idx) => (
+                          <span 
+                            key={idx} 
+                            className={`block w-1.5 h-1.5 rounded-full transition-colors ${idx === currentSponsorIndex ? 'bg-blue-600 dark:bg-blue-500' : 'bg-stone-200 dark:bg-stone-700'}`}
+                          ></span>
+                        ))}
+                      </div>
+                    )}
                     
-                    <p className="text-[10px] text-blue-600 dark:text-blue-400 mt-3 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                    <a href="mailto:seu-email@dominio.com" className="text-[10px] text-blue-600 dark:text-blue-400 mt-2 font-medium opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer inline-block">
                       Anuncie no RACT &rarr;
-                    </p>
+                    </a>
                   </div>
-                  {/* FIM DO ESPAÇO DE PATROCINADOR */}
+                  {/* FIM DO CARROSSEL DE PATROCINADOR */}
 
                   {affiliates.length > 0 && (
                     <div className="bg-[#FDFDFC] dark:bg-[#121212] border border-stone-200 dark:border-stone-800 rounded-xl p-5 shadow-sm">
