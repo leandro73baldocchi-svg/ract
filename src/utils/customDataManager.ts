@@ -8,9 +8,12 @@ const ALL_ARTICLES_KEY = 'ract_all_managed_articles_v3';
 const CUSTOM_FEEDS_KEY = 'ract_custom_rss_feeds_v2';
 const ADMIN_PASSWORD_KEY = 'ract_admin_password_hash_v1';
 const AFFILIATE_LINKS_KEY = 'ract_affiliates_v2';
+const SPONSORS_KEY = 'ract_sponsors_v1';
 
 export interface CustomRssFeed { id: string; name: string; url: string; category: string; enabled: boolean; }
 export interface AffiliateLink { id: string; categoryId: string; title: string; url: string; }
+// NOVO: Estrutura do Patrocinador
+export interface SponsorBanner { id: string; title: string; imageUrl: string; linkUrl: string; }
 
 export const DEFAULT_BASE_CATEGORIES: CustomCategory[] = [
   { id: 'all', label: 'Todas as Áreas', order: 0 },
@@ -52,7 +55,6 @@ export async function fetchServerCategories(): Promise<CustomCategory[]> {
     const serverCats: CustomCategory[] = [];
     querySnapshot.forEach((docSnap) => { serverCats.push(docSnap.data() as CustomCategory); });
     
-    // MÁGICA "CLOUD TRUTH": O Firebase sobrepõe as configurações padrão e ignora o cache antigo.
     let mergedCategories = DEFAULT_BASE_CATEGORIES.map(defaultCat => {
       const found = serverCats.find(s => s.id === defaultCat.id);
       return found ? { ...defaultCat, ...found } : defaultCat;
@@ -117,6 +119,24 @@ export async function deleteAffiliateFromServer(linkId: string): Promise<Affilia
   await deleteDoc(doc(db, "affiliates", linkId)); return await fetchServerAffiliates();
 }
 
+// NOVO: Gerenciamento de Patrocinadores (Banners)
+export async function fetchServerSponsors(): Promise<SponsorBanner[]> {
+  try {
+    const querySnapshot = await getDocs(collection(db, "sponsors"));
+    const sponsors: SponsorBanner[] = [];
+    querySnapshot.forEach((docSnap) => { sponsors.push(docSnap.data() as SponsorBanner); });
+    saveSponsorsLocal(sponsors); return sponsors;
+  } catch (err) { return getSponsorsLocal(); }
+}
+
+export async function saveSponsorToServer(sponsor: SponsorBanner): Promise<SponsorBanner[]> {
+  await setDoc(doc(db, "sponsors", sponsor.id), sponsor); return await fetchServerSponsors();
+}
+
+export async function deleteSponsorFromServer(sponsorId: string): Promise<SponsorBanner[]> {
+  await deleteDoc(doc(db, "sponsors", sponsorId)); return await fetchServerSponsors();
+}
+
 export async function fetchServerFeeds(): Promise<CustomRssFeed[]> {
   try {
     const querySnapshot = await getDocs(collection(db, "feeds"));
@@ -169,5 +189,7 @@ export function getCustomRssFeeds(): CustomRssFeed[] { try { const raw = localSt
 export function saveCustomRssFeeds(feeds: CustomRssFeed[]): void { localStorage.setItem(CUSTOM_FEEDS_KEY, JSON.stringify(feeds)); }
 export function getAffiliateLinks(): AffiliateLink[] { try { const raw = localStorage.getItem(AFFILIATE_LINKS_KEY); return raw ? JSON.parse(raw) : []; } catch { return []; } }
 export function saveAffiliateLinks(links: AffiliateLink[]): void { localStorage.setItem(AFFILIATE_LINKS_KEY, JSON.stringify(links)); }
+export function getSponsorsLocal(): SponsorBanner[] { try { const raw = localStorage.getItem(SPONSORS_KEY); return raw ? JSON.parse(raw) : []; } catch { return []; } }
+export function saveSponsorsLocal(sponsors: SponsorBanner[]): void { localStorage.setItem(SPONSORS_KEY, JSON.stringify(sponsors)); }
 export function checkAdminPassword(input: string): boolean { const stored = localStorage.getItem(ADMIN_PASSWORD_KEY) || 'admin2026'; return input.trim() === stored || input.trim() === 'admin2026' || input.trim() === 'ciencia123'; }
 export function setAdminPassword(newPassword: string): void { localStorage.setItem(ADMIN_PASSWORD_KEY, newPassword.trim()); }
