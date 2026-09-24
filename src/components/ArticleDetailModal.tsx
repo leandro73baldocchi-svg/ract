@@ -201,7 +201,7 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
         className="printable-article bg-white dark:bg-[#161616] border border-stone-300 dark:border-stone-800 rounded-lg max-w-4xl w-full my-auto shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150 transition-colors print:m-0 print:overflow-visible print:shadow-none print:border-none print:rounded-none print:w-full print:max-w-none print:dark:bg-white print:block"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* CABEÇALHO COM OS SEUS 5 BOTÕES INTACTOS */}
+        {/* CABEÇALHO DO MODAL */}
         <div className="no-print border-b border-stone-200 dark:border-stone-800 px-5 sm:px-8 py-3.5 flex items-center justify-between bg-[#FBFBFA] dark:bg-[#121212] transition-colors print:hidden">
           <div className="flex items-center gap-2 text-xs font-mono-subtle text-stone-500 dark:text-stone-400 truncate">
             <span className="font-bold text-stone-900 dark:text-stone-100 uppercase tracking-wider">{article.source}</span>
@@ -211,36 +211,33 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
 
           <div className="flex items-center gap-2">
             
-            {/* BOTÃO 1: Artigo Original */}
+            {/* BOTÃO 1: ARTIGO ORIGINAL (Ícone no celular, Completo no computador) */}
             {article.link && (
-              <a href={article.link?.startsWith('http') && article.link.length > 30 ? article.link : `https://scholar.google.com/scholar?q=${encodeURIComponent(article.title)}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium border border-blue-200 bg-blue-50 text-blue-800 hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50 transition-colors cursor-pointer">
+              <a href={article.link?.startsWith('http') && article.link.length > 30 ? article.link : `https://scholar.google.com/scholar?q=${encodeURIComponent(article.title)}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium border border-blue-200 bg-blue-50 text-blue-800 hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50 transition-colors cursor-pointer" title="Artigo Original">
                 <ExternalLink className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline"></span>
-                <span className="sm:hidden"></span>
+                <span className="hidden sm:inline">Artigo Original</span>
               </a>
             )}
 
-            {/* BOTÃO 2: Compartilhar (Adicionado no layout original) */}
-            <button onClick={handleShareLink} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium border border-stone-300 dark:border-stone-700 bg-white dark:bg-[#202020] text-stone-800 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors cursor-pointer">
+            {/* BOTÃO 2: Compartilhar */}
+            <button onClick={handleShareLink} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium border border-stone-300 dark:border-stone-700 bg-white dark:bg-[#202020] text-stone-800 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors cursor-pointer" title="Compartilhar Link">
               {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Share2 className="w-3.5 h-3.5 text-stone-600 dark:text-stone-300" />}
-              <span className="hidden sm:inline">{copiedLink ? 'Copiado!' : ''}</span>
-              <span className="sm:hidden">{copiedLink ? 'Copiado' : ''}</span>
+              <span className="hidden sm:inline">{copiedLink ? 'Copiado!' : 'Compartilhar'}</span>
             </button>
 
             {/* BOTÃO 3: Imprimir Artigo */}
-            <button onClick={handlePrint} id="btn-print-article" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium border border-stone-300 dark:border-stone-700 bg-white dark:bg-[#202020] text-stone-800 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors cursor-pointer">
+            <button onClick={handlePrint} id="btn-print-article" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium border border-stone-300 dark:border-stone-700 bg-white dark:bg-[#202020] text-stone-800 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors cursor-pointer" title="Imprimir Artigo">
               <Printer className="w-3.5 h-3.5 text-stone-600 dark:text-stone-300" />
-              <span className="hidden sm:inline"></span>
-              <span className="sm:hidden"></span>
+              <span className="hidden sm:inline">Imprimir</span>
             </button>
 
-            {/* BOTÃO 4: Salvar Offline (RECUPERADO!) */}
-            <button onClick={() => onToggleSaveOffline({ ...article, fullArticle: fullContent || undefined, cachedDeepDive: deepDive || undefined })} className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium border transition-colors cursor-pointer ${isSavedOffline ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 border-stone-900 dark:border-stone-100' : 'bg-white dark:bg-[#202020] text-stone-700 dark:text-stone-300 border-stone-300 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-700'}`}>
-              {isSavedOffline ? (<><Check className="w-3.5 h-3.5 text-emerald-500" /><span className="hidden sm:inline">Salvo Offline</span></>) : (<><Bookmark className="w-3.5 h-3.5" /><span className="hidden sm:inline"></span></>)}
+            {/* BOTÃO 4: Salvar Offline */}
+            <button onClick={() => onToggleSaveOffline({ ...article, fullArticle: fullContent || undefined, cachedDeepDive: deepDive || undefined })} className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium border transition-colors cursor-pointer ${isSavedOffline ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 border-stone-900 dark:border-stone-100' : 'bg-white dark:bg-[#202020] text-stone-700 dark:text-stone-300 border-stone-300 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-700'}`} title="Salvar Offline">
+              {isSavedOffline ? (<><Check className="w-3.5 h-3.5 text-emerald-500" /><span className="hidden sm:inline">Salvo Offline</span></>) : (<><Bookmark className="w-3.5 h-3.5" /><span className="hidden sm:inline">Salvar Offline</span></>)}
             </button>
 
             {/* BOTÃO 5: Fechar Modal */}
-            <button onClick={onClose} className="p-1.5 rounded text-stone-400 hover:text-stone-800 dark:hover:text-stone-200 hover:bg-stone-200/60 dark:hover:bg-stone-800 transition-colors cursor-pointer ml-1">
+            <button onClick={onClose} className="p-1.5 rounded text-stone-400 hover:text-stone-800 dark:hover:text-stone-200 hover:bg-stone-200/60 dark:hover:bg-stone-800 transition-colors cursor-pointer ml-1" title="Fechar">
               <X className="w-5 h-5" />
             </button>
           </div>
