@@ -112,7 +112,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
           onClick={() => onOpenArticle(article)}
           className="inline-flex items-center gap-1 font-semibold text-stone-900 dark:text-stone-200 hover:text-stone-700 dark:hover:text-white transition-colors cursor-pointer"
         >
-          <span>Ler Artigo Completo</span>
+          <span>Ler Artigo</span>
           <ArrowRight className="w-3.5 h-3.5" />
         </button>
 
