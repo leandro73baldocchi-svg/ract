@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NewsArticle } from '../types';
-import { Bookmark, ExternalLink, ArrowRight, RefreshCw, Share2, Check } from 'lucide-react';
+import { Bookmark, ArrowRight, RefreshCw } from 'lucide-react';
 
 interface ArticleCardProps {
   article: NewsArticle;
@@ -20,10 +20,6 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
   const [translatedTitle, setTranslatedTitle] = useState<string>('');
   const [translatedSummary, setTranslatedSummary] = useState<string>('');
   const [isTranslating, setIsTranslating] = useState<boolean>(false);
-  const [copied, setCopied] = useState<boolean>(false);
-
-  // A GRANDE CORREÇÃO: Unificando o link manual com o link do RSS
-  const originalLink = article.link || article.url;
 
   useEffect(() => {
     if (!autoTranslate) return;
@@ -47,15 +43,6 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
     translateText();
     return () => { isMounted = false; };
   }, [article.title, article.summary, autoTranslate, article.titlePt, article.summaryPt]);
-
-  const handleShare = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    // Agora o Compartilhar copia o Link Original (Nature, Science, etc) para quem recebe ir direto pra fonte
-    const linkToShare = originalLink || window.location.href;
-    navigator.clipboard.writeText(linkToShare);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2500);
-  };
 
   let displayTitle = article.title;
   let displaySummary = article.summary;
@@ -94,29 +81,15 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
       </div>
 
       <div className="pt-3 border-t border-stone-100 dark:border-stone-800 flex flex-wrap items-center justify-between gap-2 mt-2">
-        <button onClick={() => onOpenArticle(article)} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900 rounded-md text-xs font-bold hover:bg-stone-800 dark:hover:bg-white transition-colors cursor-pointer shadow-sm">
-          <span>Ler Resumo</span>
+        <button onClick={() => onOpenArticle(article)} className="inline-flex items-center gap-1.5 font-semibold text-stone-900 dark:text-stone-200 hover:text-stone-700 dark:hover:text-white transition-colors cursor-pointer text-xs">
+          <span>Ler Artigo</span>
           <ArrowRight className="w-3.5 h-3.5" />
         </button>
 
-        <div className="flex items-center gap-1.5">
-          {/* BOTÃO ORIGINAL - Agora procura pelo URL ou pelo LINK */}
-          {originalLink && (
-            <a href={originalLink} target="_blank" rel="noopener noreferrer" title="Ler publicação original" className="inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-md text-xs border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-400 font-bold transition-colors shadow-sm">
-              <ExternalLink className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Original</span>
-            </a>
-          )}
-          
-          <button onClick={handleShare} title="Copiar link original" className="inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-md text-xs border border-stone-300 dark:border-stone-700 text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 font-semibold transition-colors cursor-pointer shadow-sm">
-            {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Share2 className="w-3.5 h-3.5" />}
-            <span className="hidden sm:inline">{copied ? 'Copiado' : 'Link'}</span>
-          </button>
-
-          <button onClick={() => onToggleSaveOffline(article)} title="Salvar para ler depois" className={`inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-semibold transition-colors cursor-pointer border shadow-sm ${isSavedOffline ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 border-stone-900 dark:border-stone-100' : 'text-stone-700 dark:text-stone-300 border-stone-300 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-800'}`}>
-            <Bookmark className={`w-3.5 h-3.5 ${isSavedOffline ? 'fill-current' : ''}`} />
-          </button>
-        </div>
+        <button onClick={() => onToggleSaveOffline(article)} title={isSavedOffline ? 'Salvo no dispositivo para ler offline' : 'Salvar no dispositivo para ler sem internet'} className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold transition-colors cursor-pointer border shadow-sm ${isSavedOffline ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 border-stone-900 dark:border-stone-100' : 'text-stone-700 dark:text-stone-300 border-stone-300 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-800'}`}>
+          <Bookmark className={`w-3.5 h-3.5 ${isSavedOffline ? 'fill-current' : ''}`} />
+          <span className="hidden sm:inline">{isSavedOffline ? 'Salvo Offline' : 'Salvar Offline'}</span>
+        </button>
       </div>
     </article>
   );
