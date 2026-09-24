@@ -211,14 +211,24 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
 
           <div className="flex items-center gap-2">
             
-            {/* BOTÃO 1: Artigo Original */}
+            {/* BOTÃO 1: Artigo Original
             {article.link && (
               <a href={article.link?.startsWith('http') && article.link.length > 30 ? article.link : `https://scholar.google.com/scholar?q=${encodeURIComponent(article.title)}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium border border-blue-200 bg-blue-50 text-blue-800 hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50 transition-colors cursor-pointer">
                 <ExternalLink className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline"></span>
                 <span className="sm:hidden"></span>
               </a>
+            )}   */}
+
+            {/* LINK PARA O ARTIGO ORIGINAL */}
+          {(article.link || article.url) && (
+              <a href={(article.link || article.url)?.startsWith('http') && (article.link || article.url).length > 30 ? (article.link || article.url) : `https://scholar.google.com/scholar?q=${encodeURIComponent(article.title)}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium border border-blue-200 bg-blue-50 text-blue-800 hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50 transition-colors cursor-pointer" title="Artigo Original">
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline"></span>
+              </a>
             )}
+
+            
 
             {/* BOTÃO 2: Compartilhar (Adicionado no layout original) */}
             <button onClick={handleShareLink} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium border border-stone-300 dark:border-stone-700 bg-white dark:bg-[#202020] text-stone-800 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors cursor-pointer">
