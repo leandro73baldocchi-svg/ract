@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { CategoryType, CustomCategory } from '../types';
 import { RefreshCw, Bookmark, WifiOff, Search, X, Moon, Sun, Coffee, ShoppingCart, Mail, Globe } from 'lucide-react';
 
@@ -31,6 +31,8 @@ export const Header: React.FC<HeaderProps> = ({
   savedCount,
   showOfflineOnly,
   onToggleOfflineOnly,
+  autoTranslate,
+  onToggleAutoTranslate,
   isDarkMode,
   onToggleDarkMode,
   activeCategory,
@@ -42,26 +44,6 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenMobileNewsletter
 }) => {
   
-  // INJETA O SCRIPT DO GOOGLE TRANSLATE NATIVO
-  useEffect(() => {
-    const addGoogleTranslateScript = () => {
-      if (document.getElementById('google-translate-script')) return;
-      const script = document.createElement('script');
-      script.id = 'google-translate-script';
-      script.src = '//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
-      script.async = true;
-      document.body.appendChild(script);
-
-      window.googleTranslateElementInit = () => {
-        new window.google.translate.TranslateElement(
-          { pageLanguage: 'pt', includedLanguages: 'pt,en,es,fr,de,it,ru,ja,zh-CN', layout: window.google.translate.TranslateElement.InlineLayout.SIMPLE },
-          'google_translate_element'
-        );
-      };
-    };
-    addGoogleTranslateScript();
-  }, []);
-
   return (
     <header className="border-b border-stone-300 dark:border-stone-800 bg-[#FCFCFB] dark:bg-[#151515] sticky top-0 z-40 shadow-[0_1px_3px_rgba(0,0,0,0.03)] dark:shadow-none transition-colors">
       
@@ -138,11 +120,12 @@ export const Header: React.FC<HeaderProps> = ({
                 {isDarkMode ? (<><Sun className="w-3.5 h-3.5 text-amber-300" /> <span className="hidden sm:inline">Claro</span></>) : (<><Moon className="w-3.5 h-3.5 text-stone-700" /> <span className="hidden sm:inline">Escuro</span></>)}
               </button>
               
-              {/* O GOOGLE TRANSLATE ENTRA AQUI COMO UM BOTÃO DISCRETO */}
-              <div className="relative group flex items-center bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded px-2 overflow-hidden h-[30px] sm:h-[32px] shadow-2xs cursor-pointer hover:bg-stone-50 dark:hover:bg-stone-700 transition-colors">
-                <Globe className="w-3.5 h-3.5 text-stone-500 dark:text-stone-400 mr-2 shrink-0" />
-                <div id="google_translate_element" className="translate-container"></div>
-              </div>
+              {/* O SEU BOTÃO PREMIUM VOLTOU! */}
+              <button onClick={onToggleAutoTranslate} className={`px-3 py-1.5 rounded text-[11px] sm:text-xs font-medium border flex items-center gap-1.5 transition-colors cursor-pointer ${autoTranslate ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 border-stone-900 dark:border-stone-100 shadow-2xs' : 'bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-200 border-stone-300 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-700'}`}>
+                <Globe className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Tradução:</span>
+                <span className="font-mono-subtle font-bold">{autoTranslate ? 'PT-BR' : 'EN'}</span>
+              </button>
 
               <button onClick={onToggleOfflineOnly} className={`px-3 py-1.5 rounded text-[11px] sm:text-xs font-medium border flex items-center gap-1.5 transition-colors cursor-pointer ${showOfflineOnly ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 border-stone-900 dark:border-stone-100 shadow-2xs' : 'bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-200 border-stone-300 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-700'}`}>
                 <Bookmark className={`w-3.5 h-3.5 ${showOfflineOnly ? 'fill-current' : ''}`} />
@@ -176,24 +159,6 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
       </div>
-      
-      {/* OCULTA O TOPO FEIO QUE O GOOGLE COLOCA */}
-      <style dangerouslySetInnerHTML={{__html: `
-        .goog-te-banner-frame { display: none !important; }
-        body { top: 0px !important; }
-        .goog-logo-link { display: none !important; }
-        .goog-te-gadget { color: transparent !important; margin: 0 !important; padding: 0 !important; font-size: 0 !important; }
-        .goog-te-gadget select { padding: 2px; border: none; background: transparent; outline: none; font-size: 11px; font-weight: 600; color: inherit; cursor: pointer; width: 100px; }
-        @media (min-width: 640px) { .goog-te-gadget select { font-size: 12px; } }
-      `}} />
     </header>
   );
 };
-
-// Declaração para o Typescript não reclamar do Google Translate
-declare global {
-  interface Window {
-    google: any;
-    googleTranslateElementInit: () => void;
-  }
-}
