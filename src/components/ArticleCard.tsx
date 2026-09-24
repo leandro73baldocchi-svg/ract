@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NewsArticle } from '../types';
-import { Bookmark, ArrowRight, RefreshCw } from 'lucide-react';
+import { Bookmark, ExternalLink, ArrowRight, RefreshCw } from 'lucide-react';
 
 interface ArticleCardProps {
   article: NewsArticle;
@@ -21,7 +21,6 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
   const [translatedSummary, setTranslatedSummary] = useState<string>('');
   const [isTranslating, setIsTranslating] = useState<boolean>(false);
 
-  // A TRADUÇÃO SEGURA E COMPROVADA DO CARTÃO (MÉTODO GET COM TEXTO CURTO)
   useEffect(() => {
     if (!autoTranslate) return;
     if (article.titlePt && article.summaryPt) return;
@@ -30,12 +29,14 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
     const translateText = async () => {
       setIsTranslating(true);
       try {
+        // TÍTULO - GET clássico e seguro
         const resTitle = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=pt&dt=t&q=${encodeURIComponent(article.title)}`);
         const dataTitle = await resTitle.json();
         const ptTitle = dataTitle[0].map((t: any) => t[0]).join('');
 
-        const shortSummary = article.summary && article.summary.length > 250 
-          ? article.summary.substring(0, 250) + '...' 
+        // RESUMO - Cortamos em 200 caracteres para NUNCA travar o Google em janela anônima ou celular
+        const shortSummary = article.summary && article.summary.length > 200 
+          ? article.summary.substring(0, 200) + '...' 
           : (article.summary || '');
 
         const resSummary = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=pt&dt=t&q=${encodeURIComponent(shortSummary)}`);
@@ -92,6 +93,12 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
         <p className="text-stone-600 dark:text-stone-300 text-xs sm:text-sm leading-relaxed mb-4 line-clamp-3">
           {displaySummary}
         </p>
+
+        {article.keyTakeaway && (
+          <div className="mb-4 text-xs bg-stone-50 dark:bg-[#202020] border-l-2 border-stone-500 dark:border-stone-400 pl-3 py-1.5 text-stone-800 dark:text-stone-200 italic transition-colors">
+            "{article.keyTakeaway}"
+          </div>
+        )}
       </div>
 
       <div className="pt-3 border-t border-stone-100 dark:border-stone-800 flex items-center justify-between gap-2 mt-2 text-xs">
@@ -99,7 +106,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
           onClick={() => onOpenArticle(article)}
           className="inline-flex items-center gap-1 font-semibold text-stone-900 dark:text-stone-200 hover:text-stone-700 dark:hover:text-white transition-colors cursor-pointer"
         >
-          <span>Ler Artigo Completo</span>
+          <span>Ler Artigo</span>
           <ArrowRight className="w-3.5 h-3.5" />
         </button>
 
