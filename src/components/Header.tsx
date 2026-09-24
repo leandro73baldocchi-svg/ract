@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { CategoryType, CustomCategory } from '../types';
 import { RefreshCw, Bookmark, WifiOff, Search, X, Moon, Sun, Coffee, ShoppingCart, Mail, Globe } from 'lucide-react';
 
@@ -44,6 +44,40 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenMobileNewsletter
 }) => {
   
+  // A API OFICIAL DO GOOGLE TRANSLATE (RODANDO INVISÍVEL)
+  useEffect(() => {
+    const addScript = () => {
+      if (document.getElementById('google-translate-script')) return;
+      const script = document.createElement('script');
+      script.id = 'google-translate-script';
+      script.src = '//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
+      script.async = true;
+      document.body.appendChild(script);
+
+      window.googleTranslateElementInit = () => {
+        new window.google.translate.TranslateElement(
+          { pageLanguage: 'en', autoDisplay: false },
+          'google_translate_element' // Esta div vai estar oculta via CSS
+        );
+      };
+    };
+    addScript();
+  }, []);
+
+  // O SEU BOTÃO ELEGANTE CONTROLANDO A API DO GOOGLE POR TRÁS DOS PANOS
+  useEffect(() => {
+    const triggerTranslate = () => {
+      const select = document.querySelector('.goog-te-combo') as HTMLSelectElement;
+      if (select) {
+        select.value = autoTranslate ? 'pt' : 'en';
+        select.dispatchEvent(new Event('change'));
+      }
+    };
+    // Aguarda um pequeno delay pro navegador processar
+    const timeoutId = setTimeout(triggerTranslate, 600);
+    return () => clearTimeout(timeoutId);
+  }, [autoTranslate]);
+
   return (
     <header className="border-b border-stone-300 dark:border-stone-800 bg-[#FCFCFB] dark:bg-[#151515] sticky top-0 z-40 shadow-[0_1px_3px_rgba(0,0,0,0.03)] dark:shadow-none transition-colors">
       
@@ -120,7 +154,7 @@ export const Header: React.FC<HeaderProps> = ({
                 {isDarkMode ? (<><Sun className="w-3.5 h-3.5 text-amber-300" /> <span className="hidden sm:inline">Claro</span></>) : (<><Moon className="w-3.5 h-3.5 text-stone-700" /> <span className="hidden sm:inline">Escuro</span></>)}
               </button>
               
-              {/* O SEU BOTÃO PREMIUM VOLTOU! */}
+              {/* O SEU BOTÃO ELEGANTE COMANDANDO TUDO */}
               <button onClick={onToggleAutoTranslate} className={`px-3 py-1.5 rounded text-[11px] sm:text-xs font-medium border flex items-center gap-1.5 transition-colors cursor-pointer ${autoTranslate ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 border-stone-900 dark:border-stone-100 shadow-2xs' : 'bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-200 border-stone-300 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-700'}`}>
                 <Globe className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Tradução:</span>
@@ -159,6 +193,22 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
       </div>
+
+      {/* AQUI ESTÁ A MÁGICA: O MOTOR DO GOOGLE FICA TOTALMENTE INVISÍVEL */}
+      <div id="google_translate_element" style={{ display: 'none' }}></div>
+      <style dangerouslySetInnerHTML={{__html: `
+        .goog-te-banner-frame { display: none !important; }
+        body { top: 0px !important; }
+        .skiptranslate { display: none !important; }
+      `}} />
     </header>
   );
 };
+
+// Declaração para o Typescript não reclamar do Google Translate
+declare global {
+  interface Window {
+    google: any;
+    googleTranslateElementInit: () => void;
+  }
+}
