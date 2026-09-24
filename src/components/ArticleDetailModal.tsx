@@ -25,8 +25,6 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
   const [deepDive, setDeepDive] = useState<ArticleDeepDive | null>(null);
   const [loadingContent, setLoadingContent] = useState<boolean>(false);
   const [copiedCitation, setCopiedCitation] = useState<boolean>(false);
-  
-  // Controle do botão de compartilhar
   const [copiedLink, setCopiedLink] = useState<boolean>(false);
 
   useEffect(() => {
@@ -110,8 +108,10 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
   const discussion = fullContent ? (usePortuguese ? fullContent.discussionPt : fullContent.discussion) : null;
   const conclusion = fullContent ? (usePortuguese ? fullContent.conclusionPt : fullContent.conclusion) : null;
 
+  const originalUrl = article.link || article.url;
+
   const citationAbnt = fullContent?.citationAbnt ||
-    `${(article.author || article.source).toUpperCase()}. ${article.titlePt || article.title}. ${article.source}, ${article.pubDate}. Disponível em: <${article.link || article.url}>. Acesso em: ${new Date().toLocaleDateString('pt-BR')}.`;
+    `${(article.author || article.source).toUpperCase()}. ${article.titlePt || article.title}. ${article.source}, ${article.pubDate}. Disponível em: <${originalUrl}>. Acesso em: ${new Date().toLocaleDateString('pt-BR')}.`;
 
   const handlePrint = () => {
     window.print();
@@ -125,7 +125,6 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
     }
   };
 
-  // Nova função para compartilhar o link do RACT e atrair tráfego!
   const handleShareLink = () => {
     if (navigator.clipboard) {
       const url = `${window.location.origin}/?art=${article.id}`;
@@ -152,17 +151,16 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
-            {(article.link || article.url) && (
-              <a href={article.link || article.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium border border-blue-200 bg-blue-50 text-blue-800 hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50 transition-colors cursor-pointer">
+            {originalUrl && (
+              <a href={originalUrl?.startsWith('http') && originalUrl.length > 30 ? originalUrl : `https://scholar.google.com/scholar?q=${encodeURIComponent(article.title)}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium border border-blue-200 bg-blue-50 text-blue-800 hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50 transition-colors cursor-pointer">
                 <ExternalLink className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Artigo Original</span>
                 <span className="sm:hidden">Original</span>
               </a>
             )}
 
-            {/* O SEU NOVO BOTÃO DE COMPARTILHAR - IDÊNTICO AO SEU BOTÃO DE IMPRIMIR! */}
             <button onClick={handleShareLink} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium border border-stone-300 dark:border-stone-700 bg-white dark:bg-[#202020] text-stone-800 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors cursor-pointer">
-              {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Share2 className="w-3.5 h-3.5 text-stone-600 dark:text-stone-300" />}
+              {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Share2 className="w-3.5 h-3.5 text-stone-600 dark:text-stone-300" />}
               <span className="hidden sm:inline">{copiedLink ? 'Link Copiado' : 'Compartilhar'}</span>
             </button>
 
@@ -182,7 +180,6 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
           </div>
         </div>
 
-        {/* Modal Scrollable Article Body (Scrollable on screen, full height on print) */}
         <div className="p-6 sm:p-10 max-h-[85vh] overflow-y-auto space-y-8 print:max-h-none print:overflow-visible print:p-0 print:text-black">
           
           <div className="no-print flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-stone-200 dark:border-stone-800 print:hidden">
@@ -194,8 +191,8 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
                 <span>Original ({article.source.includes('USP') || article.source.includes('UNICAMP') ? 'PT' : 'EN'})</span>
               </button>
             </div>
-            {(article.link || article.url) && (
-              <a href={article.link || article.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 transition-colors">
+            {originalUrl && (
+              <a href={originalUrl?.startsWith('http') && originalUrl.length > 30 ? originalUrl : `https://scholar.google.com/scholar?q=${encodeURIComponent(article.title)}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 transition-colors">
                 <span>Periódico Oficial ({article.source})</span><ExternalLink className="w-3.5 h-3.5" />
               </a>
             )}
@@ -312,7 +309,7 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
           </section>
 
           <div className="hidden print:block pt-6 border-t border-stone-300 text-[10pt] text-stone-600 font-mono-subtle print:border-black print:text-black">
-            Documento emitido pelo Radar Autônomo de Ciências e Tecnologia (RACT) • {new Date().toLocaleDateString('pt-BR')} • {article.link || article.url}
+            Documento emitido pelo Radar Autônomo de Ciências e Tecnologia (RACT) • {new Date().toLocaleDateString('pt-BR')} • {originalUrl}
           </div>
         </div>
       </div>
