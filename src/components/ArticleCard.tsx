@@ -29,25 +29,41 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
     const translateText = async () => {
       setIsTranslating(true);
       try {
-        // Título traduz normal (é curto)
-        const resTitle = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=pt&dt=t&q=${encodeURIComponent(article.title)}`);
+        // TÍTULO: Usando método POST (Oculto e seguro)
+        const resTitle = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=pt&dt=t`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({ q: article.title || '' })
+        });
         const dataTitle = await resTitle.json();
         const ptTitle = dataTitle[0].map((t: any) => t[0]).join('');
 
-        // O TRUQUE AQUI: Pegamos apenas os primeiros 400 caracteres para o resumo do cartão
-        // Isso evita que o Google bloqueie a tradução por limite de tamanho da URL
-        const shortSummary = article.summary.length > 400 
+        // RESUMO: Cortamos em 400 letras e usamos POST para as quebras de linha não travarem o Google
+        const shortSummary = article.summary && article.summary.length > 400 
           ? article.summary.substring(0, 400) + '...' 
-          : article.summary;
+          : (article.summary || '');
 
-        const resSummary = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=pt&dt=t&q=${encodeURIComponent(shortSummary)}`);
+        const resSummary = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=pt&dt=t`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({ q: shortSummary })
+        });
         const dataSummary = await resSummary.json();
         const ptSummary = dataSummary[0].map((t: any) => t[0]).join('');
 
-        if (isMounted) { setTranslatedTitle(ptTitle); setTranslatedSummary(ptSummary); }
-      } catch (error) { console.error('Erro na tradução', error); } finally { if (isMounted) setIsTranslating(false); }
+        if (isMounted) { 
+          setTranslatedTitle(ptTitle); 
+          setTranslatedSummary(ptSummary); 
+        }
+      } catch (error) { 
+        console.error('Erro na tradução do cartão:', error); 
+      } finally { 
+        if (isMounted) setIsTranslating(false); 
+      }
     };
+
     translateText();
+
     return () => { isMounted = false; };
   }, [article.title, article.summary, autoTranslate, article.titlePt, article.summaryPt]);
 
