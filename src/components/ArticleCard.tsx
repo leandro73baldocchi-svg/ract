@@ -29,11 +29,18 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
     const translateText = async () => {
       setIsTranslating(true);
       try {
+        // Título traduz normal (é curto)
         const resTitle = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=pt&dt=t&q=${encodeURIComponent(article.title)}`);
         const dataTitle = await resTitle.json();
         const ptTitle = dataTitle[0].map((t: any) => t[0]).join('');
 
-        const resSummary = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=pt&dt=t&q=${encodeURIComponent(article.summary)}`);
+        // O TRUQUE AQUI: Pegamos apenas os primeiros 400 caracteres para o resumo do cartão
+        // Isso evita que o Google bloqueie a tradução por limite de tamanho da URL
+        const shortSummary = article.summary.length > 400 
+          ? article.summary.substring(0, 400) + '...' 
+          : article.summary;
+
+        const resSummary = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=pt&dt=t&q=${encodeURIComponent(shortSummary)}`);
         const dataSummary = await resSummary.json();
         const ptSummary = dataSummary[0].map((t: any) => t[0]).join('');
 
