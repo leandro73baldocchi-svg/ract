@@ -12,7 +12,6 @@ const SPONSORS_KEY = 'ract_sponsors_v1';
 
 export interface CustomRssFeed { id: string; name: string; url: string; category: string; enabled: boolean; }
 export interface AffiliateLink { id: string; categoryId: string; title: string; url: string; }
-// NOVO: Estrutura do Patrocinador
 export interface SponsorBanner { id: string; title: string; imageUrl: string; linkUrl: string; }
 
 export const DEFAULT_BASE_CATEGORIES: CustomCategory[] = [
@@ -54,72 +53,34 @@ export async function fetchServerCategories(): Promise<CustomCategory[]> {
     const querySnapshot = await getDocs(collection(db, "categories"));
     const serverCats: CustomCategory[] = [];
     querySnapshot.forEach((docSnap) => { serverCats.push(docSnap.data() as CustomCategory); });
-    
-    let mergedCategories = DEFAULT_BASE_CATEGORIES.map(defaultCat => {
-      const found = serverCats.find(s => s.id === defaultCat.id);
-      return found ? { ...defaultCat, ...found } : defaultCat;
-    });
-
-    serverCats.forEach(sc => {
-      if (!mergedCategories.find(mc => mc.id === sc.id)) { mergedCategories.push(sc); }
-    });
-
+    let mergedCategories = DEFAULT_BASE_CATEGORIES.map(defaultCat => { const found = serverCats.find(s => s.id === defaultCat.id); return found ? { ...defaultCat, ...found } : defaultCat; });
+    serverCats.forEach(sc => { if (!mergedCategories.find(mc => mc.id === sc.id)) { mergedCategories.push(sc); } });
     const allCat = mergedCategories.find(c => c.id === 'all') || { id: 'all', label: 'Todas as Áreas', order: 0 };
     const otherCats = mergedCategories.filter(c => c.id !== 'all');
-    otherCats.sort((a, b) => {
-      const orderA = a.order ?? 99; const orderB = b.order ?? 99;
-      if (orderA !== orderB) return orderA - orderB;
-      return a.label.localeCompare(b.label);
-    });
-
+    otherCats.sort((a, b) => { const orderA = a.order ?? 99; const orderB = b.order ?? 99; if (orderA !== orderB) return orderA - orderB; return a.label.localeCompare(b.label); });
     const finalCategories = [allCat, ...otherCats];
-    saveCustomCategories(finalCategories);
-    return finalCategories;
+    saveCustomCategories(finalCategories); return finalCategories;
   } catch (err) { return getCustomCategories(); }
 }
 
-export async function saveOrUpdateArticle(article: NewsArticle): Promise<NewsArticle[]> {
-  await setDoc(doc(db, "articles", article.id), article); return await fetchServerArticles();
-}
-
-export async function deleteManagedArticle(articleId: string): Promise<NewsArticle[]> {
-  await deleteDoc(doc(db, "articles", articleId)); return await fetchServerArticles();
-}
-
-export async function resetToFactoryArticles(): Promise<NewsArticle[]> {
-  for (const art of ACADEMIC_ARTICLES) await setDoc(doc(db, "articles", art.id), art);
-  return await fetchServerArticles();
-}
-
-export async function saveCategoryToServer(category: CustomCategory): Promise<CustomCategory[]> {
-  await setDoc(doc(db, "categories", category.id), category); return await fetchServerCategories();
-}
-
-export async function deleteCategoryFromServer(categoryId: string): Promise<CustomCategory[]> {
-  await deleteDoc(doc(db, "categories", categoryId)); return await fetchServerCategories();
-}
+export async function saveOrUpdateArticle(article: NewsArticle): Promise<NewsArticle[]> { await setDoc(doc(db, "articles", article.id), article); return await fetchServerArticles(); }
+export async function deleteManagedArticle(articleId: string): Promise<NewsArticle[]> { await deleteDoc(doc(db, "articles", articleId)); return await fetchServerArticles(); }
+export async function resetToFactoryArticles(): Promise<NewsArticle[]> { for (const art of ACADEMIC_ARTICLES) await setDoc(doc(db, "articles", art.id), art); return await fetchServerArticles(); }
+export async function saveCategoryToServer(category: CustomCategory): Promise<CustomCategory[]> { await setDoc(doc(db, "categories", category.id), category); return await fetchServerCategories(); }
+export async function deleteCategoryFromServer(categoryId: string): Promise<CustomCategory[]> { await deleteDoc(doc(db, "categories", categoryId)); return await fetchServerCategories(); }
 
 export async function fetchServerAffiliates(): Promise<AffiliateLink[]> {
   try {
     const querySnapshot = await getDocs(collection(db, "affiliates"));
     const links: AffiliateLink[] = [];
-    querySnapshot.forEach((docSnap) => {
-      const data = docSnap.data();
-      links.push({ id: data.id || docSnap.id, categoryId: data.categoryId || docSnap.id, title: data.title, url: data.url });
-    });
+    querySnapshot.forEach((docSnap) => { const data = docSnap.data(); links.push({ id: data.id || docSnap.id, categoryId: data.categoryId || docSnap.id, title: data.title, url: data.url }); });
     saveAffiliateLinks(links); return links;
   } catch (err) { return getAffiliateLinks(); }
 }
 
-export async function saveAffiliateToServer(link: AffiliateLink): Promise<AffiliateLink[]> {
-  await setDoc(doc(db, "affiliates", link.id), link); return await fetchServerAffiliates();
-}
+export async function saveAffiliateToServer(link: AffiliateLink): Promise<AffiliateLink[]> { await setDoc(doc(db, "affiliates", link.id), link); return await fetchServerAffiliates(); }
+export async function deleteAffiliateFromServer(linkId: string): Promise<AffiliateLink[]> { await deleteDoc(doc(db, "affiliates", linkId)); return await fetchServerAffiliates(); }
 
-export async function deleteAffiliateFromServer(linkId: string): Promise<AffiliateLink[]> {
-  await deleteDoc(doc(db, "affiliates", linkId)); return await fetchServerAffiliates();
-}
-
-// NOVO: Gerenciamento de Patrocinadores (Banners)
 export async function fetchServerSponsors(): Promise<SponsorBanner[]> {
   try {
     const querySnapshot = await getDocs(collection(db, "sponsors"));
@@ -128,14 +89,8 @@ export async function fetchServerSponsors(): Promise<SponsorBanner[]> {
     saveSponsorsLocal(sponsors); return sponsors;
   } catch (err) { return getSponsorsLocal(); }
 }
-
-export async function saveSponsorToServer(sponsor: SponsorBanner): Promise<SponsorBanner[]> {
-  await setDoc(doc(db, "sponsors", sponsor.id), sponsor); return await fetchServerSponsors();
-}
-
-export async function deleteSponsorFromServer(sponsorId: string): Promise<SponsorBanner[]> {
-  await deleteDoc(doc(db, "sponsors", sponsorId)); return await fetchServerSponsors();
-}
+export async function saveSponsorToServer(sponsor: SponsorBanner): Promise<SponsorBanner[]> { await setDoc(doc(db, "sponsors", sponsor.id), sponsor); return await fetchServerSponsors(); }
+export async function deleteSponsorFromServer(sponsorId: string): Promise<SponsorBanner[]> { await deleteDoc(doc(db, "sponsors", sponsorId)); return await fetchServerSponsors(); }
 
 export async function fetchServerFeeds(): Promise<CustomRssFeed[]> {
   try {
@@ -143,20 +98,11 @@ export async function fetchServerFeeds(): Promise<CustomRssFeed[]> {
     const feeds: CustomRssFeed[] = [];
     querySnapshot.forEach((docSnap) => { feeds.push(docSnap.data() as CustomRssFeed); });
     if (feeds.length > 0) { saveCustomRssFeeds(feeds); return feeds; } 
-    else {
-      for (const f of DEFAULT_RSS_FEEDS) await setDoc(doc(db, "feeds", f.id), f);
-      saveCustomRssFeeds(DEFAULT_RSS_FEEDS); return DEFAULT_RSS_FEEDS;
-    }
+    else { for (const f of DEFAULT_RSS_FEEDS) await setDoc(doc(db, "feeds", f.id), f); saveCustomRssFeeds(DEFAULT_RSS_FEEDS); return DEFAULT_RSS_FEEDS; }
   } catch (err) { return getCustomRssFeeds(); }
 }
-
-export async function saveFeedToServer(feed: CustomRssFeed): Promise<CustomRssFeed[]> {
-  await setDoc(doc(db, "feeds", feed.id), feed); return await fetchServerFeeds();
-}
-
-export async function deleteFeedFromServer(feedId: string): Promise<CustomRssFeed[]> {
-  await deleteDoc(doc(db, "feeds", feedId)); return await fetchServerFeeds();
-}
+export async function saveFeedToServer(feed: CustomRssFeed): Promise<CustomRssFeed[]> { await setDoc(doc(db, "feeds", feed.id), feed); return await fetchServerFeeds(); }
+export async function deleteFeedFromServer(feedId: string): Promise<CustomRssFeed[]> { await deleteDoc(doc(db, "feeds", feedId)); return await fetchServerFeeds(); }
 
 export async function fetchRssArticles(): Promise<NewsArticle[]> {
   const feeds = await fetchServerFeeds();
@@ -166,14 +112,28 @@ export async function fetchRssArticles(): Promise<NewsArticle[]> {
       const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feed.url)}`);
       const data = await res.json();
       if (data.status === 'ok') {
-        return data.items.map((item: any) => ({
-          id: `rss-${feed.id}-${item.guid || item.link}`, title: item.title, titlePt: "",
-          summary: (item.description || "").replace(/(<([^>]+)>)/gi, "").substring(0, 250) + "...",
-          summaryPt: "", source: feed.name, sourceCategory: feed.category,
-          date: item.pubDate?.split(' ')[0] || new Date().toISOString().split('T')[0],
-          url: item.link, imageUrl: item.thumbnail || item.enclosure?.link || "https://images.unsplash.com/photo-1532094349884-543bc11b234d",
-          authors: item.author ? [item.author] : ["Redação"], tags: ["RSS Automático", feed.category]
-        }));
+        return data.items.map((item: any) => {
+          
+          // A MÁGICA DOS PARÁGRAFOS: Resgata o texto e transforma as marcações HTML em quebras de linha reais
+          const rawHtml = item.content || item.description || "";
+          const withNewlines = rawHtml.replace(/<br\s*[\/]?>/gi, '\n').replace(/<\/p>/gi, '\n\n');
+          const cleanText = withNewlines.replace(/(<([^>]+)>)/gi, '').replace(/\n{3,}/g, '\n\n').trim();
+
+          return {
+            id: `rss-${feed.id}-${item.guid || item.link}`, 
+            title: item.title, 
+            titlePt: "",
+            summary: cleanText, // TEXTO COMPLETO, SEM LIMITE!
+            summaryPt: "", 
+            source: feed.name, 
+            sourceCategory: feed.category,
+            date: item.pubDate?.split(' ')[0] || new Date().toISOString().split('T')[0],
+            url: item.link, 
+            imageUrl: item.thumbnail || item.enclosure?.link || "https://images.unsplash.com/photo-1532094349884-543bc11b234d",
+            authors: item.author ? [item.author] : ["Redação"], 
+            tags: ["RSS Automático", feed.category]
+          };
+        });
       }
       return [];
     } catch (err) { return []; }
