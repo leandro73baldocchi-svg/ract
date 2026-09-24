@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { NewsArticle } from '../types';
-import { Bookmark, ArrowRight, RefreshCw } from 'lucide-react';
+import { Bookmark, ArrowRight } from 'lucide-react';
 
 interface ArticleCardProps {
   article: NewsArticle;
-  autoTranslate: boolean;
   isSavedOffline: boolean;
   onToggleSaveOffline: (article: NewsArticle) => void;
   onOpenArticle: (article: NewsArticle) => void;
@@ -12,53 +11,16 @@ interface ArticleCardProps {
 
 export const ArticleCard: React.FC<ArticleCardProps> = ({
   article,
-  autoTranslate,
   isSavedOffline,
   onToggleSaveOffline,
   onOpenArticle,
 }) => {
-  const [translatedTitle, setTranslatedTitle] = useState<string>('');
-  const [translatedSummary, setTranslatedSummary] = useState<string>('');
-  const [isTranslating, setIsTranslating] = useState<boolean>(false);
 
-  useEffect(() => {
-    if (!autoTranslate) return;
-    if (article.titlePt && article.summaryPt) return;
-
-    let isMounted = true;
-    const translateText = async () => {
-      setIsTranslating(true);
-      try {
-        const resTitle = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=pt&dt=t&q=${encodeURIComponent(article.title)}`);
-        const dataTitle = await resTitle.json();
-        const ptTitle = dataTitle[0].map((t: any) => t[0]).join('');
-
-        // CORTAMOS O TEXTO EM 250 LETRAS ANTES DE TRADUZIR (Evita o bloqueio do Google e funciona em modo anônimo)
-        const shortSummary = article.summary && article.summary.length > 250 
-          ? article.summary.substring(0, 250) + '...' 
-          : (article.summary || '');
-
-        const resSummary = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=pt&dt=t&q=${encodeURIComponent(shortSummary)}`);
-        const dataSummary = await resSummary.json();
-        const ptSummary = dataSummary[0].map((t: any) => t[0]).join('');
-
-        if (isMounted) { setTranslatedTitle(ptTitle); setTranslatedSummary(ptSummary); }
-      } catch (error) { console.error('Erro na tradução', error); } finally { if (isMounted) setIsTranslating(false); }
-    };
-    translateText();
-    return () => { isMounted = false; };
-  }, [article.title, article.summary, autoTranslate, article.titlePt, article.summaryPt]);
-
-  let displayTitle = article.title;
-  let displaySummary = article.summary;
-
-  if (autoTranslate) {
-    if (article.titlePt) { displayTitle = article.titlePt; } else if (translatedTitle) { displayTitle = translatedTitle; }
-    if (article.summaryPt) { displaySummary = article.summaryPt; } else if (translatedSummary) { displaySummary = translatedSummary; }
-  }
+  const displayTitle = article.titlePt || article.title;
+  const displaySummary = article.summaryPt || article.summary;
 
   return (
-    <article className="border border-stone-200/90 dark:border-stone-800 bg-white dark:bg-[#181818] rounded-md p-5 sm:p-6 flex flex-col justify-between hover:border-stone-400 dark:hover:border-stone-600 hover:shadow-xs transition-all duration-150 group">
+    <article className="border border-stone-200/90 dark:border-stone-800 bg-white dark:bg-[#181818] rounded-md p-5 sm:p-6 flex flex-col justify-between hover:border-stone-400 dark:hover:border-stone-600 hover:shadow-xs transition-all duration-150 group translate-box">
       <div>
         <div className="flex items-center justify-between gap-2 text-[11px] font-mono-subtle text-stone-500 dark:text-stone-400 mb-3 pb-2 border-b border-stone-100 dark:border-stone-800">
           <div className="flex items-center gap-2 truncate">
@@ -83,9 +45,6 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
           onClick={() => onOpenArticle(article)}
           className="font-editorial text-lg sm:text-xl font-bold text-stone-900 dark:text-stone-100 leading-snug cursor-pointer hover:text-stone-700 dark:hover:text-stone-300 transition-colors mb-2.5 flex items-start gap-2"
         >
-          {isTranslating && !article.titlePt ? (
-            <RefreshCw className="w-4 h-4 mt-1 animate-spin text-stone-300 shrink-0" />
-          ) : null}
           <span>{displayTitle}</span>
         </h3>
 
@@ -108,8 +67,6 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
           <span>Ler Artigo</span>
           <ArrowRight className="w-3.5 h-3.5" />
         </button>
-
-        {/* Link original foi REMOVIDO DAQUI para forçar a abertura do modal! */}
 
         <div className="flex items-center gap-2">
           <button
