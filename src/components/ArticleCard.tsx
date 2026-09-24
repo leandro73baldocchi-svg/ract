@@ -18,7 +18,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
   onOpenArticle,
 }) => {
   const [translatedTitle, setTranslatedTitle] = useState<string>('');
-  const [translatedSummary, setTranslatedSummary] = useState<string>('');
+  const [translatedSummaryPreview, setTranslatedSummaryPreview] = useState<string>('');
   const [isTranslating, setIsTranslating] = useState<boolean>(false);
 
   useEffect(() => {
@@ -29,15 +29,26 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
     const translateText = async () => {
       setIsTranslating(true);
       try {
-        const resTitle = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=pt&dt=t&q=${encodeURIComponent(article.title)}`);
+        const resTitle = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=pt&dt=t`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({ q: article.title })
+        });
         const dataTitle = await resTitle.json();
         const ptTitle = dataTitle[0].map((t: any) => t[0]).join('');
 
-        const resSummary = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=pt&dt=t&q=${encodeURIComponent(article.summary)}`);
+        // TRUQUE DO CARTÃO: Traduz só os 350 primeiros caracteres para a API do Google não bloquear o site
+        const previewText = article.summary.substring(0, 350) + (article.summary.length > 350 ? '...' : '');
+        
+        const resSummary = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=pt&dt=t`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({ q: previewText })
+        });
         const dataSummary = await resSummary.json();
         const ptSummary = dataSummary[0].map((t: any) => t[0]).join('');
 
-        if (isMounted) { setTranslatedTitle(ptTitle); setTranslatedSummary(ptSummary); }
+        if (isMounted) { setTranslatedTitle(ptTitle); setTranslatedSummaryPreview(ptSummary); }
       } catch (error) { console.error('Erro na tradução', error); } finally { if (isMounted) setIsTranslating(false); }
     };
     translateText();
@@ -49,7 +60,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
 
   if (autoTranslate) {
     if (article.titlePt) { displayTitle = article.titlePt; } else if (translatedTitle) { displayTitle = translatedTitle; }
-    if (article.summaryPt) { displaySummary = article.summaryPt; } else if (translatedSummary) { displaySummary = translatedSummary; }
+    if (article.summaryPt) { displaySummary = article.summaryPt; } else if (translatedSummaryPreview) { displaySummary = translatedSummaryPreview; }
   }
 
   return (
