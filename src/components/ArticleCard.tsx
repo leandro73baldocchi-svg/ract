@@ -44,9 +44,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
     return () => { isMounted = false; };
   }, [article.title, article.summary, autoTranslate, article.titlePt, article.summaryPt]);
 
-  // Corrige o link para funcionar com manuais e RSS
   const originalLink = article.link || article.url;
-
   let displayTitle = article.title;
   let displaySummary = article.summary;
 
