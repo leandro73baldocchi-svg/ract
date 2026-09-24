@@ -26,11 +26,16 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
   const [loadingContent, setLoadingContent] = useState<boolean>(false);
   const [copiedCitation, setCopiedCitation] = useState<boolean>(false);
   const [copiedLink, setCopiedLink] = useState<boolean>(false);
+  
+  // Variáveis para traduzir o Título e Resumo Base
+  const [translatedTitle, setTranslatedTitle] = useState<string>('');
+  const [translatedSummary, setTranslatedSummary] = useState<string>('');
 
   useEffect(() => {
     setUsePortuguese(autoTranslateDefault);
   }, [autoTranslateDefault, article]);
 
+  // Buscando o conteúdo completo
   useEffect(() => {
     if (!isOpen || !article) {
       setFullContent(null);
@@ -95,12 +100,43 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
     };
   }, [isOpen, article]);
 
+  // Nova Engrenagem: Traduzir o Título e o Resumo Superior se não existir no banco
+  useEffect(() => {
+    if (!isOpen || !article) { setTranslatedTitle(''); setTranslatedSummary(''); return; }
+    if (!autoTranslateDefault) return;
+    if (article.titlePt && article.summaryPt) return;
+
+    let isMounted = true;
+    const translateText = async () => {
+      try {
+        const resTitle = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=pt&dt=t&q=${encodeURIComponent(article.title)}`);
+        const dataTitle = await resTitle.json();
+        const ptTitle = dataTitle[0].map((t: any) => t[0]).join('');
+
+        // Limite gigante e seguro para o modal
+        const safeSummary = article.summary.substring(0, 1800);
+        const resSummary = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=pt&dt=t&q=${encodeURIComponent(safeSummary)}`);
+        const dataSummary = await resSummary.json();
+        const ptSummary = dataSummary[0].map((t: any) => t[0]).join('');
+
+        if (isMounted) { setTranslatedTitle(ptTitle); setTranslatedSummary(ptSummary); }
+      } catch (error) { console.error('Erro na tradução do modal', error); }
+    };
+    translateText();
+    return () => { isMounted = false; };
+  }, [article, isOpen, autoTranslateDefault]);
+
+
   if (!isOpen || !article) return null;
 
-  const title = usePortuguese ? (article.titlePt || article.title) : article.title;
+  // AGORA OS FIOS ESTÃO LIGADOS (Usando translatedTitle e translatedSummary)
+  const title = usePortuguese 
+    ? (article.titlePt || translatedTitle || article.title) 
+    : article.title;
+
   const abstract = fullContent
-    ? (usePortuguese ? fullContent.abstractPt : fullContent.abstract)
-    : (usePortuguese ? article.summaryPt || article.summary : article.summary);
+    ? (usePortuguese ? (fullContent.abstractPt || translatedSummary || fullContent.abstract) : fullContent.abstract)
+    : (usePortuguese ? (article.summaryPt || translatedSummary || article.summary) : article.summary);
 
   const introduction = fullContent ? (usePortuguese ? fullContent.introductionPt : fullContent.introduction) : null;
   const methodology = fullContent ? (usePortuguese ? fullContent.methodologyPt : fullContent.methodology) : null;
@@ -113,9 +149,7 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
   const citationAbnt = fullContent?.citationAbnt ||
     `${(article.author || article.source).toUpperCase()}. ${article.titlePt || article.title}. ${article.source}, ${article.pubDate}. Disponível em: <${originalUrl}>. Acesso em: ${new Date().toLocaleDateString('pt-BR')}.`;
 
-  const handlePrint = () => {
-    window.print();
-  };
+  const handlePrint = () => { window.print(); };
 
   const handleCopyCitation = () => {
     if (navigator.clipboard) {
@@ -160,7 +194,7 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
             )}
 
             <button onClick={handleShareLink} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium border border-stone-300 dark:border-stone-700 bg-white dark:bg-[#202020] text-stone-800 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors cursor-pointer">
-              {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Share2 className="w-3.5 h-3.5 text-stone-600 dark:text-stone-300" />}
+              {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Share2 className="w-3.5 h-3.5 text-stone-600 dark:text-stone-300" />}
               <span className="hidden sm:inline">{copiedLink ? 'Link Copiado' : 'Compartilhar'}</span>
             </button>
 
