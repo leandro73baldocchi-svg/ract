@@ -35,7 +35,7 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
     setUsePortuguese(autoTranslateDefault);
   }, [autoTranslateDefault, article]);
 
-  // CARREGA CONTEÚDO EXTRA (SE TIVER)
+  // CARREGANDO O CONTEÚDO EXTRA
   useEffect(() => {
     if (!isOpen || !article) {
       setFullContent(null);
@@ -87,7 +87,7 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
     return () => { isMounted = false; };
   }, [isOpen, article]);
 
-  // A TRADUÇÃO EM LOTES (O TRUQUE DE MESTRE PARA NÃO TRAVAR O GOOGLE)
+  // A NOVA MÁQUINA DE TRADUÇÃO FATIADA (Método Seguro GET para Funcionar no Celular)
   useEffect(() => {
     if (!isOpen || !article) { setTranslatedTitle(''); setTranslatedSummary(''); return; }
     if (!autoTranslateDefault) return;
@@ -97,27 +97,27 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
     const translateText = async () => {
       setIsTranslating(true);
       try {
+        // Traduz Título (Curto, passa sempre no GET)
         const resTitle = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=pt&dt=t&q=${encodeURIComponent(article.title)}`);
         const dataTitle = await resTitle.json();
         const ptTitle = dataTitle[0].map((t: any) => t[0]).join('');
 
-        // Fatiamos o texto gigante por parágrafos (quebras de linha)
+        // Fatiamos os parágrafos para o Google GET não bloquear o texto gigante
         const paragraphs = article.summary.split('\n');
         let ptSummaryArray = [];
 
-        // Traduzimos cada parágrafo separado. O Google nunca vai bloquear porque os pedaços são pequenos!
         for (const p of paragraphs) {
           if (!p.trim()) {
             ptSummaryArray.push('');
             continue;
           }
-          const safeP = p.length > 1500 ? p.substring(0, 1500) + '...' : p;
+          // Garante que nenhum pedaço passe de 1000 letras para o GET
+          const safeP = p.length > 1000 ? p.substring(0, 1000) + '...' : p;
           const resP = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=pt&dt=t&q=${encodeURIComponent(safeP)}`);
           const dataP = await resP.json();
           ptSummaryArray.push(dataP[0].map((t: any) => t[0]).join(''));
         }
 
-        // Colamos os parágrafos de volta
         const ptSummary = ptSummaryArray.join('\n');
 
         if (isMounted) { setTranslatedTitle(ptTitle); setTranslatedSummary(ptSummary); }
@@ -221,6 +221,11 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
                 <span>Original ({article.source.includes('USP') || article.source.includes('UNICAMP') ? 'PT' : 'EN'})</span>
               </button>
             </div>
+            {originalUrl && (
+              <a href={originalUrl?.startsWith('http') && originalUrl.length > 30 ? originalUrl : `https://scholar.google.com/scholar?q=${encodeURIComponent(article.title)}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 transition-colors">
+                <span>Periódico Oficial ({article.source})</span><ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            )}
           </div>
 
           <header className="space-y-4 print:pt-4">
@@ -246,7 +251,7 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
               <span>{usePortuguese ? 'Resumo da Pesquisa (Abstract)' : 'Abstract'}</span>
             </div>
             
-            {/* PARÁGRAFOS RESGATADOS PERFEITOS! */}
+            {/* O SEGREDO DOS PARÁGRAFOS VOLTOU, LENDO DA VARIÁVEL CERTA */}
             <div className="text-stone-700 dark:text-stone-300 text-sm sm:text-base leading-relaxed italic print:text-black">
               {abstract.split('\n').map((paragraph, idx) => {
                 if (!paragraph.trim()) return null;
