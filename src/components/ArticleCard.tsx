@@ -21,52 +21,44 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
   const [translatedSummary, setTranslatedSummary] = useState<string>('');
   const [isTranslating, setIsTranslating] = useState<boolean>(false);
 
-  // A TRADUÇÃO BLINDADA ANTI-BLOQUEIO
   useEffect(() => {
     if (!autoTranslate) return;
     if (article.titlePt && article.summaryPt) return;
 
     let isMounted = true;
-    
-    // Função inteligente que tenta o Google, e se o celular bloquear, usa a rota secreta (Proxy)
-    const fetchTranslation = async (text: string) => {
-      if (!text) return '';
-      const googleUrl = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=pt&dt=t&q=${encodeURIComponent(text)}`;
-      try {
-        const res = await fetch(googleUrl);
-        if (!res.ok) throw new Error('Bloqueado pelo Celular');
-        const data = await res.json();
-        return data[0].map((t: any) => t[0]).join('');
-      } catch (err) {
-        try {
-          // ROTA DE FUGA: Usa o servidor AllOrigins para burlar o modo anônimo do celular
-          const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(googleUrl)}`;
-          const resProxy = await fetch(proxyUrl);
-          const dataProxy = await resProxy.json();
-          return dataProxy[0].map((t: any) => t[0]).join('');
-        } catch (proxyErr) {
-          return text; // Se tudo falhar, mantém original
-        }
-      }
-    };
+    const abortController = new AbortController();
+    // Trava de 3 segundos: se o celular demorar, a setinha some e o Google Nativo assume a tela!
+    const timeoutId = setTimeout(() => abortController.abort(), 3000);
 
-    const translateCard = async () => {
+    const translateText = async () => {
       setIsTranslating(true);
       try {
-        const ptTitle = await fetchTranslation(article.title);
-        
-        // Corta em 200 letras para carregar ultrarrápido
-        const shortSummary = article.summary && article.summary.length > 200 
-          ? article.summary.substring(0, 200) + '...' 
+        const resTitle = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=pt&dt=t&q=${encodeURIComponent(article.title)}`, { signal: abortController.signal });
+        const dataTitle = await resTitle.json();
+        const ptTitle = dataTitle[0].map((t: any) => t[0]).join('');
+
+        const shortSummary = article.summary && article.summary.length > 250 
+          ? article.summary.substring(0, 250) + '...' 
           : (article.summary || '');
-        const ptSummary = await fetchTranslation(shortSummary);
+
+        const resSummary = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=pt&dt=t&q=${encodeURIComponent(shortSummary)}`, { signal: abortController.signal });
+        const dataSummary = await resSummary.json();
+        const ptSummary = dataSummary[0].map((t: any) => t[0]).join('');
 
         if (isMounted) { setTranslatedTitle(ptTitle); setTranslatedSummary(ptSummary); }
-      } catch (error) { console.error('Erro na tradução', error); } finally { if (isMounted) setIsTranslating(false); }
+      } catch (error) { 
+        // Falha silenciosa: no celular o bloqueio para a setinha na hora
+      } finally { 
+        clearTimeout(timeoutId);
+        if (isMounted) setIsTranslating(false); 
+      }
     };
-
-    translateCard();
-    return () => { isMounted = false; };
+    
+    translateText();
+    return () => { 
+      isMounted = false;
+      abortController.abort();
+    };
   }, [article.title, article.summary, autoTranslate, article.titlePt, article.summaryPt]);
 
   let displayTitle = article.title;
@@ -92,7 +84,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
             )}
             {article.isPeerReviewed && (
               <span className="text-[10px] px-1.5 py-0.5 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 rounded border border-emerald-200 dark:border-emerald-800 shrink-0 font-medium">
-                Revisado
+                Revisado por Pares
               </span>
             )}
           </div>
@@ -103,8 +95,9 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
           onClick={() => onOpenArticle(article)}
           className="font-editorial text-lg sm:text-xl font-bold text-stone-900 dark:text-stone-100 leading-snug cursor-pointer hover:text-stone-700 dark:hover:text-stone-300 transition-colors mb-2.5 flex items-start gap-2"
         >
+          {/* O SEGREDO AQUI: hidden sm:block faz a setinha SUMIR do celular! */}
           {isTranslating && !article.titlePt ? (
-            <RefreshCw className="w-4 h-4 mt-1 animate-spin text-stone-300 shrink-0" />
+            <RefreshCw className="w-4 h-4 mt-1 animate-spin text-stone-300 shrink-0 hidden sm:block" />
           ) : null}
           <span>{displayTitle}</span>
         </h3>
@@ -112,12 +105,6 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
         <p className="text-stone-600 dark:text-stone-300 text-xs sm:text-sm leading-relaxed mb-4 line-clamp-3">
           {displaySummary}
         </p>
-
-        {article.keyTakeaway && (
-          <div className="mb-4 text-xs bg-stone-50 dark:bg-[#202020] border-l-2 border-stone-500 dark:border-stone-400 pl-3 py-1.5 text-stone-800 dark:text-stone-200 italic transition-colors">
-            "{article.keyTakeaway}"
-          </div>
-        )}
       </div>
 
       <div className="pt-3 border-t border-stone-100 dark:border-stone-800 flex items-center justify-between gap-2 mt-2 text-xs">
@@ -125,12 +112,11 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
           onClick={() => onOpenArticle(article)}
           className="inline-flex items-center gap-1 font-semibold text-stone-900 dark:text-stone-200 hover:text-stone-700 dark:hover:text-white transition-colors cursor-pointer"
         >
-          <span>Ler Artigo</span>
+          <span>Ler Artigo Completo</span>
           <ArrowRight className="w-3.5 h-3.5" />
         </button>
 
         <div className="flex items-center gap-2">
-          {/* BOTÃO EXTERNO REMOVIDO DAQUI COM SUCESSO! */}
           <button
             onClick={() => onToggleSaveOffline(article)}
             title={isSavedOffline ? 'Salvo no dispositivo para ler offline' : 'Salvar no dispositivo para ler sem internet'}
