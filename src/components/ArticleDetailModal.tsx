@@ -224,7 +224,7 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
             <button onClick={handleShareLink} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium border border-stone-300 dark:border-stone-700 bg-white dark:bg-[#202020] text-stone-800 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors cursor-pointer">
               {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Share2 className="w-3.5 h-3.5 text-stone-600 dark:text-stone-300" />}
               <span className="hidden sm:inline">{copiedLink ? 'Copiado!' : ''}</span>
-              <span className="sm:hidden">{copiedLink ? 'Copiado' : 'Link'}</span>
+              <span className="sm:hidden">{copiedLink ? 'Copiado' : ''}</span>
             </button>
 
             {/* BOTÃO 3: Imprimir Artigo */}
