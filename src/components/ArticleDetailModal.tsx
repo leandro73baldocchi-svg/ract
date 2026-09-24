@@ -50,7 +50,6 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
 
   if (!isOpen || !article) return null;
 
-  // Compartilha o Link do Próprio RACT (Mágica do Link)
   const handleShare = () => {
     const url = `${window.location.origin}/?art=${article.id}`;
     navigator.clipboard.writeText(url);
@@ -60,7 +59,6 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
 
   const handlePrint = () => { window.print(); };
 
-  // Encontra o link da Revista
   const originalLink = article.link || article.url;
 
   let displayTitle = article.title;
@@ -95,7 +93,7 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
         <div className="flex-1 overflow-y-auto p-6 sm:p-10 print:overflow-visible print:p-0">
           <div className="max-w-2xl mx-auto">
             
-            {/* PAINEL DE BOTÕES DE AÇÃO (Escondido na hora de imprimir) */}
+            {/* PAINEL DE BOTÕES DE AÇÃO - AGORA TODOS NO PADRÃO CLEAN */}
             <div className="flex flex-wrap items-center gap-2 mb-8 print:hidden">
               <button onClick={() => onToggleSaveOffline(article)} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors border cursor-pointer ${isSavedOffline ? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900 border-stone-900 dark:border-stone-100' : 'bg-white dark:bg-[#1A1A1A] text-stone-700 dark:text-stone-300 border-stone-300 dark:border-stone-700 hover:bg-stone-50 dark:hover:bg-stone-800'}`}>
                 <Bookmark className={`w-4 h-4 ${isSavedOffline ? 'fill-current' : ''}`} />
@@ -107,10 +105,11 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
                 <span>{copied ? 'Copiado!' : 'Compartilhar (RACT)'}</span>
               </button>
 
+              {/* BOTÃO CORRIGIDO PARA ESTILO CLEAN */}
               {originalLink && (
-                <a href={originalLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors border bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-400 cursor-pointer">
+                <a href={originalLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors border bg-white dark:bg-[#1A1A1A] text-stone-700 dark:text-stone-300 border-stone-300 dark:border-stone-700 hover:bg-stone-50 dark:hover:bg-stone-800 cursor-pointer">
                   <ExternalLink className="w-4 h-4" />
-                  <span>Artigo Original na Fonte</span>
+                  <span>Artigo Original</span>
                 </a>
               )}
 
@@ -126,7 +125,7 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
                <p className="text-sm font-mono mt-1 text-gray-700">Relatório Acadêmico Gerado Automaticamente</p>
             </div>
 
-            {/* Título e Metadados do Texto */}
+            {/* Título e Metadados */}
             <h1 className="font-editorial text-2xl sm:text-3xl lg:text-4xl font-bold text-stone-900 dark:text-stone-50 leading-tight mb-6 flex items-start gap-3 print:text-black">
               {isTranslating && !article.titlePt ? (<RefreshCw className="w-5 h-5 mt-2 animate-spin text-stone-300 shrink-0 print:hidden" />) : null}
               <span>{displayTitle}</span>
