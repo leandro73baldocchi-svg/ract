@@ -22,7 +22,9 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
   const [isTranslating, setIsTranslating] = useState<boolean>(false);
   const [copied, setCopied] = useState<boolean>(false);
 
-  // Lógica de Tradução
+  // A GRANDE CORREÇÃO: Unificando o link manual com o link do RSS
+  const originalLink = article.link || article.url;
+
   useEffect(() => {
     if (!autoTranslate) return;
     if (article.titlePt && article.summaryPt) return;
@@ -46,11 +48,11 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
     return () => { isMounted = false; };
   }, [article.title, article.summary, autoTranslate, article.titlePt, article.summaryPt]);
 
-  // Lógica de Compartilhar Link
   const handleShare = (e: React.MouseEvent) => {
     e.stopPropagation();
-    const url = `${window.location.origin}/?art=${article.id}`;
-    navigator.clipboard.writeText(url);
+    // Agora o Compartilhar copia o Link Original (Nature, Science, etc) para quem recebe ir direto pra fonte
+    const linkToShare = originalLink || window.location.href;
+    navigator.clipboard.writeText(linkToShare);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
   };
@@ -91,7 +93,6 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
         )}
       </div>
 
-      {/* FOOTER DO CARTÃO TOTALMENTE REFEITO COM COMPARTILHAR E ORIGINAL CLARO */}
       <div className="pt-3 border-t border-stone-100 dark:border-stone-800 flex flex-wrap items-center justify-between gap-2 mt-2">
         <button onClick={() => onOpenArticle(article)} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900 rounded-md text-xs font-bold hover:bg-stone-800 dark:hover:bg-white transition-colors cursor-pointer shadow-sm">
           <span>Ler Resumo</span>
@@ -99,14 +100,15 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
         </button>
 
         <div className="flex items-center gap-1.5">
-          {article.link && (
-            <a href={article.link} target="_blank" rel="noopener noreferrer" title="Ler publicação original" className="inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-md text-xs border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-400 font-bold transition-colors shadow-sm">
+          {/* BOTÃO ORIGINAL - Agora procura pelo URL ou pelo LINK */}
+          {originalLink && (
+            <a href={originalLink} target="_blank" rel="noopener noreferrer" title="Ler publicação original" className="inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-md text-xs border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-400 font-bold transition-colors shadow-sm">
               <ExternalLink className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Original</span>
             </a>
           )}
           
-          <button onClick={handleShare} title="Copiar link para WhatsApp/LinkedIn" className="inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-md text-xs border border-stone-300 dark:border-stone-700 text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 font-semibold transition-colors cursor-pointer shadow-sm">
+          <button onClick={handleShare} title="Copiar link original" className="inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-md text-xs border border-stone-300 dark:border-stone-700 text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 font-semibold transition-colors cursor-pointer shadow-sm">
             {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Share2 className="w-3.5 h-3.5" />}
             <span className="hidden sm:inline">{copied ? 'Copiado' : 'Link'}</span>
           </button>
