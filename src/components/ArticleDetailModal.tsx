@@ -223,20 +223,20 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
             {/* BOTÃO 2: Compartilhar (Adicionado no layout original) */}
             <button onClick={handleShareLink} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium border border-stone-300 dark:border-stone-700 bg-white dark:bg-[#202020] text-stone-800 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors cursor-pointer">
               {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Share2 className="w-3.5 h-3.5 text-stone-600 dark:text-stone-300" />}
-              <span className="hidden sm:inline">{copiedLink ? 'Copiado!' : 'Compartilhar'}</span>
+              <span className="hidden sm:inline">{copiedLink ? 'Copiado!' : ' '}</span>
               <span className="sm:hidden">{copiedLink ? 'Copiado' : 'Link'}</span>
             </button>
 
             {/* BOTÃO 3: Imprimir Artigo */}
             <button onClick={handlePrint} id="btn-print-article" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium border border-stone-300 dark:border-stone-700 bg-white dark:bg-[#202020] text-stone-800 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors cursor-pointer">
               <Printer className="w-3.5 h-3.5 text-stone-600 dark:text-stone-300" />
-              <span className="hidden sm:inline">Imprimir Artigo</span>
+              <span className="hidden sm:inline"> </span>
               <span className="sm:hidden">Imprimir</span>
             </button>
 
             {/* BOTÃO 4: Salvar Offline (RECUPERADO!) */}
             <button onClick={() => onToggleSaveOffline({ ...article, fullArticle: fullContent || undefined, cachedDeepDive: deepDive || undefined })} className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium border transition-colors cursor-pointer ${isSavedOffline ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 border-stone-900 dark:border-stone-100' : 'bg-white dark:bg-[#202020] text-stone-700 dark:text-stone-300 border-stone-300 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-700'}`}>
-              {isSavedOffline ? (<><Check className="w-3.5 h-3.5 text-emerald-500" /><span className="hidden sm:inline">Salvo Offline</span></>) : (<><Bookmark className="w-3.5 h-3.5" /><span className="hidden sm:inline">Salvar Offline</span></>)}
+              {isSavedOffline ? (<><Check className="w-3.5 h-3.5 text-emerald-500" /><span className="hidden sm:inline">Salvo Offline</span></>) : (<><Bookmark className="w-3.5 h-3.5" /><span className="hidden sm:inline"> </span></>)}
             </button>
 
             {/* BOTÃO 5: Fechar Modal */}
