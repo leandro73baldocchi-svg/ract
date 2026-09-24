@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Analytics } from '@vercel/analytics/react';
 import { Header } from './components/Header';
 import { ArticleCard } from './components/ArticleCard';
@@ -36,6 +36,10 @@ export default function App() {
 
   const [isMobileVitrineOpen, setIsMobileVitrineOpen] = useState<boolean>(false);
   const [isMobileNewsletterOpen, setIsMobileNewsletterOpen] = useState<boolean>(false);
+
+  // Travas de Segurança da URL para não apagar o link antes de carregar
+  const initialUrlCheckDone = useRef(false);
+  const isFirstMountForUrl = useRef(true);
 
   useEffect(() => { fetchServerAffiliates().then(setAffiliates); fetchServerSponsors().then(setSponsors); }, []);
   useEffect(() => { if (sponsors.length <= 1) return; const interval = setInterval(() => { setCurrentSponsorIndex((prev) => (prev + 1) % sponsors.length); }, 6000); return () => clearInterval(interval); }, [sponsors.length]);
@@ -100,28 +104,40 @@ export default function App() {
     } catch (err) { console.warn('Erro sync', err); } finally { setLoading(false); setIsRefreshing(false); }
   };
 
-  // MÁGICA 1: LER O LINK QUANDO ALGUÉM ENTRA NO SITE
+  // MÁGICA 1 (CORRIGIDA): LER A URL COM PACIÊNCIA E ABRIR O ARTIGO
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const urlParams = new URLSearchParams(window.location.search);
     const artId = urlParams.get('art');
-    if (artId && articles.length > 0 && !selectedArticle) {
+    
+    // Se achou um link na URL e os artigos já carregaram, ele abre a notícia e "trava" para não abrir de novo.
+    if (artId && articles.length > 0 && !selectedArticle && !initialUrlCheckDone.current) {
       const found = articles.find(a => a.id === artId);
-      if (found) setSelectedArticle(found);
+      if (found) {
+        setSelectedArticle(found);
+        initialUrlCheckDone.current = true;
+      }
     }
-  }, [articles]);
+  }, [articles, selectedArticle]);
 
-  // MÁGICA 2: MUDAR O LINK QUANDO VOCÊ CLICA EM UMA NOTÍCIA
+  // MÁGICA 2 (CORRIGIDA): ATUALIZAR A URL APENAS QUANDO O USUÁRIO FECHAR OU ABRIR
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    
+    // Na primeira vez que a página carrega, ele não faz nada (não apaga a URL)
+    if (isFirstMountForUrl.current) {
+      isFirstMountForUrl.current = false;
+      return;
+    }
+    
     const url = new URL(window.location.href);
     if (selectedArticle) {
       url.searchParams.set('art', selectedArticle.id);
-      window.history.pushState({}, '', url.toString());
+      window.history.replaceState({}, '', url.toString());
     } else {
       if (url.searchParams.has('art')) {
         url.searchParams.delete('art');
-        window.history.pushState({}, '', url.toString());
+        window.history.replaceState({}, '', url.toString());
       }
     }
   }, [selectedArticle]);
