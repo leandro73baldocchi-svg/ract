@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NewsArticle } from '../types';
-import { Bookmark, ExternalLink, ArrowRight, RefreshCw } from 'lucide-react';
+import { Bookmark, ArrowRight, RefreshCw } from 'lucide-react';
 
 interface ArticleCardProps {
   article: NewsArticle;
@@ -29,14 +29,13 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
     const translateText = async () => {
       setIsTranslating(true);
       try {
-        // TÍTULO - Método GET clássico e seguro
         const resTitle = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=pt&dt=t&q=${encodeURIComponent(article.title)}`);
         const dataTitle = await resTitle.json();
         const ptTitle = dataTitle[0].map((t: any) => t[0]).join('');
 
-        // RESUMO - Cortamos em 300 letras ANTES de enviar. Isso evita que o Google bloqueie a URL por ser grande demais!
-        const shortSummary = article.summary && article.summary.length > 300 
-          ? article.summary.substring(0, 300) + '...' 
+        // CORTAMOS O TEXTO EM 250 LETRAS ANTES DE TRADUZIR (Evita o bloqueio do Google e funciona em modo anônimo)
+        const shortSummary = article.summary && article.summary.length > 250 
+          ? article.summary.substring(0, 250) + '...' 
           : (article.summary || '');
 
         const resSummary = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=pt&dt=t&q=${encodeURIComponent(shortSummary)}`);
@@ -50,7 +49,6 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
     return () => { isMounted = false; };
   }, [article.title, article.summary, autoTranslate, article.titlePt, article.summaryPt]);
 
-  const originalLink = article.link || article.url;
   let displayTitle = article.title;
   let displaySummary = article.summary;
 
@@ -111,6 +109,8 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
           <ArrowRight className="w-3.5 h-3.5" />
         </button>
 
+        {/* Link original foi REMOVIDO DAQUI para forçar a abertura do modal! */}
+
         <div className="flex items-center gap-2">
           <button
             onClick={() => onToggleSaveOffline(article)}
@@ -124,18 +124,6 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
             <Bookmark className={`w-3 h-3 ${isSavedOffline ? 'fill-current' : ''}`} />
             <span className="hidden sm:inline">{isSavedOffline ? 'Salvo Offline' : 'Salvar Offline'}</span>
           </button>
-
-          {originalLink && (
-            <a
-              href={originalLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              title="Abrir página oficial do periódico"
-              className="p-1 text-stone-400 dark:text-stone-500 hover:text-stone-800 dark:hover:text-stone-200 transition-colors"
-            >
-              <ExternalLink className="w-3.5 h-3.5" />
-            </a>
-          )}
         </div>
       </div>
     </article>
