@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { NewsArticle, FullArticleContent, ArticleDeepDive } from '../types';
 import { generateAcademicFullArticle } from '../utils/academicGenerator';
-import { X, ExternalLink, Bookmark, Check, Printer, Copy, FileText, Globe, Quote, Share2 } from 'lucide-react';
+import { X, ExternalLink, Bookmark, Check, Printer, Copy, FileText, Globe, Quote, Share2, RefreshCw } from 'lucide-react';
 
 interface ArticleDetailModalProps {
   article: NewsArticle | null;
@@ -26,28 +26,26 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
   const [loadingContent, setLoadingContent] = useState<boolean>(false);
   const [copiedCitation, setCopiedCitation] = useState<boolean>(false);
   const [copiedLink, setCopiedLink] = useState<boolean>(false);
-  
-  // Variáveis para traduzir o Título e Resumo Base
+
   const [translatedTitle, setTranslatedTitle] = useState<string>('');
   const [translatedSummary, setTranslatedSummary] = useState<string>('');
+  const [isTranslating, setIsTranslating] = useState<boolean>(false);
 
   useEffect(() => {
     setUsePortuguese(autoTranslateDefault);
   }, [autoTranslateDefault, article]);
 
-  // Buscando o conteúdo completo
+  // CARREGA CONTEÚDO EXTRA (SE TIVER)
   useEffect(() => {
     if (!isOpen || !article) {
       setFullContent(null);
       setDeepDive(null);
       return;
     }
-
     if (article.fullArticle) {
       setFullContent(article.fullArticle);
       return;
     }
-
     let isMounted = true;
     const fetchFullArticle = async () => {
       setLoadingContent(true);
@@ -56,19 +54,12 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            id: article.id,
-            title: article.title,
-            titlePt: article.titlePt,
-            summary: article.summary,
-            summaryPt: article.summaryPt,
-            source: article.source,
-            sourceCategory: article.sourceCategory,
-            author: article.author,
-            pubDate: article.pubDate,
-            link: article.link,
+            id: article.id, title: article.title, titlePt: article.titlePt,
+            summary: article.summary, summaryPt: article.summaryPt,
+            source: article.source, sourceCategory: article.sourceCategory,
+            author: article.author, pubDate: article.pubDate, link: article.link,
           }),
         });
-
         if (res.ok) {
           const data = await res.json();
           if (data.success && data.fullArticle && isMounted) {
@@ -92,15 +83,11 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
         if (isMounted) setLoadingContent(false);
       }
     };
-
     fetchFullArticle();
-
-    return () => {
-      isMounted = false;
-    };
+    return () => { isMounted = false; };
   }, [isOpen, article]);
 
-  // Nova Engrenagem: Traduzir o Título e o Resumo Superior se não existir no banco
+  // A TRADUÇÃO EM LOTES (O TRUQUE DE MESTRE PARA NÃO TRAVAR O GOOGLE)
   useEffect(() => {
     if (!isOpen || !article) { setTranslatedTitle(''); setTranslatedSummary(''); return; }
     if (!autoTranslateDefault) return;
@@ -108,32 +95,41 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
 
     let isMounted = true;
     const translateText = async () => {
+      setIsTranslating(true);
       try {
         const resTitle = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=pt&dt=t&q=${encodeURIComponent(article.title)}`);
         const dataTitle = await resTitle.json();
         const ptTitle = dataTitle[0].map((t: any) => t[0]).join('');
 
-        // Limite gigante e seguro para o modal
-        const safeSummary = article.summary.substring(0, 1800);
-        const resSummary = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=pt&dt=t&q=${encodeURIComponent(safeSummary)}`);
-        const dataSummary = await resSummary.json();
-        const ptSummary = dataSummary[0].map((t: any) => t[0]).join('');
+        // Fatiamos o texto gigante por parágrafos (quebras de linha)
+        const paragraphs = article.summary.split('\n');
+        let ptSummaryArray = [];
+
+        // Traduzimos cada parágrafo separado. O Google nunca vai bloquear porque os pedaços são pequenos!
+        for (const p of paragraphs) {
+          if (!p.trim()) {
+            ptSummaryArray.push('');
+            continue;
+          }
+          const safeP = p.length > 1500 ? p.substring(0, 1500) + '...' : p;
+          const resP = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=pt&dt=t&q=${encodeURIComponent(safeP)}`);
+          const dataP = await resP.json();
+          ptSummaryArray.push(dataP[0].map((t: any) => t[0]).join(''));
+        }
+
+        // Colamos os parágrafos de volta
+        const ptSummary = ptSummaryArray.join('\n');
 
         if (isMounted) { setTranslatedTitle(ptTitle); setTranslatedSummary(ptSummary); }
-      } catch (error) { console.error('Erro na tradução do modal', error); }
+      } catch (error) { console.error('Erro na tradução do modal', error); } finally { if (isMounted) setIsTranslating(false); }
     };
     translateText();
     return () => { isMounted = false; };
   }, [article, isOpen, autoTranslateDefault]);
 
-
   if (!isOpen || !article) return null;
 
-  // AGORA OS FIOS ESTÃO LIGADOS (Usando translatedTitle e translatedSummary)
-  const title = usePortuguese 
-    ? (article.titlePt || translatedTitle || article.title) 
-    : article.title;
-
+  const title = usePortuguese ? (article.titlePt || translatedTitle || article.title) : article.title;
   const abstract = fullContent
     ? (usePortuguese ? (fullContent.abstractPt || translatedSummary || fullContent.abstract) : fullContent.abstract)
     : (usePortuguese ? (article.summaryPt || translatedSummary || article.summary) : article.summary);
@@ -194,7 +190,7 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
             )}
 
             <button onClick={handleShareLink} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium border border-stone-300 dark:border-stone-700 bg-white dark:bg-[#202020] text-stone-800 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors cursor-pointer">
-              {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Share2 className="w-3.5 h-3.5 text-stone-600 dark:text-stone-300" />}
+              {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Share2 className="w-3.5 h-3.5 text-stone-600 dark:text-stone-300" />}
               <span className="hidden sm:inline">{copiedLink ? 'Link Copiado' : 'Compartilhar'}</span>
             </button>
 
@@ -225,11 +221,6 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
                 <span>Original ({article.source.includes('USP') || article.source.includes('UNICAMP') ? 'PT' : 'EN'})</span>
               </button>
             </div>
-            {originalUrl && (
-              <a href={originalUrl?.startsWith('http') && originalUrl.length > 30 ? originalUrl : `https://scholar.google.com/scholar?q=${encodeURIComponent(article.title)}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 transition-colors">
-                <span>Periódico Oficial ({article.source})</span><ExternalLink className="w-3.5 h-3.5" />
-              </a>
-            )}
           </div>
 
           <header className="space-y-4 print:pt-4">
@@ -237,8 +228,9 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
               <span>{article.source}</span><span>•</span><span>{article.pubDate}</span>
               {article.doi && (<><span>•</span><span>DOI: {article.doi}</span></>)}
             </div>
-            <h1 className="font-editorial text-2xl sm:text-4xl font-extrabold text-stone-950 dark:text-stone-50 leading-tight print:text-black">
-              {title}
+            <h1 className="font-editorial text-2xl sm:text-4xl font-extrabold text-stone-950 dark:text-stone-50 leading-tight print:text-black flex items-start gap-3">
+              {isTranslating && !article.titlePt ? (<RefreshCw className="w-6 h-6 mt-2 animate-spin text-stone-300 shrink-0 print:hidden" />) : null}
+              <span>{title}</span>
             </h1>
             <div className="text-xs sm:text-sm text-stone-600 dark:text-stone-400 border-l-2 border-stone-400 dark:border-stone-600 pl-3 py-0.5 print:text-black">
               <span>Autoria / Grupo Científico: </span>
@@ -253,9 +245,14 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
               <FileText className="w-3.5 h-3.5 text-stone-600 dark:text-stone-400 print:text-black" />
               <span>{usePortuguese ? 'Resumo da Pesquisa (Abstract)' : 'Abstract'}</span>
             </div>
-            <p className="text-stone-700 dark:text-stone-300 text-sm sm:text-base leading-relaxed italic print:text-black">
-              {abstract}
-            </p>
+            
+            {/* PARÁGRAFOS RESGATADOS PERFEITOS! */}
+            <div className="text-stone-700 dark:text-stone-300 text-sm sm:text-base leading-relaxed italic print:text-black">
+              {abstract.split('\n').map((paragraph, idx) => {
+                if (!paragraph.trim()) return null;
+                return <p key={idx} className="mb-4">{paragraph}</p>;
+              })}
+            </div>
           </section>
 
           {loadingContent ? (
