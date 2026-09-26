@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { CustomCategory, NewsArticle, CategoryType } from '../types';
 import {
   DEFAULT_BASE_CATEGORIES, getCustomCategories, saveCustomCategories, getAllManagedArticles, saveAllManagedArticles, saveOrUpdateArticle, deleteManagedArticle, resetToFactoryArticles, getCustomRssFeeds, saveCustomRssFeeds, CustomRssFeed, checkAdminPassword, setAdminPassword, saveCategoryToServer, deleteCategoryFromServer, fetchServerArticles, fetchServerCategories, fetchServerAffiliates, saveAffiliateToServer, deleteAffiliateFromServer, AffiliateLink, fetchServerFeeds, saveFeedToServer, deleteFeedFromServer,
-  // NOVO: Importando funções de Patrocinador
-  fetchServerSponsors, saveSponsorToServer, deleteSponsorFromServer, SponsorBanner
+  fetchServerSponsors, saveSponsorToServer, deleteSponsorFromServer, SponsorBanner,
+  fetchServerSocialNetworks, saveSocialNetworkToServer, deleteSocialNetworkFromServer, SocialNetwork
 } from '../utils/customDataManager';
 import {
-  X, Plus, Trash2, Edit, Lock, Database, Layers, FileText, Save, Download, Upload, CheckCircle, ExternalLink, ShieldCheck, AlertCircle, Rss, Search, RotateCcw, TrendingUp, MonitorPlay
+  X, Plus, Trash2, Edit, Lock, Database, Layers, FileText, Save, Download, Upload, CheckCircle, ExternalLink, ShieldCheck, AlertCircle, Rss, Search, RotateCcw, TrendingUp, MonitorPlay, Share2
 } from 'lucide-react';
 
 interface AdminDashboardModalProps {
@@ -23,7 +23,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   const [authError, setAuthError] = useState<string | null>(null);
 
   // Active subtab
-  const [activeTab, setActiveTab] = useState<'articles' | 'categories' | 'feeds' | 'affiliates' | 'sponsors' | 'backup'>('articles');
+  const [activeTab, setActiveTab] = useState<'articles' | 'categories' | 'feeds' | 'affiliates' | 'sponsors' | 'social' | 'backup'>('articles');
 
   // Articles State
   const [articlesList, setArticlesList] = useState<NewsArticle[]>(() => getAllManagedArticles());
@@ -54,13 +54,21 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   const [affUrl, setAffUrl] = useState<string>('');
   const [affSuccessMsg, setAffSuccessMsg] = useState<string | null>(null);
 
-  // NOVO: Sponsors State (Patrocinadores)
+  // Sponsors State
   const [sponsorsList, setSponsorsList] = useState<SponsorBanner[]>([]);
   const [isEditingSponsorId, setIsEditingSponsorId] = useState<string | null>(null);
   const [sponsorTitle, setSponsorTitle] = useState<string>('');
   const [sponsorImageUrl, setSponsorImageUrl] = useState<string>('');
   const [sponsorLinkUrl, setSponsorLinkUrl] = useState<string>('');
   const [sponsorSuccessMsg, setSponsorSuccessMsg] = useState<string | null>(null);
+
+  // Social Networks State
+  const [socialNetworksList, setSocialNetworksList] = useState<SocialNetwork[]>([]);
+  const [isEditingSocialId, setIsEditingSocialId] = useState<string | null>(null);
+  const [socialName, setSocialName] = useState<string>('');
+  const [socialUrl, setSocialUrl] = useState<string>('');
+  const [socialIcon, setSocialIcon] = useState<string>('linkedin');
+  const [socialSuccessMsg, setSocialSuccessMsg] = useState<string | null>(null);
 
   // Form Article State
   const [isEditingId, setIsEditingId] = useState<string | null>(null);
@@ -80,7 +88,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
       fetchServerCategories().then(setCustomCategories);
       fetchServerAffiliates().then(setAffiliatesList);
       fetchServerFeeds().then(setRssFeeds);
-      fetchServerSponsors().then(setSponsorsList); // NOVO
+      fetchServerSponsors().then(setSponsorsList);
+      fetchServerSocialNetworks().then(setSocialNetworksList);
     }
   }, [isOpen]);
 
@@ -89,7 +98,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     const cats = await fetchServerCategories(); setCustomCategories(cats);
     const affs = await fetchServerAffiliates(); setAffiliatesList(affs);
     const fds = await fetchServerFeeds(); setRssFeeds(fds);
-    const spon = await fetchServerSponsors(); setSponsorsList(spon); // NOVO
+    const spon = await fetchServerSponsors(); setSponsorsList(spon);
+    const soc = await fetchServerSocialNetworks(); setSocialNetworksList(soc);
   };
 
   if (!isOpen) return null;
@@ -135,7 +145,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   const handleCancelEditAffiliate = () => { setIsEditingAffId(null); setAffCatId('default'); setAffTitle(''); setAffUrl(''); };
   const handleDeleteAffiliate = async (id: string) => { if (confirm('Deseja realmente remover este link da sua vitrine?')) { try { const updated = await deleteAffiliateFromServer(id); setAffiliatesList(updated); if (isEditingAffId === id) handleCancelEditAffiliate(); onDataUpdated(); } catch (err) { alert('Erro ao excluir link'); } } };
 
-  // NOVO: Funções de Patrocinadores (Banners)
+  // Funções de Patrocinadores (Banners)
   const handleSaveSponsor = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!sponsorTitle.trim() || !sponsorImageUrl.trim() || !sponsorLinkUrl.trim()) return;
@@ -150,8 +160,34 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   const handleCancelEditSponsor = () => { setIsEditingSponsorId(null); setSponsorTitle(''); setSponsorImageUrl(''); setSponsorLinkUrl(''); };
   const handleDeleteSponsor = async (id: string) => { if (confirm('Deseja realmente remover este banner rotativo?')) { try { const updated = await deleteSponsorFromServer(id); setSponsorsList(updated); if (isEditingSponsorId === id) handleCancelEditSponsor(); onDataUpdated(); } catch (err) { alert('Erro ao excluir banner'); } } };
 
+  // NOVO: Funções de Redes Sociais
+  const handleSaveSocial = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!socialName.trim() || !socialUrl.trim()) return;
+    const newSocial: SocialNetwork = {
+      id: isEditingSocialId ? isEditingSocialId : `soc-${Date.now()}`,
+      name: socialName.trim(),
+      url: socialUrl.trim(),
+      icon: socialIcon,
+    };
+    try {
+      const updated = await saveSocialNetworkToServer(newSocial);
+      setSocialNetworksList(updated);
+      setIsEditingSocialId(null);
+      setSocialName('');
+      setSocialUrl('');
+      setSocialIcon('linkedin');
+      setSocialSuccessMsg('Rede social salva com sucesso!');
+      setTimeout(() => setSocialSuccessMsg(null), 4000);
+      onDataUpdated();
+    } catch (err) { alert('Erro ao salvar rede social'); }
+  };
+  const handleStartEditSocial = (soc: SocialNetwork) => { setIsEditingSocialId(soc.id); setSocialName(soc.name); setSocialUrl(soc.url); setSocialIcon(soc.icon); document.getElementById('admin-scrollable-content')?.scrollTo({ top: 0, behavior: 'smooth' }); };
+  const handleCancelEditSocial = () => { setIsEditingSocialId(null); setSocialName(''); setSocialUrl(''); setSocialIcon('linkedin'); };
+  const handleDeleteSocial = async (id: string) => { if (confirm('Deseja realmente remover esta rede social?')) { try { const updated = await deleteSocialNetworkFromServer(id); setSocialNetworksList(updated); if (isEditingSocialId === id) handleCancelEditSocial(); onDataUpdated(); } catch (err) { alert('Erro ao excluir rede social'); } } };
+
   // Funções de Backup e Senha
-  const handleExportBackup = () => { const backupData = { version: '2.0', exportedAt: new Date().toISOString(), customCategories, articles: articlesList, rssFeeds }; const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `ract-backup-completo-${new Date().toISOString().slice(0, 10)}.json`; a.click(); URL.revokeObjectURL(url); };
+  const handleExportBackup = () => { const backupData = { version: '2.0', exportedAt: new Date().toISOString(), customCategories, articles: articlesList, rssFeeds, socialNetworks: socialNetworksList }; const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `ract-backup-completo-${new Date().toISOString().slice(0, 10)}.json`; a.click(); URL.revokeObjectURL(url); };
   const handleImportBackup = (e: React.ChangeEvent<HTMLInputElement>) => { const file = e.target.files?.[0]; if (!file) return; const reader = new FileReader(); reader.onload = (event) => { try { const parsed = JSON.parse(event.target?.result as string); if (parsed.customCategories) { setCustomCategories(parsed.customCategories); saveCustomCategories(parsed.customCategories); } if (parsed.articles) { saveAllManagedArticles(parsed.articles); setArticlesList(parsed.articles); } if (parsed.rssFeeds) { setRssFeeds(parsed.rssFeeds); saveCustomRssFeeds(parsed.rssFeeds); } alert('Backup importado com sucesso!'); onDataUpdated(); } catch (err) { alert('Erro ao importar arquivo JSON.'); } }; reader.readAsText(file); };
   const handleChangePassword = (e: React.FormEvent) => { e.preventDefault(); if (!newPassInput.trim()) return; setAdminPassword(newPassInput.trim()); setNewPassInput(''); setPassSuccessMsg('Senha atualizada com sucesso!'); setTimeout(() => setPassSuccessMsg(null), 4000); };
 
@@ -193,6 +229,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
               <button onClick={() => setActiveTab('categories')} className={`pb-2.5 px-3 text-xs font-semibold flex items-center gap-1.5 border-b-2 cursor-pointer shrink-0 ${activeTab === 'categories' ? 'border-stone-900 text-stone-900 dark:border-stone-100 dark:text-stone-100' : 'border-transparent text-stone-500 hover:text-stone-800 dark:hover:text-stone-300'}`}><Layers className="w-3.5 h-3.5" /><span>Áreas</span></button>
               <button onClick={() => setActiveTab('sponsors')} className={`pb-2.5 px-3 text-xs font-semibold flex items-center gap-1.5 border-b-2 cursor-pointer shrink-0 ${activeTab === 'sponsors' ? 'border-blue-600 text-blue-700 dark:text-blue-400' : 'border-transparent text-stone-500 hover:text-stone-800 dark:hover:text-stone-300'}`}><MonitorPlay className="w-3.5 h-3.5 text-blue-600 dark:text-blue-500" /><span>Patrocinadores</span></button>
               <button onClick={() => setActiveTab('affiliates')} className={`pb-2.5 px-3 text-xs font-semibold flex items-center gap-1.5 border-b-2 cursor-pointer shrink-0 ${activeTab === 'affiliates' ? 'border-amber-600 text-amber-700 dark:text-amber-400' : 'border-transparent text-stone-500 hover:text-stone-800 dark:hover:text-stone-300'}`}><TrendingUp className="w-3.5 h-3.5 text-amber-600 dark:text-amber-500" /><span>Vitrine Afiliados</span></button>
+              <button onClick={() => setActiveTab('social')} className={`pb-2.5 px-3 text-xs font-semibold flex items-center gap-1.5 border-b-2 cursor-pointer shrink-0 ${activeTab === 'social' ? 'border-purple-600 text-purple-700 dark:text-purple-400' : 'border-transparent text-stone-500 hover:text-stone-800 dark:hover:text-stone-300'}`}><Share2 className="w-3.5 h-3.5 text-purple-600 dark:text-purple-500" /><span>Redes Sociais</span></button>
               <button onClick={() => setActiveTab('backup')} className={`pb-2.5 px-3 text-xs font-semibold flex items-center gap-1.5 border-b-2 cursor-pointer shrink-0 ${activeTab === 'backup' ? 'border-stone-900 text-stone-900 dark:border-stone-100 dark:text-stone-100' : 'border-transparent text-stone-500 hover:text-stone-800 dark:hover:text-stone-300'}`}><Database className="w-3.5 h-3.5" /><span>Sistema</span></button>
             </div>
 
@@ -228,7 +265,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                 </div>
               )}
 
-              {/* TAB 2: SPONSORS (NOVO) */}
+              {/* TAB 2: SPONSORS */}
               {activeTab === 'sponsors' && (
                 <div className="space-y-6">
                   {sponsorSuccessMsg && <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 rounded-lg text-xs flex items-center gap-2"><CheckCircle className="w-4 h-4 shrink-0" /> <span>{sponsorSuccessMsg}</span></div>}
@@ -300,7 +337,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                 </div>
               )}
 
-              {/* TAB 4: FEEDS E O RESTANTE DOS MENUS NÃO MUDAM ... */}
+              {/* TAB 4: FEEDS */}
               {activeTab === 'feeds' && (
                 <div className="space-y-6">
                   {feedSuccessMsg && <div className="p-3 bg-emerald-50 border border-emerald-300 text-emerald-800 rounded-lg text-xs flex items-center gap-2"><CheckCircle className="w-4 h-4 shrink-0" /> <span>{feedSuccessMsg}</span></div>}
@@ -313,6 +350,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                 </div>
               )}
 
+              {/* TAB 5: CATEGORIES */}
               {activeTab === 'categories' && (
                 <div className="space-y-6">
                   {catSuccessMsg && <div className="p-3 bg-emerald-50 border border-emerald-300 text-emerald-800 rounded-lg text-xs flex items-center gap-2"><CheckCircle className="w-4 h-4 shrink-0" /><span>{catSuccessMsg}</span></div>}
@@ -325,6 +363,74 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                 </div>
               )}
 
+              {/* NOVO - TAB 6: REDES SOCIAIS */}
+              {activeTab === 'social' && (
+                <div className="space-y-6">
+                  {socialSuccessMsg && <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 rounded-lg text-xs flex items-center gap-2"><CheckCircle className="w-4 h-4 shrink-0" /> <span>{socialSuccessMsg}</span></div>}
+                  <form onSubmit={handleSaveSocial} className="p-4 sm:p-5 bg-stone-50 dark:bg-stone-900/60 border border-stone-200 dark:border-stone-800 rounded-xl space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-purple-700 dark:text-purple-400 flex items-center gap-1.5">
+                        <Share2 className="w-4 h-4" /> {isEditingSocialId ? 'Editar Rede Social' : 'Adicionar Nova Rede'}
+                      </h4>
+                      {isEditingSocialId && <button type="button" onClick={handleCancelEditSocial} className="text-xs text-stone-500 hover:text-stone-800 dark:hover:text-stone-200 underline cursor-pointer">Cancelar Edição</button>}
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[11px] font-semibold text-stone-700 dark:text-stone-300 mb-1">Nome da Rede *</label>
+                        <input type="text" required value={socialName} onChange={(e) => setSocialName(e.target.value)} placeholder="Ex: LinkedIn, Reddit..." className="w-full px-3 py-1.5 text-xs bg-white dark:bg-stone-950 border border-stone-300 dark:border-stone-700 rounded" />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-semibold text-stone-700 dark:text-stone-300 mb-1">Ícone / Estilo</label>
+                        <select value={socialIcon} onChange={(e) => setSocialIcon(e.target.value)} className="w-full px-3 py-1.5 text-xs bg-white dark:bg-stone-950 border border-stone-300 dark:border-stone-700 rounded focus:outline-none">
+                          <option value="linkedin">LinkedIn</option>
+                          <option value="twitter">Twitter / X</option>
+                          <option value="reddit">Reddit</option>
+                          <option value="github">GitHub</option>
+                          <option value="instagram">Instagram</option>
+                          <option value="facebook">Facebook</option>
+                          <option value="globe">Site Pessoal / Outro</option>
+                        </select>
+                      </div>
+                      <div className="sm:col-span-2">
+                        <label className="block text-[11px] font-semibold text-stone-700 dark:text-stone-300 mb-1">Link de Destino URL *</label>
+                        <input type="url" required value={socialUrl} onChange={(e) => setSocialUrl(e.target.value)} placeholder="https://..." className="w-full px-3 py-1.5 text-xs bg-white dark:bg-stone-950 border border-stone-300 dark:border-stone-700 rounded font-mono" />
+                      </div>
+                    </div>
+                    <div className="pt-2 flex justify-end">
+                      <button type="submit" className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1.5">
+                        <Save className="w-3.5 h-3.5" /> Salvar Rede
+                      </button>
+                    </div>
+                  </form>
+
+                  <div className="space-y-2">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-stone-800 dark:text-stone-200">Redes Ativas ({socialNetworksList.length})</h4>
+                    <div className="border border-stone-200 dark:border-stone-800 rounded-xl overflow-hidden bg-white dark:bg-stone-950 divide-y divide-stone-200 dark:divide-stone-800 max-h-[300px] overflow-y-auto">
+                      {socialNetworksList.length === 0 ? (
+                        <div className="p-8 text-center text-xs text-stone-500">Nenhuma rede social cadastrada.</div>
+                      ) : (
+                        socialNetworksList.map((soc) => (
+                          <div key={soc.id} className="p-3 flex items-center justify-between gap-3 text-xs">
+                            <div className="flex flex-col min-w-0">
+                              <p className="font-bold text-stone-900 dark:text-stone-100 flex items-center gap-2">
+                                <span className="capitalize text-purple-600 dark:text-purple-400 font-semibold">{soc.icon}</span> 
+                                <span className="text-stone-400">-</span> {soc.name}
+                              </p>
+                              <a href={soc.url} target="_blank" rel="noreferrer" className="text-[10px] text-blue-600 dark:text-blue-400 font-mono truncate hover:underline block mt-0.5">{soc.url}</a>
+                            </div>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <button onClick={() => handleStartEditSocial(soc)} className="p-1.5 rounded text-stone-600 hover:bg-stone-200 cursor-pointer"><Edit className="w-4 h-4" /></button>
+                              <button onClick={() => handleDeleteSocial(soc.id)} className="p-1.5 rounded text-rose-500 hover:bg-rose-50 cursor-pointer"><Trash2 className="w-4 h-4" /></button>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 7: BACKUP */}
               {activeTab === 'backup' && (
                 <div className="space-y-6">
                   <div className="p-4 sm:p-5 bg-stone-50 dark:bg-stone-900/60 border border-stone-200 dark:border-stone-800 rounded-xl space-y-3">
