@@ -9,10 +9,12 @@ const CUSTOM_FEEDS_KEY = 'ract_custom_rss_feeds_v2';
 const ADMIN_PASSWORD_KEY = 'ract_admin_password_hash_v1';
 const AFFILIATE_LINKS_KEY = 'ract_affiliates_v2';
 const SPONSORS_KEY = 'ract_sponsors_v1';
+const SOCIAL_NETWORKS_KEY = 'ract_social_networks_v1';
 
 export interface CustomRssFeed { id: string; name: string; url: string; category: string; enabled: boolean; }
 export interface AffiliateLink { id: string; categoryId: string; title: string; url: string; }
 export interface SponsorBanner { id: string; title: string; imageUrl: string; linkUrl: string; }
+export interface SocialNetwork { id: string; name: string; url: string; icon: string; }
 
 export const DEFAULT_BASE_CATEGORIES: CustomCategory[] = [
   { id: 'all', label: 'Todas as Áreas', order: 0 },
@@ -92,6 +94,17 @@ export async function fetchServerSponsors(): Promise<SponsorBanner[]> {
 export async function saveSponsorToServer(sponsor: SponsorBanner): Promise<SponsorBanner[]> { await setDoc(doc(db, "sponsors", sponsor.id), sponsor); return await fetchServerSponsors(); }
 export async function deleteSponsorFromServer(sponsorId: string): Promise<SponsorBanner[]> { await deleteDoc(doc(db, "sponsors", sponsorId)); return await fetchServerSponsors(); }
 
+export async function fetchServerSocialNetworks(): Promise<SocialNetwork[]> {
+  try {
+    const querySnapshot = await getDocs(collection(db, "social_networks"));
+    const networks: SocialNetwork[] = [];
+    querySnapshot.forEach((docSnap) => { networks.push(docSnap.data() as SocialNetwork); });
+    saveSocialNetworksLocal(networks); return networks;
+  } catch (err) { return getSocialNetworksLocal(); }
+}
+export async function saveSocialNetworkToServer(network: SocialNetwork): Promise<SocialNetwork[]> { await setDoc(doc(db, "social_networks", network.id), network); return await fetchServerSocialNetworks(); }
+export async function deleteSocialNetworkFromServer(networkId: string): Promise<SocialNetwork[]> { await deleteDoc(doc(db, "social_networks", networkId)); return await fetchServerSocialNetworks(); }
+
 export async function fetchServerFeeds(): Promise<CustomRssFeed[]> {
   try {
     const querySnapshot = await getDocs(collection(db, "feeds"));
@@ -114,7 +127,6 @@ export async function fetchRssArticles(): Promise<NewsArticle[]> {
       if (data.status === 'ok') {
         return data.items.map((item: any) => {
           
-          // A MÁGICA DOS PARÁGRAFOS: Resgata o texto e transforma as marcações HTML em quebras de linha reais
           const rawHtml = item.content || item.description || "";
           const withNewlines = rawHtml.replace(/<br\s*[\/]?>/gi, '\n').replace(/<\/p>/gi, '\n\n');
           const cleanText = withNewlines.replace(/(<([^>]+)>)/gi, '').replace(/\n{3,}/g, '\n\n').trim();
@@ -123,7 +135,7 @@ export async function fetchRssArticles(): Promise<NewsArticle[]> {
             id: `rss-${feed.id}-${item.guid || item.link}`, 
             title: item.title, 
             titlePt: "",
-            summary: cleanText, // TEXTO COMPLETO, SEM LIMITE!
+            summary: cleanText,
             summaryPt: "", 
             source: feed.name, 
             sourceCategory: feed.category,
@@ -151,5 +163,7 @@ export function getAffiliateLinks(): AffiliateLink[] { try { const raw = localSt
 export function saveAffiliateLinks(links: AffiliateLink[]): void { localStorage.setItem(AFFILIATE_LINKS_KEY, JSON.stringify(links)); }
 export function getSponsorsLocal(): SponsorBanner[] { try { const raw = localStorage.getItem(SPONSORS_KEY); return raw ? JSON.parse(raw) : []; } catch { return []; } }
 export function saveSponsorsLocal(sponsors: SponsorBanner[]): void { localStorage.setItem(SPONSORS_KEY, JSON.stringify(sponsors)); }
+export function getSocialNetworksLocal(): SocialNetwork[] { try { const raw = localStorage.getItem(SOCIAL_NETWORKS_KEY); return raw ? JSON.parse(raw) : []; } catch { return []; } }
+export function saveSocialNetworksLocal(networks: SocialNetwork[]): void { localStorage.setItem(SOCIAL_NETWORKS_KEY, JSON.stringify(networks)); }
 export function checkAdminPassword(input: string): boolean { const stored = localStorage.getItem(ADMIN_PASSWORD_KEY) || 'admin2026'; return input.trim() === stored || input.trim() === 'admin2026' || input.trim() === 'ciencia123'; }
 export function setAdminPassword(newPassword: string): void { localStorage.setItem(ADMIN_PASSWORD_KEY, newPassword.trim()); }
