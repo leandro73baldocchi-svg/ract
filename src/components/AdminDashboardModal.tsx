@@ -6,7 +6,7 @@ import {
   fetchServerSocialNetworks, saveSocialNetworkToServer, deleteSocialNetworkFromServer, SocialNetwork
 } from '../utils/customDataManager';
 import {
-  X, Plus, Trash2, Edit, Lock, Database, Layers, FileText, Save, Download, Upload, CheckCircle, ExternalLink, ShieldCheck, AlertCircle, Rss, Search, RotateCcw, TrendingUp, MonitorPlay, Share2
+  X, Plus, Trash2, Edit, Lock, Database, Layers, FileText, Save, Download, Upload, CheckCircle, ExternalLink, ShieldCheck, AlertCircle, Rss, Search, RotateCcw, TrendingUp, MonitorPlay, Share2, ShoppingCart
 } from 'lucide-react';
 
 interface AdminDashboardModalProps {
