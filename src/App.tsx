@@ -13,7 +13,7 @@ import { NewsArticle, CategoryType, CustomCategory } from './types';
 import { AdminDashboardModal } from './components/AdminDashboardModal';
 import { DEFAULT_BASE_CATEGORIES, getCustomCategories, getAllManagedArticles, fetchServerArticles, fetchServerCategories, fetchRssArticles, getAffiliateLinks, fetchServerAffiliates, AffiliateLink, fetchServerSponsors, SponsorBanner, fetchServerSocialNetworks, SocialNetwork } from './utils/customDataManager';
 import { getOfflineArticles, saveArticleOffline, removeArticleOffline, getAutoTranslatePreference, setAutoTranslatePreference, getDarkModePreference, setDarkModePreference } from './utils/offlineStorage';
-import { Bookmark, ShoppingCart, TrendingUp, ExternalLink, Mail, PlusCircle, Linkedin, Twitter, Github, Instagram, Facebook, Globe } from 'lucide-react';
+import { Bookmark, ShoppingCart, TrendingUp, ExternalLink, Mail, PlusCircle, Linkedin, Twitter, Github, Instagram, Facebook, Globe, X } from 'lucide-react';
 
 export default function App() {
   const [articles, setArticles] = useState<NewsArticle[]>(() => getAllManagedArticles());
@@ -258,6 +258,47 @@ export default function App() {
           )}
         </div>
       </footer>
+
+      {/* MODAL: NEWSLETTER */}
+      {isMobileNewsletterOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setIsMobileNewsletterOpen(false)}>
+          <div className="bg-white dark:bg-[#121212] w-full max-w-md rounded-xl shadow-2xl overflow-hidden relative" onClick={e => e.stopPropagation()}>
+            <button onClick={() => setIsMobileNewsletterOpen(false)} className="absolute top-3 right-3 p-1.5 text-stone-500 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg transition-colors cursor-pointer"><X className="w-5 h-5"/></button>
+            <div className="p-5 border-b border-stone-100 dark:border-stone-800 bg-stone-50 dark:bg-[#181818]">
+              <div className="flex items-center gap-2 mb-1.5"><Mail className="w-5 h-5 text-blue-600 dark:text-blue-500"/><h3 className="font-bold text-base text-stone-900 dark:text-stone-100 uppercase tracking-wider">Newsletter</h3></div>
+              <p className="text-sm text-stone-500 dark:text-stone-400 leading-snug">Receba as principais publicações científicas direto no seu e-mail.</p>
+            </div>
+            <div className="bg-white">
+              <iframe width="100%" height="320" src="https://f1baa2a4.sibforms.com/v2/serve/MUIFAIZama2f8WtOuv76-bvEFDjzQiq_QO67UcmlC7k_-Fnm2TZCFOypjijlOvo8K9TQzN56nAggcuIb4CQ0cHWKhVXvGi3Vzez5t5celarPJq9FRvApWgefr_Tzq5kO3XLLQpyhP78FypQkIvgw4Cz5MQ0nOL-ppT6HjScbGqiCzdAgUUDMjldQeJm2la52v-t4XhUD70u8TDAaTg==" frameBorder="0" scrolling="auto" allowFullScreen style={{ display: 'block', margin: '0 auto', maxWidth: '100%' }}></iframe>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: VITRINE DE OFERTAS */}
+      {isMobileVitrineOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setIsMobileVitrineOpen(false)}>
+          <div className="bg-white dark:bg-[#121212] w-full max-w-md rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] relative" onClick={e => e.stopPropagation()}>
+            <div className="p-4 border-b border-stone-100 dark:border-stone-800 flex items-center justify-between shrink-0 bg-stone-50 dark:bg-[#181818]">
+              <div className="flex items-center gap-2"><TrendingUp className="w-5 h-5 text-amber-600"/><h3 className="font-bold text-base uppercase tracking-wider dark:text-stone-100">Vitrine RACT</h3></div>
+              <button onClick={() => setIsMobileVitrineOpen(false)} className="p-1.5 text-stone-500 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg transition-colors cursor-pointer"><X className="w-5 h-5"/></button>
+            </div>
+            <div className="p-4 overflow-y-auto space-y-3">
+              {randomizedAffiliates.length === 0 ? (
+                <p className="text-center text-sm text-stone-500 py-4">Nenhuma oferta disponível no momento.</p>
+              ) : (
+                randomizedAffiliates.map(aff => (
+                  <a key={aff.id} href={aff.url} target="_blank" rel="noreferrer" className="group block p-4 bg-white dark:bg-[#1A1A1A] border border-stone-200 dark:border-stone-800 rounded-lg hover:border-amber-400 hover:shadow-md transition-all cursor-pointer">
+                    <p className="text-[10px] font-bold text-amber-600 uppercase tracking-wider mb-2 flex items-center gap-1.5"><ShoppingCart className="w-3.5 h-3.5"/> Recomendação</p>
+                    <p className="font-bold text-sm mb-2 group-hover:text-amber-700 dark:text-stone-100 leading-snug">{aff.title}</p>
+                    <p className="text-xs text-stone-500 flex items-center gap-1 font-medium">Ver Oferta <ExternalLink className="w-3.5 h-3.5"/></p>
+                  </a>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <ArticleDetailModal article={selectedArticle} isOpen={!!selectedArticle} onClose={() => setSelectedArticle(null)} isSavedOffline={selectedArticle ? savedIdsSet.has(selectedArticle.id) : false} onToggleSaveOffline={handleToggleSaveOffline} autoTranslateDefault={autoTranslate} />
       <AdminDashboardModal isOpen={isAdminOpen} onClose={handleCloseAdmin} onDataUpdated={handleDataUpdated} />
