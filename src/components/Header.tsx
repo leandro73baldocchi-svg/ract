@@ -133,12 +133,12 @@ export const Header: React.FC<HeaderProps> = ({
 
           <div className="flex flex-col gap-2.5 shrink-0 mt-2 lg:mt-0">
             <div className="flex items-center gap-2 flex-wrap lg:justify-end">
-              <button onClick={onOpenMobileVitrine} className="px-3 py-1.5 rounded text-[11px] sm:text-xs font-bold border flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800">
+              <button type="button" onClick={onOpenMobileVitrine} className="px-3 py-1.5 rounded text-[11px] sm:text-xs font-bold border flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800">
                 <ShoppingCart className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Ofertas</span>
               </button>
 
-              <button onClick={onOpenMobileNewsletter} className="px-3 py-1.5 rounded text-[11px] sm:text-xs font-bold border flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-800">
+              <button type="button" onClick={onOpenMobileNewsletter} className="px-3 py-1.5 rounded text-[11px] sm:text-xs font-bold border flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-800">
                 <Mail className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Assinar</span>
               </button>
@@ -150,23 +150,23 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
 
             <div className="flex items-center gap-2 flex-wrap lg:justify-end">
-              <button onClick={onToggleDarkMode} className={`px-3 py-1.5 rounded text-[11px] sm:text-xs font-medium border flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs ${isDarkMode ? 'bg-stone-850 text-amber-300 border-stone-700 hover:bg-stone-800' : 'bg-white text-stone-700 border-stone-300 hover:bg-stone-100 hover:text-stone-900'}`}>
+              <button type="button" onClick={onToggleDarkMode} className={`px-3 py-1.5 rounded text-[11px] sm:text-xs font-medium border flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs ${isDarkMode ? 'bg-stone-850 text-amber-300 border-stone-700 hover:bg-stone-800' : 'bg-white text-stone-700 border-stone-300 hover:bg-stone-100 hover:text-stone-900'}`}>
                 {isDarkMode ? (<><Sun className="w-3.5 h-3.5 text-amber-300" /> <span className="hidden sm:inline">Claro</span></>) : (<><Moon className="w-3.5 h-3.5 text-stone-700" /> <span className="hidden sm:inline">Escuro</span></>)}
               </button>
               
-              {/* O SEU BOTÃO ELEGANTE COMANDANDO TUDO */}
-              <button onClick={onToggleAutoTranslate} className={`px-3 py-1.5 rounded text-[11px] sm:text-xs font-medium border flex items-center gap-1.5 transition-colors cursor-pointer ${autoTranslate ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 border-stone-900 dark:border-stone-100 shadow-2xs' : 'bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-200 border-stone-300 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-700'}`}>
+              <button type="button" onClick={onToggleAutoTranslate} className={`px-3 py-1.5 rounded text-[11px] sm:text-xs font-medium border flex items-center gap-1.5 transition-colors cursor-pointer ${autoTranslate ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 border-stone-900 dark:border-stone-100 shadow-2xs' : 'bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-200 border-stone-300 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-700'}`}>
                 <Globe className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Tradução:</span>
                 <span className="font-mono-subtle font-bold">{autoTranslate ? 'PT-BR' : 'EN'}</span>
               </button>
 
-              <button onClick={onToggleOfflineOnly} className={`px-3 py-1.5 rounded text-[11px] sm:text-xs font-medium border flex items-center gap-1.5 transition-colors cursor-pointer ${showOfflineOnly ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 border-stone-900 dark:border-stone-100 shadow-2xs' : 'bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-200 border-stone-300 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-700'}`}>
+              <button type="button" onClick={onToggleOfflineOnly} className={`px-3 py-1.5 rounded text-[11px] sm:text-xs font-medium border flex items-center gap-1.5 transition-colors cursor-pointer ${showOfflineOnly ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 border-stone-900 dark:border-stone-100 shadow-2xs' : 'bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-200 border-stone-300 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-700'}`}>
                 <Bookmark className={`w-3.5 h-3.5 ${showOfflineOnly ? 'fill-current' : ''}`} />
                 <span className="hidden sm:inline">Offline</span>
                 {savedCount > 0 && (<span className={`text-[10px] px-1.5 py-0.5 rounded font-mono-subtle font-semibold ${showOfflineOnly ? 'bg-stone-800 dark:bg-stone-300 text-stone-100 dark:text-stone-900' : 'bg-stone-200 dark:bg-stone-700 text-stone-800 dark:text-stone-200'}`}>{savedCount}</span>)}
               </button>
-              <button onClick={onRefresh} disabled={isRefreshing || !isOnline} className="p-1.5 rounded text-stone-700 dark:text-stone-300 hover:text-stone-950 dark:hover:text-white border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-800 hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors disabled:opacity-40 cursor-pointer">
+
+              <button type="button" onClick={onRefresh} disabled={isRefreshing || !isOnline} className="p-1.5 rounded text-stone-700 dark:text-stone-300 hover:text-stone-950 dark:hover:text-white border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-800 hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors disabled:opacity-40 cursor-pointer">
                 <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
               </button>
             </div>
@@ -180,7 +180,7 @@ export const Header: React.FC<HeaderProps> = ({
             {categoriesList.map((cat) => {
               const isActive = activeCategory === cat.id && !showOfflineOnly;
               return (
-                <button key={cat.id} onClick={() => onSelectCategory(cat.id)} className={`px-3 py-1.5 rounded text-xs transition-colors whitespace-nowrap cursor-pointer ${isActive ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 font-semibold shadow-2xs' : 'text-stone-700 dark:text-stone-300 hover:text-stone-950 dark:hover:text-white hover:bg-stone-200/70 dark:hover:bg-stone-800 font-medium'}`}>
+                <button type="button" key={cat.id} onClick={() => onSelectCategory(cat.id)} className={`px-3 py-1.5 rounded text-xs transition-colors whitespace-nowrap cursor-pointer ${isActive ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 font-semibold shadow-2xs' : 'text-stone-700 dark:text-stone-300 hover:text-stone-950 dark:hover:text-white hover:bg-stone-200/70 dark:hover:bg-stone-800 font-medium'}`}>
                   {cat.label}
                 </button>
               );
@@ -189,12 +189,11 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="relative w-full md:w-64 shrink-0">
             <Search className="w-3.5 h-3.5 text-stone-400 dark:text-stone-500 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input type="text" value={searchQuery} onChange={(e) => onSearchChange(e.target.value)} placeholder="Buscar tema, autor ou periódico..." className="w-full pl-8 pr-7 py-1 text-xs bg-white dark:bg-[#222222] text-stone-900 dark:text-stone-100 border border-stone-300 dark:border-stone-700 rounded focus:outline-none focus:border-stone-900 dark:focus:border-stone-400 transition-colors placeholder:text-stone-400 dark:placeholder:text-stone-500" />
-            {searchQuery && (<button onClick={() => onSearchChange('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 p-0.5 cursor-pointer"><X className="w-3 h-3" /></button>)}
+            {searchQuery && (<button type="button" onClick={() => onSearchChange('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 p-0.5 cursor-pointer"><X className="w-3 h-3" /></button>)}
           </div>
         </div>
       </div>
 
-      {/* AQUI ESTÁ A MÁGICA: O MOTOR DO GOOGLE FICA TOTALMENTE INVISÍVEL */}
       <div id="google_translate_element" style={{ display: 'none' }}></div>
       <style dangerouslySetInnerHTML={{__html: `
         .goog-te-banner-frame { display: none !important; }
@@ -205,7 +204,6 @@ export const Header: React.FC<HeaderProps> = ({
   );
 };
 
-// Declaração para o Typescript não reclamar do Google Translate
 declare global {
   interface Window {
     google: any;
