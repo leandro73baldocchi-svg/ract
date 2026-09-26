@@ -240,7 +240,9 @@ export default function App() {
                   {soc.icon === 'github' && <Github className="w-4 h-4" />}
                   {soc.icon === 'instagram' && <Instagram className="w-4 h-4" />}
                   {soc.icon === 'facebook' && <Facebook className="w-4 h-4" />}
-                  {(soc.icon === 'reddit' || soc.icon === 'globe') && <Globe className="w-4 h-4" />}
+                  {soc.icon === 'reddit' && <Reddit className="w-4 h-4" />}
+                  {soc.icon === 'globe' && <Globe className="w-4 h-4" />}
+                  {/*    {(soc.icon === 'reddit' || soc.icon === 'globe') && <Globe className="w-4 h-4" />}   */}
                 </a>
               ))}
             </div>
