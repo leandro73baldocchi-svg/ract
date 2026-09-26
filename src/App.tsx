@@ -11,15 +11,14 @@ import { ArticleDetailModal } from './components/ArticleDetailModal';
 import { UniversitiesView } from './components/UniversitiesView';
 import { NewsArticle, CategoryType, CustomCategory } from './types';
 import { AdminDashboardModal } from './components/AdminDashboardModal';
-import { DEFAULT_BASE_CATEGORIES, getCustomCategories, getAllManagedArticles, fetchServerArticles, fetchServerCategories, fetchRssArticles, getAffiliateLinks, fetchServerAffiliates, AffiliateLink, fetchServerSponsors, SponsorBanner, fetchServerSocialNetworks, SocialNetwork } from './utils/customDataManager';
+import { DEFAULT_BASE_CATEGORIES, getCustomCategories, getAllManagedArticles, fetchServerArticles, fetchServerCategories, fetchRssArticles, getAffiliateLinks, fetchServerAffiliates, AffiliateLink, fetchServerSponsors, SponsorBanner } from './utils/customDataManager';
 import { getOfflineArticles, saveArticleOffline, removeArticleOffline, getAutoTranslatePreference, setAutoTranslatePreference, getDarkModePreference, setDarkModePreference } from './utils/offlineStorage';
-import { Bookmark, ShoppingCart, TrendingUp, ExternalLink, Mail, PlusCircle, Linkedin, Twitter, Github, Instagram, Facebook, Globe } from 'lucide-react';
+import { Bookmark, ShoppingCart, TrendingUp, ExternalLink, Mail, X, PlusCircle } from 'lucide-react';
 
 export default function App() {
   const [articles, setArticles] = useState<NewsArticle[]>(() => getAllManagedArticles());
   const [affiliates, setAffiliates] = useState<AffiliateLink[]>(() => getAffiliateLinks());
   const [sponsors, setSponsors] = useState<SponsorBanner[]>([]);
-  const [socialNetworks, setSocialNetworks] = useState<SocialNetwork[]>([]);
   const [currentSponsorIndex, setCurrentSponsorIndex] = useState(0);
   const [visibleCount, setVisibleCount] = useState<number>(12);
   const [loading, setLoading] = useState<boolean>(false);
@@ -41,18 +40,8 @@ export default function App() {
   // Trava blindada para evitar o Loop de abrir o modal 2 vezes
   const hasInitializedUrl = useRef(false);
 
-  useEffect(() => { 
-    fetchServerAffiliates().then(setAffiliates); 
-    fetchServerSponsors().then(setSponsors); 
-    fetchServerSocialNetworks().then(setSocialNetworks);
-  }, []);
-
-  useEffect(() => { 
-    if (sponsors.length <= 1) return; 
-    const interval = setInterval(() => { setCurrentSponsorIndex((prev) => (prev + 1) % sponsors.length); }, 6000); 
-    return () => clearInterval(interval); 
-  }, [sponsors.length]);
-
+  useEffect(() => { fetchServerAffiliates().then(setAffiliates); fetchServerSponsors().then(setSponsors); }, []);
+  useEffect(() => { if (sponsors.length <= 1) return; const interval = setInterval(() => { setCurrentSponsorIndex((prev) => (prev + 1) % sponsors.length); }, 6000); return () => clearInterval(interval); }, [sponsors.length]);
   useEffect(() => { setVisibleCount(12); }, [activeCategory, searchQuery, showOfflineOnly]);
 
   useEffect(() => {
@@ -69,8 +58,8 @@ export default function App() {
   const handleCloseAdmin = () => { setIsAdminOpen(false); if (typeof window !== 'undefined') window.history.replaceState({}, '', window.location.pathname); };
   
   const handleDataUpdated = async () => { 
-    const [arts, cats, affs, spon, soc] = await Promise.all([fetchServerArticles(), fetchServerCategories(), fetchServerAffiliates(), fetchServerSponsors(), fetchServerSocialNetworks()]); 
-    setArticles(arts); setCustomCategories(cats); setAffiliates(affs); setSponsors(spon); setSocialNetworks(soc); setCurrentSponsorIndex(0); loadNewsFeed(true);
+    const [arts, cats, affs, spon] = await Promise.all([fetchServerArticles(), fetchServerCategories(), fetchServerAffiliates(), fetchServerSponsors()]); 
+    setArticles(arts); setCustomCategories(cats); setAffiliates(affs); setSponsors(spon); setCurrentSponsorIndex(0); loadNewsFeed(true);
   };
 
   const allCategoriesList = useMemo(() => customCategories?.length > 0 ? customCategories : DEFAULT_BASE_CATEGORIES, [customCategories]);
@@ -223,31 +212,12 @@ export default function App() {
         )}
       </main>
 
-      {/* RODAPÉ ELEGANTE E AUTOMÁTICO */}
-      <footer className="border-t border-stone-200 dark:border-stone-800 bg-white dark:bg-[#151515] py-6 mt-12 transition-colors print:hidden">
-        <div className="max-w-6xl mx-auto px-4 sm:px-8 flex flex-col sm:flex-row items-center justify-between gap-5 text-center sm:text-left">
-          <div className="text-xs text-stone-500 dark:text-stone-400 font-mono-subtle">
-            <strong className="text-stone-700 dark:text-stone-300 block mb-1">RADAR AUTÔNOMO DE CIÊNCIAS E TECNOLOGIA (RACT)</strong>
-            <span>© {new Date().getFullYear()} • Plataforma Acadêmica Independente</span>
-          </div>
-          
-          {socialNetworks.length > 0 && (
-            <div className="flex items-center justify-center flex-wrap gap-3">
-              {socialNetworks.map((soc) => (
-                <a key={soc.id} href={soc.url} target="_blank" rel="noreferrer" title={soc.name} className="p-2 bg-stone-100 dark:bg-[#202020] rounded-full text-stone-500 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700 hover:text-stone-900 dark:hover:text-stone-100 transition-all shadow-sm cursor-pointer">
-                  {soc.icon === 'linkedin' && <Linkedin className="w-4 h-4" />}
-                  {soc.icon === 'twitter' && <Twitter className="w-4 h-4" />}
-                  {soc.icon === 'github' && <Github className="w-4 h-4" />}
-                  {soc.icon === 'instagram' && <Instagram className="w-4 h-4" />}
-                  {soc.icon === 'facebook' && <Facebook className="w-4 h-4" />}
-                  {(soc.icon === 'reddit' || soc.icon === 'globe') && <Globe className="w-4 h-4" />}
-                </a>
-              ))}
-            </div>
-          )}
-        </div>
+      <footer className="border-t border-stone-200 dark:border-stone-800 bg-white dark:bg-[#151515] py-6 text-xs text-stone-500 dark:text-stone-400 font-mono-subtle mt-12 transition-colors print:hidden">
+        <div className="max-w-6xl mx-auto px-4 sm:px-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left"><div><strong className="text-stone-700 dark:text-stone-300">RADAR AUTÔNOMO DE CIÊNCIAS E TECNOLOGIA (RACT)</strong></div></div>
       </footer>
 
+      {/* MODAIS AQUI - Código omitido para não ficar gigante */}
+      
       <ArticleDetailModal article={selectedArticle} isOpen={!!selectedArticle} onClose={() => setSelectedArticle(null)} isSavedOffline={selectedArticle ? savedIdsSet.has(selectedArticle.id) : false} onToggleSaveOffline={handleToggleSaveOffline} autoTranslateDefault={autoTranslate} />
       <AdminDashboardModal isOpen={isAdminOpen} onClose={handleCloseAdmin} onDataUpdated={handleDataUpdated} />
       <Analytics />
