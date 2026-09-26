@@ -156,7 +156,6 @@ export default function App() {
 
   const displayedArticles = useMemo(() => filteredArticles.slice(0, visibleCount), [filteredArticles, visibleCount]);
 
-  // 🔥 MÁGICA DA VITRINE ALEATÓRIA: Embaralha os produtos toda vez que carrega!
   const randomizedAffiliates = useMemo(() => {
     const shuffled = [...affiliates];
     for (let i = shuffled.length - 1; i > 0; i--) {
@@ -212,10 +211,30 @@ export default function App() {
                     <a href="mailto:leandro73baldocchi@gmail.com?subject=Orçamento%20para%20Anúncio%20no%20RACT" className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800 dark:hover:bg-blue-900/50 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-colors cursor-pointer"><Mail className="w-4 h-4" /> Anuncie no RACT</a>
                   </div>
 
+                  {/* VITRINE LATERAL DO COMPUTADOR (AGORA COM IMAGEM) */}
                   {randomizedAffiliates.length > 0 && (
                     <div className="bg-[#FDFDFC] dark:bg-[#121212] border border-stone-200 dark:border-stone-800 rounded-xl p-5 shadow-sm">
                       <div className="flex items-center gap-2 mb-4 pb-3 border-b border-stone-100 dark:border-stone-800"><TrendingUp className="w-4 h-4 text-amber-600" /><h3 className="font-bold text-sm uppercase tracking-wider dark:text-stone-100">Vitrine RACT</h3></div>
-                      <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">{randomizedAffiliates.map(aff => (<a key={aff.id} href={aff.url} target="_blank" rel="noreferrer" className="group block p-3 bg-white dark:bg-[#1A1A1A] border border-stone-200 dark:border-stone-800 rounded-lg hover:border-amber-400 hover:shadow-md transition-all cursor-pointer"><p className="text-[9px] font-bold text-amber-600 uppercase tracking-wider mb-1.5 flex gap-1.5"><ShoppingCart className="w-3 h-3" /> Recomendação</p><p className="font-bold text-[13px] mb-1.5 group-hover:text-amber-700 dark:text-stone-100 leading-snug">{aff.title}</p><p className="text-[10px] text-stone-500 flex gap-1">Ver Oferta <ExternalLink className="w-3 h-3" /></p></a>))}</div>
+                      <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
+                        {randomizedAffiliates.map(aff => (
+                          <a key={aff.id} href={aff.url} target="_blank" rel="noreferrer" className="group flex items-start gap-3 p-3 bg-white dark:bg-[#1A1A1A] border border-stone-200 dark:border-stone-800 rounded-lg hover:border-amber-400 hover:shadow-md transition-all cursor-pointer">
+                            {aff.imageUrl ? (
+                              <div className="w-12 h-12 shrink-0 rounded bg-stone-100 overflow-hidden border border-stone-200 dark:border-stone-700">
+                                <img src={aff.imageUrl} alt={aff.title} className="w-full h-full object-cover" />
+                              </div>
+                            ) : (
+                              <div className="w-12 h-12 shrink-0 rounded bg-stone-50 dark:bg-[#202020] border border-stone-200 dark:border-stone-700 border-dashed flex items-center justify-center">
+                                <ShoppingCart className="w-5 h-5 text-stone-300 dark:text-stone-600" />
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-[9px] font-bold text-amber-600 uppercase tracking-wider mb-1 flex items-center gap-1.5"><TrendingUp className="w-3 h-3" /> Recomendação</p>
+                              <p className="font-bold text-[13px] mb-1.5 group-hover:text-amber-700 dark:text-stone-100 leading-tight line-clamp-2">{aff.title}</p>
+                              <p className="text-[10px] text-stone-500 flex items-center gap-1 font-medium">Ver Oferta <ExternalLink className="w-3 h-3" /></p>
+                            </div>
+                          </a>
+                        ))}
+                      </div>
                     </div>
                   )}
                   
@@ -275,7 +294,7 @@ export default function App() {
         </div>
       )}
 
-      {/* MODAL: VITRINE DE OFERTAS */}
+      {/* MODAL: VITRINE DE OFERTAS (AGORA COM IMAGEM) */}
       {isMobileVitrineOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setIsMobileVitrineOpen(false)}>
           <div className="bg-white dark:bg-[#121212] w-full max-w-md rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] relative" onClick={e => e.stopPropagation()}>
@@ -288,10 +307,21 @@ export default function App() {
                 <p className="text-center text-sm text-stone-500 py-4">Nenhuma oferta disponível no momento.</p>
               ) : (
                 randomizedAffiliates.map(aff => (
-                  <a key={aff.id} href={aff.url} target="_blank" rel="noreferrer" className="group block p-4 bg-white dark:bg-[#1A1A1A] border border-stone-200 dark:border-stone-800 rounded-lg hover:border-amber-400 hover:shadow-md transition-all cursor-pointer">
-                    <p className="text-[10px] font-bold text-amber-600 uppercase tracking-wider mb-2 flex items-center gap-1.5"><ShoppingCart className="w-3.5 h-3.5"/> Recomendação</p>
-                    <p className="font-bold text-sm mb-2 group-hover:text-amber-700 dark:text-stone-100 leading-snug">{aff.title}</p>
-                    <p className="text-xs text-stone-500 flex items-center gap-1 font-medium">Ver Oferta <ExternalLink className="w-3.5 h-3.5"/></p>
+                  <a key={aff.id} href={aff.url} target="_blank" rel="noreferrer" className="group flex items-start gap-4 p-4 bg-white dark:bg-[#1A1A1A] border border-stone-200 dark:border-stone-800 rounded-lg hover:border-amber-400 hover:shadow-md transition-all cursor-pointer">
+                    {aff.imageUrl ? (
+                      <div className="w-16 h-16 shrink-0 rounded-lg bg-stone-100 overflow-hidden border border-stone-200 dark:border-stone-700 shadow-sm">
+                        <img src={aff.imageUrl} alt={aff.title} className="w-full h-full object-cover" />
+                      </div>
+                    ) : (
+                      <div className="w-16 h-16 shrink-0 rounded-lg bg-stone-50 dark:bg-[#202020] border border-stone-200 dark:border-stone-700 border-dashed flex items-center justify-center">
+                        <ShoppingCart className="w-6 h-6 text-stone-300 dark:text-stone-600" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0 py-0.5">
+                      <p className="text-[10px] font-bold text-amber-600 uppercase tracking-wider mb-1.5 flex items-center gap-1.5"><TrendingUp className="w-3.5 h-3.5"/> Recomendação</p>
+                      <p className="font-bold text-sm mb-2 group-hover:text-amber-700 dark:text-stone-100 leading-snug line-clamp-2">{aff.title}</p>
+                      <p className="text-xs text-stone-500 flex items-center gap-1 font-medium">Ver Oferta <ExternalLink className="w-3.5 h-3.5"/></p>
+                    </div>
                   </a>
                 ))
               )}
