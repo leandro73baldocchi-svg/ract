@@ -12,7 +12,7 @@ const SPONSORS_KEY = 'ract_sponsors_v1';
 const SOCIAL_NETWORKS_KEY = 'ract_social_networks_v1';
 
 export interface CustomRssFeed { id: string; name: string; url: string; category: string; enabled: boolean; }
-export interface AffiliateLink { id: string; categoryId: string; title: string; url: string; }
+export interface AffiliateLink { id: string; categoryId: string; title: string; url: string; imageUrl?: string; }
 export interface SponsorBanner { id: string; title: string; imageUrl: string; linkUrl: string; }
 export interface SocialNetwork { id: string; name: string; url: string; icon: string; }
 
@@ -75,7 +75,7 @@ export async function fetchServerAffiliates(): Promise<AffiliateLink[]> {
   try {
     const querySnapshot = await getDocs(collection(db, "affiliates"));
     const links: AffiliateLink[] = [];
-    querySnapshot.forEach((docSnap) => { const data = docSnap.data(); links.push({ id: data.id || docSnap.id, categoryId: data.categoryId || docSnap.id, title: data.title, url: data.url }); });
+    querySnapshot.forEach((docSnap) => { const data = docSnap.data(); links.push({ id: data.id || docSnap.id, categoryId: data.categoryId || docSnap.id, title: data.title, url: data.url, imageUrl: data.imageUrl || '' }); });
     saveAffiliateLinks(links); return links;
   } catch (err) { return getAffiliateLinks(); }
 }
