@@ -52,6 +52,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   const [affCatId, setAffCatId] = useState<string>('default');
   const [affTitle, setAffTitle] = useState<string>('');
   const [affUrl, setAffUrl] = useState<string>('');
+  const [affImageUrl, setAffImageUrl] = useState<string>('');
   const [affSuccessMsg, setAffSuccessMsg] = useState<string | null>(null);
 
   // Sponsors State
@@ -140,9 +141,9 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   const handleDeleteFeed = async (id: string) => { if (confirm('Remover fonte RSS de todos os aparelhos?')) { try { const updated = await deleteFeedFromServer(id); setRssFeeds(updated); } catch (err) { alert('Erro ao excluir Feed'); } } };
 
   // Funções de Afiliados
-  const handleSaveAffiliate = async (e: React.FormEvent) => { e.preventDefault(); if (!affTitle.trim() || !affUrl.trim()) return; const newAffiliate: AffiliateLink = { id: isEditingAffId ? isEditingAffId : `aff-${Date.now()}`, categoryId: affCatId, title: affTitle.trim(), url: affUrl.trim() }; try { const updated = await saveAffiliateToServer(newAffiliate); setAffiliatesList(updated); setIsEditingAffId(null); setAffTitle(''); setAffUrl(''); setAffSuccessMsg('Link de parceiro salvo com sucesso!'); setTimeout(() => setAffSuccessMsg(null), 4000); onDataUpdated(); } catch (err) { alert('Erro ao salvar link'); } };
-  const handleStartEditAffiliate = (aff: AffiliateLink) => { setIsEditingAffId(aff.id); setAffCatId(aff.categoryId || 'default'); setAffTitle(aff.title); setAffUrl(aff.url); document.getElementById('admin-scrollable-content')?.scrollTo({ top: 0, behavior: 'smooth' }); };
-  const handleCancelEditAffiliate = () => { setIsEditingAffId(null); setAffCatId('default'); setAffTitle(''); setAffUrl(''); };
+  const handleSaveAffiliate = async (e: React.FormEvent) => { e.preventDefault(); if (!affTitle.trim() || !affUrl.trim()) return; const newAffiliate: AffiliateLink = { id: isEditingAffId ? isEditingAffId : `aff-${Date.now()}`, categoryId: affCatId, title: affTitle.trim(), url: affUrl.trim(), imageUrl: affImageUrl.trim() }; try { const updated = await saveAffiliateToServer(newAffiliate); setAffiliatesList(updated); setIsEditingAffId(null); setAffTitle(''); setAffUrl(''); setAffImageUrl(''); setAffSuccessMsg('Link de parceiro salvo com sucesso!'); setTimeout(() => setAffSuccessMsg(null), 4000); onDataUpdated(); } catch (err) { alert('Erro ao salvar link'); } };
+  const handleStartEditAffiliate = (aff: AffiliateLink) => { setIsEditingAffId(aff.id); setAffCatId(aff.categoryId || 'default'); setAffTitle(aff.title); setAffUrl(aff.url); setAffImageUrl(aff.imageUrl || ''); document.getElementById('admin-scrollable-content')?.scrollTo({ top: 0, behavior: 'smooth' }); };
+  const handleCancelEditAffiliate = () => { setIsEditingAffId(null); setAffCatId('default'); setAffTitle(''); setAffUrl(''); setAffImageUrl(''); };
   const handleDeleteAffiliate = async (id: string) => { if (confirm('Deseja realmente remover este link da sua vitrine?')) { try { const updated = await deleteAffiliateFromServer(id); setAffiliatesList(updated); if (isEditingAffId === id) handleCancelEditAffiliate(); onDataUpdated(); } catch (err) { alert('Erro ao excluir link'); } } };
 
   // Funções de Patrocinadores (Banners)
@@ -160,7 +161,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   const handleCancelEditSponsor = () => { setIsEditingSponsorId(null); setSponsorTitle(''); setSponsorImageUrl(''); setSponsorLinkUrl(''); };
   const handleDeleteSponsor = async (id: string) => { if (confirm('Deseja realmente remover este banner rotativo?')) { try { const updated = await deleteSponsorFromServer(id); setSponsorsList(updated); if (isEditingSponsorId === id) handleCancelEditSponsor(); onDataUpdated(); } catch (err) { alert('Erro ao excluir banner'); } } };
 
-  // NOVO: Funções de Redes Sociais
+  // Funções de Redes Sociais
   const handleSaveSocial = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!socialName.trim() || !socialUrl.trim()) return;
@@ -320,7 +321,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                 </div>
               )}
 
-              {/* TAB 3: AFFILIATES */}
+              {/* TAB 3: AFFILIATES (COM NOVA IMAGEM) */}
               {activeTab === 'affiliates' && (
                 <div className="space-y-6">
                   {affSuccessMsg && <div className="p-3 bg-emerald-50 border border-emerald-300 text-emerald-800 rounded-lg text-xs flex items-center gap-2"><CheckCircle className="w-4 h-4 shrink-0" /> <span>{affSuccessMsg}</span></div>}
@@ -329,11 +330,12 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div className="sm:col-span-2"><label className="block text-[11px] font-semibold text-stone-700 mb-1">Área do Artigo Sugerida *</label><select value={affCatId} onChange={(e) => setAffCatId(e.target.value)} className="w-full px-3 py-2 text-xs bg-white dark:bg-stone-950 border border-stone-300 dark:border-stone-700 rounded focus:outline-none"><option value="default">📘 Padrão Geral (Exibe na vitrine de todas as áreas)</option>{allAvailableCategories.filter(c => c.id !== 'all').map((c) => (<option key={c.id} value={c.id}>🔸 Área: {c.label}</option>))}</select></div>
                       <div><label className="block text-[11px] font-semibold text-stone-700 mb-1">Título do Produto / Livro *</label><input type="text" required value={affTitle} onChange={(e) => setAffTitle(e.target.value)} placeholder="Ex: Cosmos (Carl Sagan)" className="w-full px-3 py-1.5 text-xs bg-white dark:bg-stone-950 border border-stone-300 dark:border-stone-700 rounded" /></div>
-                      <div><label className="block text-[11px] font-semibold text-stone-700 mb-1">Link URL (Qualquer loja) *</label><input type="url" required value={affUrl} onChange={(e) => setAffUrl(e.target.value)} placeholder="https://..." className="w-full px-3 py-1.5 text-xs bg-white dark:bg-stone-950 border border-stone-300 dark:border-stone-700 rounded font-mono" /></div>
+                      <div><label className="block text-[11px] font-semibold text-stone-700 mb-1">Link URL de Compra *</label><input type="url" required value={affUrl} onChange={(e) => setAffUrl(e.target.value)} placeholder="https://..." className="w-full px-3 py-1.5 text-xs bg-white dark:bg-stone-950 border border-stone-300 dark:border-stone-700 rounded font-mono" /></div>
+                      <div className="sm:col-span-2"><label className="block text-[11px] font-semibold text-stone-700 mb-1">Link da Imagem do Produto (Opcional - mas recomendado)</label><input type="url" value={affImageUrl} onChange={(e) => setAffImageUrl(e.target.value)} placeholder="https://site.com/imagem-do-livro.jpg" className="w-full px-3 py-1.5 text-xs bg-white dark:bg-stone-950 border border-stone-300 dark:border-stone-700 rounded font-mono" /></div>
                     </div>
                     <div className="pt-2 flex justify-end"><button type="submit" className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1.5"><Save className="w-3.5 h-3.5" /> Salvar Link</button></div>
                   </form>
-                  <div className="space-y-2"><h4 className="text-xs font-bold uppercase tracking-wider text-stone-800 dark:text-stone-200">Links Ativos na Vitrine ({affiliatesList.length})</h4><div className="border border-stone-200 dark:border-stone-800 rounded-xl overflow-hidden bg-white dark:bg-stone-950 divide-y divide-stone-200 dark:divide-stone-800 max-h-[300px] overflow-y-auto">{affiliatesList.length === 0 ? (<div className="p-8 text-center text-xs text-stone-500">Nenhum link configurado ainda.</div>) : (affiliatesList.map((aff) => { const categoryName = aff.categoryId === 'default' ? 'Padrão Geral' : allAvailableCategories.find(c => c.id === aff.categoryId)?.label || aff.categoryId; return (<div key={aff.id} className="p-3 flex items-center justify-between gap-3 text-xs"><div className="min-w-0"><div className="flex items-center gap-2 mb-0.5"><span className={`px-1.5 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider ${aff.categoryId === 'default' ? 'bg-amber-100 text-amber-800' : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300'}`}>{categoryName}</span></div><p className="font-bold text-stone-900 dark:text-stone-100 truncate">{aff.title}</p><a href={aff.url} target="_blank" rel="noreferrer" className="text-[10px] text-blue-600 dark:text-blue-400 font-mono truncate hover:underline">{aff.url}</a></div><div className="flex items-center gap-1.5 shrink-0"><button onClick={() => handleStartEditAffiliate(aff)} className="p-1.5 rounded text-stone-600 hover:bg-stone-200 cursor-pointer"><Edit className="w-4 h-4" /></button><button onClick={() => handleDeleteAffiliate(aff.id)} className="p-1.5 rounded text-rose-500 hover:bg-rose-50 cursor-pointer"><Trash2 className="w-4 h-4" /></button></div></div>); }))}</div></div>
+                  <div className="space-y-2"><h4 className="text-xs font-bold uppercase tracking-wider text-stone-800 dark:text-stone-200">Links Ativos na Vitrine ({affiliatesList.length})</h4><div className="border border-stone-200 dark:border-stone-800 rounded-xl overflow-hidden bg-white dark:bg-stone-950 divide-y divide-stone-200 dark:divide-stone-800 max-h-[300px] overflow-y-auto">{affiliatesList.length === 0 ? (<div className="p-8 text-center text-xs text-stone-500">Nenhum link configurado ainda.</div>) : (affiliatesList.map((aff) => { const categoryName = aff.categoryId === 'default' ? 'Padrão Geral' : allAvailableCategories.find(c => c.id === aff.categoryId)?.label || aff.categoryId; return (<div key={aff.id} className="p-3 flex items-center justify-between gap-3 text-xs"><div className="flex items-center gap-3 min-w-0">{aff.imageUrl ? <div className="w-10 h-10 rounded border border-stone-200 overflow-hidden shrink-0"><img src={aff.imageUrl} alt={aff.title} className="w-full h-full object-cover" /></div> : <div className="w-10 h-10 rounded border border-stone-200 border-dashed bg-stone-50 flex items-center justify-center shrink-0"><ShoppingCart className="w-4 h-4 text-stone-300" /></div>}<div className="min-w-0"><div className="flex items-center gap-2 mb-0.5"><span className={`px-1.5 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider ${aff.categoryId === 'default' ? 'bg-amber-100 text-amber-800' : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300'}`}>{categoryName}</span></div><p className="font-bold text-stone-900 dark:text-stone-100 truncate">{aff.title}</p><a href={aff.url} target="_blank" rel="noreferrer" className="text-[10px] text-blue-600 dark:text-blue-400 font-mono truncate hover:underline block mt-0.5">{aff.url}</a></div></div><div className="flex items-center gap-1.5 shrink-0"><button onClick={() => handleStartEditAffiliate(aff)} className="p-1.5 rounded text-stone-600 hover:bg-stone-200 cursor-pointer"><Edit className="w-4 h-4" /></button><button onClick={() => handleDeleteAffiliate(aff.id)} className="p-1.5 rounded text-rose-500 hover:bg-rose-50 cursor-pointer"><Trash2 className="w-4 h-4" /></button></div></div>); }))}</div></div>
                 </div>
               )}
 
@@ -363,7 +365,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                 </div>
               )}
 
-              {/* NOVO - TAB 6: REDES SOCIAIS */}
+              {/* TAB 6: REDES SOCIAIS */}
               {activeTab === 'social' && (
                 <div className="space-y-6">
                   {socialSuccessMsg && <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 rounded-lg text-xs flex items-center gap-2"><CheckCircle className="w-4 h-4 shrink-0" /> <span>{socialSuccessMsg}</span></div>}
