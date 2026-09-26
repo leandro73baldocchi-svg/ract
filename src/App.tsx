@@ -231,7 +231,7 @@ export default function App() {
             <span>© {new Date().getFullYear()} • Plataforma Acadêmica Independente</span>
           </div>
           
-          {socialNetworks.length > 0 && (
+{socialNetworks.length > 0 && (
             <div className="flex items-center justify-center flex-wrap gap-3">
               {socialNetworks.map((soc) => (
                 <a key={soc.id} href={soc.url} target="_blank" rel="noreferrer" title={soc.name} className="p-2 bg-stone-100 dark:bg-[#202020] rounded-full text-stone-500 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700 hover:text-stone-900 dark:hover:text-stone-100 transition-all shadow-sm cursor-pointer">
@@ -240,9 +240,14 @@ export default function App() {
                   {soc.icon === 'github' && <Github className="w-4 h-4" />}
                   {soc.icon === 'instagram' && <Instagram className="w-4 h-4" />}
                   {soc.icon === 'facebook' && <Facebook className="w-4 h-4" />}
-                  {soc.icon === 'reddit' && <Reddit className="w-4 h-4" />}
                   {soc.icon === 'globe' && <Globe className="w-4 h-4" />}
-                  {/*    {(soc.icon === 'reddit' || soc.icon === 'globe') && <Globe className="w-4 h-4" />}   */}
+                  
+                  {/* Ícone Oficial do Reddit feito em código puro */}
+                  {soc.icon === 'reddit' && (
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968 0 1.754.786 1.754 1.754 0 .716-.435 1.333-1.01 1.614a3.111 3.111 0 0 1 .042.52c0 2.694-3.13 4.87-7.004 4.87-3.874 0-7.004-2.176-7.004-4.87 0-.183.015-.366.043-.534A1.748 1.748 0 0 1 4.028 12c0-.968.786-1.754 1.754-1.754.463 0 .898.196 1.207.49 1.207-.883 2.878-1.43 4.744-1.487l.885-4.182a.342.342 0 0 1 .14-.197.35.35 0 0 1 .238-.042l2.906.617a1.214 1.214 0 0 1 1.108-.701zM9.25 12C8.561 12 8 12.562 8 13.25c0 .687.561 1.248 1.25 1.248.687 0 1.248-.561 1.248-1.249 0-.688-.561-1.249-1.249-1.249zm5.5 0c-.687 0-1.248.561-1.248 1.25 0 .687.561 1.248 1.249 1.248.688 0 1.249-.561 1.249-1.249 0-.688-.561-1.25-1.25-1.25zm-5.466 3.99a.327.327 0 0 0-.231.094.33.33 0 0 0 0 .466c.843.84 2.484.912 2.961.912.477 0 2.105-.072 2.961-.912a.33.33 0 0 0 0-.466.327.327 0 0 0-.466 0c-.32.32-1.152.617-2.495.617-1.359 0-2.191-.314-2.5-.617a.332.332 0 0 0-.23-.094z" />
+                    </svg>
+                  )}
                 </a>
               ))}
             </div>
