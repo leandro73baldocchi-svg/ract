@@ -13,7 +13,7 @@ import { NewsArticle, CategoryType, CustomCategory } from './types';
 import { AdminDashboardModal } from './components/AdminDashboardModal';
 import { DEFAULT_BASE_CATEGORIES, getCustomCategories, getAllManagedArticles, fetchServerArticles, fetchServerCategories, fetchRssArticles, getAffiliateLinks, fetchServerAffiliates, AffiliateLink, fetchServerSponsors, SponsorBanner, fetchServerSocialNetworks, SocialNetwork } from './utils/customDataManager';
 import { getOfflineArticles, saveArticleOffline, removeArticleOffline, getAutoTranslatePreference, setAutoTranslatePreference, getDarkModePreference, setDarkModePreference } from './utils/offlineStorage';
-import { Bookmark, ShoppingCart, TrendingUp, ExternalLink, Mail, PlusCircle, Linkedin, Twitter, Github, Instagram, Facebook, Globe, X } from 'lucide-react';
+import { Bookmark, ShoppingCart, TrendingUp, ExternalLink, Mail, PlusCircle, Linkedin, Twitter, Github, Instagram, Facebook, Globe, X, Info } from 'lucide-react';
 
 export default function App() {
   const [articles, setArticles] = useState<NewsArticle[]>(() => getAllManagedArticles());
@@ -37,6 +37,7 @@ export default function App() {
 
   const [isMobileVitrineOpen, setIsMobileVitrineOpen] = useState<boolean>(false);
   const [isMobileNewsletterOpen, setIsMobileNewsletterOpen] = useState<boolean>(false);
+  const [isAboutModalOpen, setIsAboutModalOpen] = useState<boolean>(false);
 
   const hasInitializedUrl = useRef(false);
 
@@ -211,7 +212,6 @@ export default function App() {
                     <a href="mailto:leandro73baldocchi@gmail.com?subject=Orçamento%20para%20Anúncio%20no%20RACT" className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800 dark:hover:bg-blue-900/50 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-colors cursor-pointer"><Mail className="w-4 h-4" /> Anuncie no RACT</a>
                   </div>
 
-                  {/* VITRINE LATERAL DO COMPUTADOR (AGORA COM IMAGEM) */}
                   {randomizedAffiliates.length > 0 && (
                     <div className="bg-[#FDFDFC] dark:bg-[#121212] border border-stone-200 dark:border-stone-800 rounded-xl p-5 shadow-sm">
                       <div className="flex items-center gap-2 mb-4 pb-3 border-b border-stone-100 dark:border-stone-800"><TrendingUp className="w-4 h-4 text-amber-600" /><h3 className="font-bold text-sm uppercase tracking-wider dark:text-stone-100">Vitrine RACT</h3></div>
@@ -253,7 +253,11 @@ export default function App() {
         <div className="max-w-6xl mx-auto px-4 sm:px-8 flex flex-col sm:flex-row items-center justify-between gap-5 text-center sm:text-left">
           <div className="text-xs text-stone-500 dark:text-stone-400 font-mono-subtle">
             <strong className="text-stone-700 dark:text-stone-300 block mb-1">RADAR AUTÔNOMO DE CIÊNCIAS E TECNOLOGIA (RACT)</strong>
-            <span>© {new Date().getFullYear()} • Plataforma Acadêmica Independente</span>
+            <span className="flex items-center gap-2 flex-wrap justify-center sm:justify-start">
+              <span>© {new Date().getFullYear()} • Plataforma Acadêmica Independente</span>
+              <span className="hidden sm:inline">•</span>
+              <button onClick={() => setIsAboutModalOpen(true)} className="hover:text-stone-800 dark:hover:text-stone-200 underline underline-offset-2 transition-colors cursor-pointer">Sobre / Transparência</button>
+            </span>
           </div>
           
           {socialNetworks.length > 0 && (
@@ -277,6 +281,35 @@ export default function App() {
           )}
         </div>
       </footer>
+
+      {/* MODAL: SOBRE / TRANSPARÊNCIA */}
+      {isAboutModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setIsAboutModalOpen(false)}>
+          <div className="bg-white dark:bg-[#121212] w-full max-w-lg rounded-xl shadow-2xl overflow-hidden relative" onClick={e => e.stopPropagation()}>
+            <button onClick={() => setIsAboutModalOpen(false)} className="absolute top-3 right-3 p-1.5 text-stone-500 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg transition-colors cursor-pointer"><X className="w-5 h-5"/></button>
+            <div className="p-5 border-b border-stone-100 dark:border-stone-800 bg-stone-50 dark:bg-[#181818]">
+              <div className="flex items-center gap-2 mb-1.5"><Info className="w-5 h-5 text-blue-600 dark:text-blue-500"/><h3 className="font-bold text-base text-stone-900 dark:text-stone-100 uppercase tracking-wider">Sobre a Plataforma</h3></div>
+              <p className="text-sm text-stone-500 dark:text-stone-400 leading-snug">Transparência Editorial e Direitos Autorais.</p>
+            </div>
+            <div className="p-6 space-y-4 text-sm text-stone-600 dark:text-stone-300">
+              <p>O <strong>Radar Autônomo de Ciências e Tecnologia (RACT)</strong> é um projeto acadêmico independente desenvolvido por Leandro Sarno. Nosso objetivo é democratizar o acesso à ciência de ponta no Brasil.</p>
+              <div className="p-4 bg-stone-50 dark:bg-[#1A1A1A] rounded-lg border border-stone-200 dark:border-stone-800">
+                <h4 className="font-bold text-stone-900 dark:text-stone-100 mb-2">Como funcionamos:</h4>
+                <ul className="list-disc pl-4 space-y-1.5 text-xs">
+                  <li>Atuamos como um <strong>agregador autônomo</strong> via tecnologia RSS.</li>
+                  <li>Utilizamos APIs de inteligência artificial para tradução automatizada (PT-BR).</li>
+                  <li><strong>Não alteramos</strong> o teor das pesquisas. Todos os direitos autorais e méritos intelectuais pertencem exclusivamente aos periódicos e agências de origem (Nature, Science, MIT, etc.).</li>
+                </ul>
+              </div>
+              <p className="text-xs">O RACT não hospeda o conteúdo integral dos artigos, atuando apenas como vitrine para a descoberta científica, direcionando o leitor sempre ao link original da publicação.</p>
+              <div className="pt-4 border-t border-stone-100 dark:border-stone-800 flex items-center gap-2 text-xs">
+                <Mail className="w-4 h-4 text-stone-400" />
+                <span>Contato Técnico e Editorial: <strong>leandro73baldocchi@gmail.com</strong></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* MODAL: NEWSLETTER */}
       {isMobileNewsletterOpen && (
