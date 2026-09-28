@@ -31,21 +31,9 @@ export interface OpinionArticle {
   author: string; // Nome do Autor
 }
 
-//  export const DEFAULT_BASE_CATEGORIES: CustomCategory[] = [
-//    { id: 'all', label: 'Todas as Áreas', order: 0 },
-//    { id: 'biography', label: 'Biografias', order: 99 },
-//    { id: 'education', label: 'Educação', order: 99 },
-//    { id: 'biotech', label: 'Biotecnologia', order: 99 },
-//    { id: 'health', label: 'Saúde', order: 99 },
-//    { id: 'physics', label: 'Física', order: 99 },
-//    { id: 'math', label: 'Matemática', order: 99 },
-//    { id: 'astronomy', label: 'Astronomia', order: 99 },
-//    { id: 'geology', label: 'Geologia', order: 99 },
-//    { id: 'tech', label: 'Tecnologia', order: 99 },
-//    { id: 'ai', label: 'Inteligência Artificial', order: 99 },
-//    { id: 'psychology', label: 'Psicologia', order: 99 },
-//  { id: 'universities', label: 'Universidades (Brasil & Mundo)', order: 99 },
-// ];
+export const DEFAULT_BASE_CATEGORIES: CustomCategory[] = [
+    { id: 'all', label: 'Todas as Áreas', order: 0 }
+];
 
 export const DEFAULT_RSS_FEEDS: CustomRssFeed[] = [];
 
