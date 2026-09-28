@@ -13,7 +13,7 @@ import { NewsArticle, CategoryType, CustomCategory, RactVideo } from './types';
 import { AdminDashboardModal } from './components/AdminDashboardModal';
 import { DEFAULT_BASE_CATEGORIES, getCustomCategories, getAllManagedArticles, fetchServerArticles, fetchServerCategories, fetchRssArticles, getAffiliateLinks, fetchServerAffiliates, AffiliateLink, fetchServerSponsors, SponsorBanner, fetchServerSocialNetworks, SocialNetwork, fetchServerVideos } from './utils/customDataManager';
 import { getOfflineArticles, saveArticleOffline, removeArticleOffline, getAutoTranslatePreference, setAutoTranslatePreference, getDarkModePreference, setDarkModePreference } from './utils/offlineStorage';
-import { Bookmark, ShoppingCart, TrendingUp, ExternalLink, Mail, PlusCircle, Linkedin, Twitter, Github, Instagram, Facebook, Globe, X, Info, Youtube } from 'lucide-react';
+import { ShoppingCart, TrendingUp, ExternalLink, Mail, PlusCircle, Linkedin, Twitter, Github, Instagram, Facebook, Globe, X, Info, Youtube } from 'lucide-react';
 import VideoCard from './components/VideoCard';
 
 export default function App() {
