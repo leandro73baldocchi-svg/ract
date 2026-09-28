@@ -10,11 +10,26 @@ const ADMIN_PASSWORD_KEY = 'ract_admin_password_hash_v1';
 const AFFILIATE_LINKS_KEY = 'ract_affiliates_v2';
 const SPONSORS_KEY = 'ract_sponsors_v1';
 const SOCIAL_NETWORKS_KEY = 'ract_social_networks_v1';
+const OPINIONS_KEY = 'ract_opinions_v1'; // [NOVO] Chave para as Opiniões Autorais
 
 export interface CustomRssFeed { id: string; name: string; url: string; category: string; enabled: boolean; }
 export interface AffiliateLink { id: string; categoryId: string; title: string; url: string; imageUrl?: string; }
 export interface SponsorBanner { id: string; title: string; imageUrl: string; linkUrl: string; }
 export interface SocialNetwork { id: string; name: string; url: string; icon: string; }
+
+// [NOVO] Interface Estruturada para Artigos Acadêmicos / Opiniões
+export interface OpinionArticle {
+  id: string;
+  title: string;
+  abstract: string; // O Resumo Inicial
+  content: string; // O Texto Principal
+  references: string; // Referências Bibliográficas
+  externalLinks: string; // Links Externos Recomendados
+  imageUrl: string; // Link da Imagem de Capa
+  videoUrl: string; // Link de Vídeo (YouTube, etc)
+  pubDate: string; // Data de Publicação
+  author: string; // Nome do Autor
+}
 
 export const DEFAULT_BASE_CATEGORIES: CustomCategory[] = [
   { id: 'all', label: 'Todas as Áreas', order: 0 },
@@ -105,6 +120,27 @@ export async function fetchServerSocialNetworks(): Promise<SocialNetwork[]> {
 export async function saveSocialNetworkToServer(network: SocialNetwork): Promise<SocialNetwork[]> { await setDoc(doc(db, "social_networks", network.id), network); return await fetchServerSocialNetworks(); }
 export async function deleteSocialNetworkFromServer(networkId: string): Promise<SocialNetwork[]> { await deleteDoc(doc(db, "social_networks", networkId)); return await fetchServerSocialNetworks(); }
 
+// [NOVO] Funções para Salvar as Opiniões no Firebase
+export async function fetchServerOpinions(): Promise<OpinionArticle[]> {
+  try {
+    const querySnapshot = await getDocs(collection(db, "opinions"));
+    const opinions: OpinionArticle[] = [];
+    querySnapshot.forEach((docSnap) => { opinions.push(docSnap.data() as OpinionArticle); });
+    saveOpinionsLocal(opinions); 
+    return opinions;
+  } catch (err) { 
+    return getOpinionsLocal(); 
+  }
+}
+export async function saveOpinionToServer(opinion: OpinionArticle): Promise<OpinionArticle[]> { 
+  await setDoc(doc(db, "opinions", opinion.id), opinion); 
+  return await fetchServerOpinions(); 
+}
+export async function deleteOpinionFromServer(opinionId: string): Promise<OpinionArticle[]> { 
+  await deleteDoc(doc(db, "opinions", opinionId)); 
+  return await fetchServerOpinions(); 
+}
+
 export async function fetchServerFeeds(): Promise<CustomRssFeed[]> {
   try {
     const querySnapshot = await getDocs(collection(db, "feeds"));
@@ -165,5 +201,10 @@ export function getSponsorsLocal(): SponsorBanner[] { try { const raw = localSto
 export function saveSponsorsLocal(sponsors: SponsorBanner[]): void { localStorage.setItem(SPONSORS_KEY, JSON.stringify(sponsors)); }
 export function getSocialNetworksLocal(): SocialNetwork[] { try { const raw = localStorage.getItem(SOCIAL_NETWORKS_KEY); return raw ? JSON.parse(raw) : []; } catch { return []; } }
 export function saveSocialNetworksLocal(networks: SocialNetwork[]): void { localStorage.setItem(SOCIAL_NETWORKS_KEY, JSON.stringify(networks)); }
+
+// [NOVO] Local Storage Helper para Opiniões
+export function getOpinionsLocal(): OpinionArticle[] { try { const raw = localStorage.getItem(OPINIONS_KEY); return raw ? JSON.parse(raw) : []; } catch { return []; } }
+export function saveOpinionsLocal(opinions: OpinionArticle[]): void { localStorage.setItem(OPINIONS_KEY, JSON.stringify(opinions)); }
+
 export function checkAdminPassword(input: string): boolean { const stored = localStorage.getItem(ADMIN_PASSWORD_KEY) || 'admin2026'; return input.trim() === stored || input.trim() === 'admin2026' || input.trim() === 'ciencia123'; }
 export function setAdminPassword(newPassword: string): void { localStorage.setItem(ADMIN_PASSWORD_KEY, newPassword.trim()); }
