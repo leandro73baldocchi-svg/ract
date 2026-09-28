@@ -4,14 +4,16 @@ import {
   DEFAULT_BASE_CATEGORIES, getCustomCategories, saveCustomCategories, getAllManagedArticles, saveAllManagedArticles, saveOrUpdateArticle, deleteManagedArticle, resetToFactoryArticles, getCustomRssFeeds, saveCustomRssFeeds, CustomRssFeed, checkAdminPassword, setAdminPassword, saveCategoryToServer, deleteCategoryFromServer, fetchServerArticles, fetchServerCategories, fetchServerAffiliates, saveAffiliateToServer, deleteAffiliateFromServer, AffiliateLink, fetchServerFeeds, saveFeedToServer, deleteFeedFromServer,
   fetchServerSponsors, saveSponsorToServer, deleteSponsorFromServer, SponsorBanner,
   fetchServerSocialNetworks, saveSocialNetworkToServer, deleteSocialNetworkFromServer, SocialNetwork,
-  // [NOVO] Importando as funções e a interface das Opiniões Autorais
-  fetchServerOpinions, saveOpinionToServer, deleteOpinionFromServer, OpinionArticle, saveOpinionsLocal
+  fetchServerOpinions, saveOpinionToServer, deleteOpinionFromServer, OpinionArticle, saveOpinionsLocal,
+  // [NOVO] Importando as funções e a interface dos Vídeos
+  fetchServerVideos, saveVideoToServer, deleteVideoFromServer, RactVideo
 } from '../utils/customDataManager';
 
 import {
   X, Plus, Trash2, Edit, Lock, Database, Layers, FileText, Save, Download, Upload, CheckCircle, ExternalLink, ShieldCheck, AlertCircle, Rss, Search, RotateCcw, TrendingUp, MonitorPlay, Share2, ShoppingCart,
-  // [NOVO] Ícones para a Aba de Opiniões
-  BrainCircuit, Image, Video, Link, BookOpen
+  BrainCircuit, Image, Video, Link, BookOpen,
+  // [NOVO] Ícone do YouTube
+  Youtube
 } from 'lucide-react';
 
 interface AdminDashboardModalProps {
@@ -27,8 +29,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   const [passwordInput, setPasswordInput] = useState<string>('');
   const [authError, setAuthError] = useState<string | null>(null);
 
-  // [MODIFICADO] Adicionada a aba 'opinions'
-  const [activeTab, setActiveTab] = useState<'articles' | 'opinions' | 'categories' | 'feeds' | 'affiliates' | 'sponsors' | 'social' | 'backup'>('articles');
+  // [MODIFICADO] Adicionada a aba 'videos'
+  const [activeTab, setActiveTab] = useState<'articles' | 'opinions' | 'videos' | 'categories' | 'feeds' | 'affiliates' | 'sponsors' | 'social' | 'backup'>('articles');
 
   // Articles State
   const [articlesList, setArticlesList] = useState<NewsArticle[]>(() => getAllManagedArticles());
@@ -36,7 +38,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   const [articleCategoryFilter, setArticleCategoryFilter] = useState<string>('all');
   const [artSuccessMsg, setArtSuccessMsg] = useState<string | null>(null);
 
-  // [NOVO] Opinions State - Formulário Acadêmico Estruturado
+  // Opinions State
   const [opinionsList, setOpinionsList] = useState<OpinionArticle[]>([]);
   const [isEditingOpinionId, setIsEditingOpinionId] = useState<string | null>(null);
   const [opinionSuccessMsg, setOpinionSuccessMsg] = useState<string | null>(null);
@@ -44,6 +46,16 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     title: string; abstract: string; content: string; references: string; externalLinks: string; imageUrl: string; videoUrl: string;
   }>({
     title: '', abstract: '', content: '', references: '', externalLinks: '', imageUrl: '', videoUrl: ''
+  });
+
+  // [NOVO] Videos State
+  const [videosList, setVideosList] = useState<RactVideo[]>([]);
+  const [isEditingVideoId, setIsEditingVideoId] = useState<string | null>(null);
+  const [videoSuccessMsg, setVideoSuccessMsg] = useState<string | null>(null);
+  const [videoForm, setVideoForm] = useState<{
+    title: string; url: string; channelName: string; category: string; description: string; featured: boolean;
+  }>({
+    title: '', url: '', channelName: '', category: 'all', description: '', featured: false
   });
 
   // Categories State
@@ -106,7 +118,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
   const refreshData = async () => {
     const list = await fetchServerArticles(); setArticlesList(list);
-    const opin = await fetchServerOpinions(); setOpinionsList(opin); // [NOVO]
+    const opin = await fetchServerOpinions(); setOpinionsList(opin);
+    const vids = await fetchServerVideos(); setVideosList(vids); // [NOVO]
     const cats = await fetchServerCategories(); setCustomCategories(cats);
     const affs = await fetchServerAffiliates(); setAffiliatesList(affs);
     const fds = await fetchServerFeeds(); setRssFeeds(fds);
@@ -140,7 +153,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   const handleDeleteArticle = async (articleId: string, title: string) => { if (confirm(`Deseja realmente EXCLUIR do servidor o artigo:\n"${title}"?`)) { const updated = await deleteManagedArticle(articleId); setArticlesList(updated); if (isEditingId === articleId) handleCancelEdit(); onDataUpdated(); } };
   const handleResetFactory = async () => { if (confirm('Tem certeza que deseja restaurar o acervo com os artigos originais no servidor?')) { const defaultArts = await resetToFactoryArticles(); setArticlesList(defaultArts); onDataUpdated(); } };
 
-  // [NOVO] Funções de Minhas Opiniões Autorais
+  // Funções de Minhas Opiniões Autorais
   const handleSaveOpinion = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!opinionForm.title.trim() || !opinionForm.content.trim()) { alert('Preencha pelo menos o Título e o Texto Principal!'); return; }
@@ -197,6 +210,62 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
       } catch (err) { alert('Erro ao excluir artigo'); }
     }
   };
+
+  // [NOVO] Funções de Vídeos
+  const handleSaveVideo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!videoForm.title.trim() || !videoForm.url.trim()) { alert('Preencha pelo menos o Título e a URL do vídeo!'); return; }
+    
+    const videoToSave: RactVideo = {
+      id: isEditingVideoId ? isEditingVideoId : `vid-${Date.now()}`,
+      title: videoForm.title.trim(),
+      url: videoForm.url.trim(),
+      channelName: videoForm.channelName.trim(),
+      category: videoForm.category,
+      description: videoForm.description.trim(),
+      featured: videoForm.featured,
+      dateAdded: new Date().toISOString()
+    };
+    
+    try {
+      const updated = await saveVideoToServer(videoToSave);
+      setVideosList(updated);
+      handleCancelEditVideo();
+      setVideoSuccessMsg(isEditingVideoId ? 'Vídeo atualizado com sucesso!' : 'Vídeo adicionado à vitrine!');
+      setTimeout(() => setVideoSuccessMsg(null), 4000);
+      onDataUpdated();
+    } catch (err) { alert('Erro ao salvar vídeo no servidor'); }
+  };
+
+  const handleStartEditVideo = (vid: RactVideo) => {
+    setIsEditingVideoId(vid.id);
+    setVideoForm({
+      title: vid.title,
+      url: vid.url,
+      channelName: vid.channelName || '',
+      category: vid.category || 'all',
+      description: vid.description || '',
+      featured: vid.featured || false
+    });
+    document.getElementById('admin-scrollable-content')?.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleCancelEditVideo = () => {
+    setIsEditingVideoId(null);
+    setVideoForm({ title: '', url: '', channelName: '', category: 'all', description: '', featured: false });
+  };
+
+  const handleDeleteVideo = async (id: string, title: string) => {
+    if (confirm(`Deseja realmente REMOVER este vídeo da vitrine:\n"${title}"?`)) {
+      try {
+        const updated = await deleteVideoFromServer(id);
+        setVideosList(updated);
+        if (isEditingVideoId === id) handleCancelEditVideo();
+        onDataUpdated();
+      } catch (err) { alert('Erro ao excluir vídeo'); }
+    }
+  };
+
 
   // Funções de Categoria
   const handleEditCategory = (cat: CustomCategory) => { setNewCatId(cat.id); setNewCatLabel(cat.label); setNewCatOrder((cat.order ?? 99).toString()); setIsEditingCategory(true); document.getElementById('admin-scrollable-content')?.scrollTo({ top: 0, behavior: 'smooth' }); };
@@ -267,7 +336,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
         const parsed = JSON.parse(event.target?.result as string); 
         if (parsed.customCategories) { setCustomCategories(parsed.customCategories); saveCustomCategories(parsed.customCategories); } 
         if (parsed.articles) { saveAllManagedArticles(parsed.articles); setArticlesList(parsed.articles); } 
-        if (parsed.opinions) { saveOpinionsLocal(parsed.opinions); setOpinionsList(parsed.opinions); } // [NOVO] Importando opiniões do backup
+        if (parsed.opinions) { saveOpinionsLocal(parsed.opinions); setOpinionsList(parsed.opinions); }
         if (parsed.rssFeeds) { setRssFeeds(parsed.rssFeeds); saveCustomRssFeeds(parsed.rssFeeds); } 
         alert('Backup importado com sucesso!'); 
         onDataUpdated(); 
@@ -312,8 +381,11 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
             <div className="flex items-center gap-2 px-5 pt-2.5 border-b border-stone-200 dark:border-stone-800 bg-stone-50/70 dark:bg-stone-900/40 shrink-0 overflow-x-auto">
               <button onClick={() => setActiveTab('articles')} className={`pb-2.5 px-3 text-xs font-semibold flex items-center gap-1.5 border-b-2 cursor-pointer shrink-0 ${activeTab === 'articles' ? 'border-stone-900 text-stone-900 dark:border-stone-100 dark:text-stone-100' : 'border-transparent text-stone-500 hover:text-stone-800 dark:hover:text-stone-300'}`}><FileText className="w-3.5 h-3.5" /><span>Acervo Global</span></button>
               
-              {/* [NOVO] Aba Minhas Análises */}
+              {/* Aba Minhas Análises */}
               <button onClick={() => setActiveTab('opinions')} className={`pb-2.5 px-3 text-xs font-semibold flex items-center gap-1.5 border-b-2 cursor-pointer shrink-0 ${activeTab === 'opinions' ? 'border-teal-600 text-teal-700 dark:text-teal-400 dark:border-teal-400' : 'border-transparent text-stone-500 hover:text-stone-800 dark:hover:text-stone-300'}`}><BookOpen className="w-3.5 h-3.5 text-teal-600 dark:text-teal-500" /><span>Minhas Análises (Opiniões)</span></button>
+              
+              {/* [NOVO] Aba Vitrine de Vídeos */}
+              <button onClick={() => setActiveTab('videos')} className={`pb-2.5 px-3 text-xs font-semibold flex items-center gap-1.5 border-b-2 cursor-pointer shrink-0 ${activeTab === 'videos' ? 'border-red-600 text-red-700 dark:text-red-400 dark:border-red-400' : 'border-transparent text-stone-500 hover:text-stone-800 dark:hover:text-stone-300'}`}><Youtube className="w-4 h-4 text-red-600 dark:text-red-500" /><span>Vitrine de Vídeos</span></button>
 
               <button onClick={() => setActiveTab('feeds')} className={`pb-2.5 px-3 text-xs font-semibold flex items-center gap-1.5 border-b-2 cursor-pointer shrink-0 ${activeTab === 'feeds' ? 'border-stone-900 text-stone-900 dark:border-stone-100 dark:text-stone-100' : 'border-transparent text-stone-500 hover:text-stone-800 dark:hover:text-stone-300'}`}><Rss className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" /><span>Fontes RSS</span></button>
               <button onClick={() => setActiveTab('categories')} className={`pb-2.5 px-3 text-xs font-semibold flex items-center gap-1.5 border-b-2 cursor-pointer shrink-0 ${activeTab === 'categories' ? 'border-stone-900 text-stone-900 dark:border-stone-100 dark:text-stone-100' : 'border-transparent text-stone-500 hover:text-stone-800 dark:hover:text-stone-300'}`}><Layers className="w-3.5 h-3.5" /><span>Áreas</span></button>
@@ -355,7 +427,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                 </div>
               )}
 
-              {/* [NOVO] TAB DE MINHAS OPINIÕES AUTORAIS */}
+              {/* TAB DE MINHAS OPINIÕES AUTORAIS */}
               {activeTab === 'opinions' && (
                 <div className="space-y-6">
                   {opinionSuccessMsg && <div className="p-3 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 rounded-lg text-xs flex items-center gap-2"><CheckCircle className="w-4 h-4 shrink-0" /><span>{opinionSuccessMsg}</span></div>}
@@ -441,6 +513,88 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                             <div className="flex flex-col items-center gap-2 shrink-0">
                               <button onClick={() => handleStartEditOpinion(opin)} className="p-2 rounded text-stone-600 hover:bg-stone-200 hover:text-teal-700 transition-colors cursor-pointer" title="Editar Artigo"><Edit className="w-4 h-4" /></button>
                               <button onClick={() => handleDeleteOpinion(opin.id, opin.title)} className="p-2 rounded text-stone-400 hover:bg-rose-50 hover:text-rose-600 transition-colors cursor-pointer" title="Excluir Artigo"><Trash2 className="w-4 h-4" /></button>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* [NOVO] TAB DE VÍDEOS */}
+              {activeTab === 'videos' && (
+                <div className="space-y-6">
+                  {videoSuccessMsg && <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 rounded-lg text-xs flex items-center gap-2"><CheckCircle className="w-4 h-4 shrink-0" /> <span>{videoSuccessMsg}</span></div>}
+                  
+                  <form onSubmit={handleSaveVideo} className="p-5 bg-red-50/50 dark:bg-red-950/10 border border-red-200 dark:border-red-900/50 rounded-xl space-y-4">
+                    <div className="flex items-center justify-between border-b border-red-100 dark:border-red-900/50 pb-3">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-red-700 dark:text-red-400 flex items-center gap-1.5">
+                        <Youtube className="w-4 h-4" /> {isEditingVideoId ? 'Editar Vídeo' : 'Adicionar Vídeo do YouTube'}
+                      </h4>
+                      {isEditingVideoId && <button type="button" onClick={handleCancelEditVideo} className="text-xs text-stone-500 hover:text-stone-800 underline cursor-pointer">Cancelar Edição</button>}
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="sm:col-span-2">
+                        <label className="block text-[11px] font-semibold text-stone-700 dark:text-stone-300 mb-1">Link do YouTube *</label>
+                        <input type="url" required value={videoForm.url} onChange={(e) => setVideoForm({ ...videoForm, url: e.target.value })} placeholder="https://www.youtube.com/watch?v=..." className="w-full px-3 py-1.5 text-xs bg-white dark:bg-stone-950 border border-stone-300 dark:border-stone-700 rounded font-mono" />
+                      </div>
+                      
+                      <div className="sm:col-span-2">
+                        <label className="block text-[11px] font-semibold text-stone-700 dark:text-stone-300 mb-1">Título do Vídeo *</label>
+                        <input type="text" required value={videoForm.title} onChange={(e) => setVideoForm({ ...videoForm, title: e.target.value })} placeholder="Ex: O que são Buracos Negros?" className="w-full px-3 py-1.5 text-xs bg-white dark:bg-stone-950 border border-stone-300 dark:border-stone-700 rounded" />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-semibold text-stone-700 dark:text-stone-300 mb-1">Canal (Autor)</label>
+                        <input type="text" value={videoForm.channelName} onChange={(e) => setVideoForm({ ...videoForm, channelName: e.target.value })} placeholder="Ex: Canal USP" className="w-full px-3 py-1.5 text-xs bg-white dark:bg-stone-950 border border-stone-300 dark:border-stone-700 rounded" />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-semibold text-stone-700 dark:text-stone-300 mb-1">Área / Categoria</label>
+                        <select value={videoForm.category} onChange={(e) => setVideoForm({ ...videoForm, category: e.target.value })} className="w-full px-3 py-1.5 text-xs bg-white dark:bg-stone-950 border border-stone-300 dark:border-stone-700 rounded">
+                          {allAvailableCategories.map((c) => (<option key={c.id} value={c.id}>{c.label}</option>))}
+                        </select>
+                      </div>
+
+                      <div className="sm:col-span-2">
+                        <label className="block text-[11px] font-semibold text-stone-700 dark:text-stone-300 mb-1">Breve Descrição</label>
+                        <textarea rows={2} value={videoForm.description} onChange={(e) => setVideoForm({ ...videoForm, description: e.target.value })} placeholder="Um resumo sobre o assunto do vídeo..." className="w-full px-3 py-1.5 text-xs bg-white dark:bg-stone-950 border border-stone-300 dark:border-stone-700 rounded resize-y" />
+                      </div>
+                    </div>
+
+                    <div className="pt-2 flex items-center justify-between">
+                      <label className="flex items-center gap-2 text-xs text-stone-600 dark:text-stone-400 cursor-pointer">
+                        <input type="checkbox" checked={videoForm.featured} onChange={(e) => setVideoForm({ ...videoForm, featured: e.target.checked })} className="rounded border-stone-300 dark:border-stone-700" />
+                        <span>Destacar no topo da vitrine</span>
+                      </label>
+                      <button type="submit" className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5">
+                        <Save className="w-3.5 h-3.5" /> Salvar Vídeo
+                      </button>
+                    </div>
+                  </form>
+
+                  <div className="space-y-3">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-stone-800 dark:text-stone-200 border-b border-stone-200 pb-2">Vídeos na Vitrine ({videosList.length})</h4>
+                    <div className="border border-stone-200 dark:border-stone-800 rounded-xl overflow-hidden bg-white dark:bg-stone-950 divide-y divide-stone-200 dark:divide-stone-800 max-h-[400px] overflow-y-auto">
+                      {videosList.length === 0 ? (
+                        <div className="p-8 text-center text-xs text-stone-500">Nenhum vídeo cadastrado.</div>
+                      ) : (
+                        videosList.map((vid) => (
+                          <div key={vid.id} className="p-4 flex items-start justify-between gap-4 hover:bg-stone-50 transition-colors">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1.5">
+                                <span className="px-2 py-0.5 rounded text-[9px] font-bold uppercase bg-stone-100 text-stone-600">{vid.category}</span>
+                                {vid.featured && <span className="px-2 py-0.5 rounded text-[9px] font-bold uppercase bg-amber-100 text-amber-700">Destaque</span>}
+                                <span className="text-[10px] text-stone-500">{vid.channelName}</span>
+                              </div>
+                              <h5 className="text-sm font-bold text-stone-900 line-clamp-1">{vid.title}</h5>
+                              <a href={vid.url} target="_blank" rel="noreferrer" className="text-[10px] text-blue-600 font-mono truncate block mt-1 hover:underline">{vid.url}</a>
+                            </div>
+                            <div className="flex flex-col items-center gap-2 shrink-0">
+                              <button onClick={() => handleStartEditVideo(vid)} className="p-1.5 rounded text-stone-600 hover:bg-stone-200 transition-colors cursor-pointer" title="Editar"><Edit className="w-4 h-4" /></button>
+                              <button onClick={() => handleDeleteVideo(vid.id, vid.title)} className="p-1.5 rounded text-rose-500 hover:bg-rose-50 transition-colors cursor-pointer" title="Excluir"><Trash2 className="w-4 h-4" /></button>
                             </div>
                           </div>
                         ))
