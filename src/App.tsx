@@ -190,9 +190,26 @@ export default function App() {
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 py-6 print:hidden">
         {!showOfflineOnly && activeCategory === 'universities' ? ( <UniversitiesView /> ) : (
           <>
-            <div className="mb-4 flex items-center justify-between text-xs text-stone-500 border-b pb-2">
+            <div className="mb-6 flex items-center justify-between text-xs text-stone-500 border-b border-stone-200 dark:border-stone-800 pb-2">
               <span className="uppercase font-semibold text-stone-800 dark:text-stone-200">{activeCategory === 'all' ? 'Todas as Publicações' : 'Filtro Ativo'} • {filteredArticles.length} publicações</span>
             </div>
+
+            {/* SEÇÃO DA VIDEOTECA RACT MOVIDA PARA O TOPO */}
+            {filteredVideos.length > 0 && (
+              <div className="mb-10 pb-8 border-b border-stone-200 dark:border-stone-800">
+                <div className="flex items-center gap-2 mb-6">
+                  <Youtube className="w-6 h-6 text-red-600 dark:text-red-500" />
+                  <h2 className="text-lg font-bold uppercase tracking-wider text-stone-900 dark:text-stone-100">
+                    Videoteca {activeCategory !== 'all' ? '- Filtro Ativo' : ''}
+                  </h2>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {filteredVideos.map(video => (
+                    <VideoCard key={video.id} video={video} />
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="flex flex-col lg:flex-row gap-6 items-start">
               <div className="flex-1 w-full min-w-0">
@@ -261,23 +278,6 @@ export default function App() {
               )}
             </div>
 
-            {/* SEÇÃO DA VIDEOTECA RACT */}
-            {filteredVideos.length > 0 && (
-              <div className="mt-12 pt-8 border-t border-stone-200 dark:border-stone-800">
-                <div className="flex items-center gap-2 mb-6">
-                  <Youtube className="w-6 h-6 text-red-600 dark:text-red-500" />
-                  <h2 className="text-lg font-bold uppercase tracking-wider text-stone-900 dark:text-stone-100">
-                    Videoteca {activeCategory !== 'all' ? '- Filtro Ativo' : ''}
-                  </h2>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredVideos.map(video => (
-                    <VideoCard key={video.id} video={video} />
-                  ))}
-                </div>
-              </div>
-            )}
-            
           </>
         )}
       </main>
