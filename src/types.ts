@@ -91,3 +91,14 @@ export interface ArticleDeepDive {
   simplifiedExplanation: string;
   keyTerms: { term: string; definition: string }[];
 }
+
+export interface RactVideo {
+  id: string;             // O ID único do Firebase
+  title: string;          // Título do vídeo
+  url: string;            // O link do YouTube
+  channelName: string;    // De onde veio (ex: Canal USP)
+  category: string;       // Para o filtro (ex: 'ai', 'psychology')
+  description: string;    // Um resumo rápido
+  dateAdded: string;      // Quando foi colocado na vitrine
+  featured: boolean;      // Se vai aparecer no topo (Destaque)
+}
