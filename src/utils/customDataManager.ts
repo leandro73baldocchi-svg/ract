@@ -1,4 +1,4 @@
-import { CustomCategory, NewsArticle } from '../types';
+import { CustomCategory, NewsArticle, RactVideo } from '../types';
 import { ACADEMIC_ARTICLES } from '../data/academicArticles';
 import { db } from './firebase';
 import { collection, getDocs, doc, setDoc, deleteDoc } from 'firebase/firestore';
@@ -193,3 +193,27 @@ export function saveOpinionsLocal(opinions: OpinionArticle[]): void { localStora
 
 export function checkAdminPassword(input: string): boolean { const stored = localStorage.getItem(ADMIN_PASSWORD_KEY) || 'admin2026'; return input.trim() === stored || input.trim() === 'admin2026' || input.trim() === 'ciencia123'; }
 export function setAdminPassword(newPassword: string): void { localStorage.setItem(ADMIN_PASSWORD_KEY, newPassword.trim()); }
+
+// [NOVO] Funções para a Vitrine de Vídeos
+export async function fetchServerVideos(): Promise<RactVideo[]> {
+  try {
+    const querySnapshot = await getDocs(collection(db, "videos"));
+    const videos: RactVideo[] = [];
+    querySnapshot.forEach((docSnap) => { 
+      videos.push(docSnap.data() as RactVideo); 
+    });
+    return videos;
+  } catch (err) { 
+    return []; 
+  }
+}
+
+export async function saveVideoToServer(video: RactVideo): Promise<RactVideo[]> {
+  await setDoc(doc(db, "videos", video.id), video);
+  return await fetchServerVideos();
+}
+
+export async function deleteVideoFromServer(videoId: string): Promise<RactVideo[]> {
+  await deleteDoc(doc(db, "videos", videoId));
+  return await fetchServerVideos();
+}
