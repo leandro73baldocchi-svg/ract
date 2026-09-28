@@ -11,12 +11,19 @@ import { ArticleDetailModal } from './components/ArticleDetailModal';
 import { UniversitiesView } from './components/UniversitiesView';
 import { NewsArticle, CategoryType, CustomCategory } from './types';
 import { AdminDashboardModal } from './components/AdminDashboardModal';
-import { DEFAULT_BASE_CATEGORIES, getCustomCategories, getAllManagedArticles, fetchServerArticles, fetchServerCategories, fetchRssArticles, getAffiliateLinks, fetchServerAffiliates, AffiliateLink, fetchServerSponsors, SponsorBanner, fetchServerSocialNetworks, SocialNetwork } from './utils/customDataManager';
+// [NOVO] Importando o OpinionReader e as funções de opinião
+import { OpinionReader } from './components/OpinionReader';
+import { DEFAULT_BASE_CATEGORIES, getCustomCategories, getAllManagedArticles, fetchServerArticles, fetchServerCategories, fetchRssArticles, getAffiliateLinks, fetchServerAffiliates, AffiliateLink, fetchServerSponsors, SponsorBanner, fetchServerSocialNetworks, SocialNetwork, fetchServerOpinions, OpinionArticle } from './utils/customDataManager';
 import { getOfflineArticles, saveArticleOffline, removeArticleOffline, getAutoTranslatePreference, setAutoTranslatePreference, getDarkModePreference, setDarkModePreference } from './utils/offlineStorage';
 import { Bookmark, ShoppingCart, TrendingUp, ExternalLink, Mail, PlusCircle, Linkedin, Twitter, Github, Instagram, Facebook, Globe, X, Info } from 'lucide-react';
 
+// Tipo unificado para o Feed (Pode ser Notícia Normal ou Opinião Autoral)
+type FeedItem = NewsArticle | (OpinionArticle & { isOpinion: true });
+
 export default function App() {
-  const [articles, setArticles] = useState<NewsArticle[]>(() => getAllManagedArticles());
+  // [MODIFICADO] Estado unificado do Feed principal
+  const [feedItems, setFeedItems] = useState<FeedItem[]>([]);
+  
   const [affiliates, setAffiliates] = useState<AffiliateLink[]>(() => getAffiliateLinks());
   const [sponsors, setSponsors] = useState<SponsorBanner[]>([]);
   const [socialNetworks, setSocialNetworks] = useState<SocialNetwork[]>([]);
@@ -27,7 +34,11 @@ export default function App() {
   const [activeCategory, setActiveCategory] = useState<CategoryType>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [showOfflineOnly, setShowOfflineOnly] = useState<boolean>(false);
+  
+  // [MODIFICADO] Controle de leitura
   const [selectedArticle, setSelectedArticle] = useState<NewsArticle | null>(null);
+  const [selectedOpinion, setSelectedOpinion] = useState<OpinionArticle | null>(null);
+
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => getDarkModePreference());
   const [customCategories, setCustomCategories] = useState<CustomCategory[]>(() => getCustomCategories());
   const [isAdminOpen, setIsAdminOpen] = useState<boolean>(false);
@@ -69,8 +80,8 @@ export default function App() {
   const handleCloseAdmin = () => { setIsAdminOpen(false); if (typeof window !== 'undefined') window.history.replaceState({}, '', window.location.pathname); };
   
   const handleDataUpdated = async () => { 
-    const [arts, cats, affs, spon, soc] = await Promise.all([fetchServerArticles(), fetchServerCategories(), fetchServerAffiliates(), fetchServerSponsors(), fetchServerSocialNetworks()]); 
-    setArticles(arts); setCustomCategories(cats); setAffiliates(affs); setSponsors(spon); setSocialNetworks(soc); setCurrentSponsorIndex(0); loadNewsFeed(true);
+    const [arts, cats, affs, spon, soc, opins] = await Promise.all([fetchServerArticles(), fetchServerCategories(), fetchServerAffiliates(), fetchServerSponsors(), fetchServerSocialNetworks(), fetchServerOpinions()]); 
+    setCustomCategories(cats); setAffiliates(affs); setSponsors(spon); setSocialNetworks(soc); setCurrentSponsorIndex(0); loadNewsFeed(true);
   };
 
   const allCategoriesList = useMemo(() => customCategories?.length > 0 ? customCategories : DEFAULT_BASE_CATEGORIES, [customCategories]);
@@ -94,22 +105,39 @@ export default function App() {
     if (force) setIsRefreshing(true);
     if (typeof navigator !== 'undefined' && !navigator.onLine) { setLoading(false); setIsRefreshing(false); return; }
     try {
-      const [articlesData, categoriesData, rssData] = await Promise.allSettled([fetchServerArticles(), fetchServerCategories(), fetchRssArticles()]);
-      let combinedArticles: NewsArticle[] = [];
-      if (articlesData.status === 'fulfilled' && Array.isArray(articlesData.value)) combinedArticles = [...articlesData.value];
-      if (rssData.status === 'fulfilled' && Array.isArray(rssData.value)) combinedArticles = [...combinedArticles, ...rssData.value];
-      const uniqueArticlesMap = new Map<string, NewsArticle>();
-      combinedArticles.forEach(art => uniqueArticlesMap.set(art.id, art));
-      let uniqueArticles = Array.from(uniqueArticlesMap.values());
-      uniqueArticles.sort((a, b) => {
-        const getTimestamp = (art: NewsArticle) => {
-          if (art.id.startsWith('art-')) { const time = parseInt(art.id.replace('art-', '')); if (!isNaN(time) && time > 1000000000000) return time; }
-          if (art.date) { const dateTime = new Date(art.date).getTime(); if (!isNaN(dateTime)) return dateTime; }
+      // [MODIFICADO] Busca artigos normais, RSS e Suas Opiniões
+      const [articlesData, categoriesData, rssData, opinionsData] = await Promise.allSettled([fetchServerArticles(), fetchServerCategories(), fetchRssArticles(), fetchServerOpinions()]);
+      
+      let combinedFeed: FeedItem[] = [];
+      if (articlesData.status === 'fulfilled' && Array.isArray(articlesData.value)) combinedFeed = [...articlesData.value];
+      if (rssData.status === 'fulfilled' && Array.isArray(rssData.value)) combinedFeed = [...combinedFeed, ...rssData.value];
+      
+      // Adiciona as Opiniões marcadas para diferenciá-las no Feed
+      if (opinionsData.status === 'fulfilled' && Array.isArray(opinionsData.value)) {
+        const mappedOpinions = opinionsData.value.map(opin => ({ ...opin, isOpinion: true as const }));
+        combinedFeed = [...combinedFeed, ...mappedOpinions];
+      }
+
+      const uniqueFeedMap = new Map<string, FeedItem>();
+      combinedFeed.forEach(item => uniqueFeedMap.set(item.id, item));
+      let uniqueFeed = Array.from(uniqueFeedMap.values());
+      
+      // [MODIFICADO] Ordenação adaptada para lidar com os diferentes tipos de dados
+      uniqueFeed.sort((a, b) => {
+        const getTimestamp = (item: FeedItem) => {
+          if (item.id.startsWith('art-') || item.id.startsWith('opin-')) { const time = parseInt(item.id.split('-')[1]); if (!isNaN(time) && time > 1000000000000) return time; }
+          // Para Opiniões (que usam pubDate no formato DD de Mês) ou artigos antigos (date)
+          if ('pubDate' in item && item.pubDate) {
+            // Conversão simplificada para ordenar (Idealmente deveria ser salvo como ISO)
+            return Date.now(); // Fallback temporário para demonstração
+          }
+          if ('date' in item && item.date) { const dateTime = new Date(item.date).getTime(); if (!isNaN(dateTime)) return dateTime; }
           return 0;
         };
         return getTimestamp(b) - getTimestamp(a);
       });
-      setArticles(uniqueArticles);
+      
+      setFeedItems(uniqueFeed);
       if (categoriesData.status === 'fulfilled' && Array.isArray(categoriesData.value)) setCustomCategories(categoriesData.value);
     } catch (err) { console.warn('Erro sync', err); } finally { setLoading(false); setIsRefreshing(false); }
   };
@@ -118,16 +146,21 @@ export default function App() {
     if (typeof window === 'undefined') return;
     if (hasInitializedUrl.current) return; 
 
-    if (articles.length > 0) {
+    if (feedItems.length > 0) {
       const urlParams = new URLSearchParams(window.location.search);
       const artId = urlParams.get('art');
+      const opinId = urlParams.get('opin');
+      
       if (artId) {
-        const found = articles.find(a => a.id === artId);
+        const found = feedItems.find(a => a.id === artId && !('isOpinion' in a)) as NewsArticle;
         if (found) setSelectedArticle(found);
+      } else if (opinId) {
+        const found = feedItems.find(a => a.id === opinId && 'isOpinion' in a) as OpinionArticle;
+        if (found) setSelectedOpinion(found);
       }
       hasInitializedUrl.current = true;
     }
-  }, [articles]);
+  }, [feedItems]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -136,26 +169,38 @@ export default function App() {
     const url = new URL(window.location.href);
     if (selectedArticle) {
       url.searchParams.set('art', selectedArticle.id);
+      url.searchParams.delete('opin');
+      window.history.replaceState({}, '', url.toString());
+    } else if (selectedOpinion) {
+      url.searchParams.set('opin', selectedOpinion.id);
+      url.searchParams.delete('art');
       window.history.replaceState({}, '', url.toString());
     } else {
-      if (url.searchParams.has('art')) {
-        url.searchParams.delete('art');
-        window.history.replaceState({}, '', url.toString());
-      }
+      url.searchParams.delete('art');
+      url.searchParams.delete('opin');
+      window.history.replaceState({}, '', url.toString());
     }
-  }, [selectedArticle]);
+  }, [selectedArticle, selectedOpinion]);
 
   const handleToggleSaveOffline = (article: NewsArticle) => { const isSaved = offlineArticles.some((a) => a.id === article.id); if (isSaved) { removeArticleOffline(article.id); setOfflineArticles(getOfflineArticles()); } else { saveArticleOffline(article); setOfflineArticles(getOfflineArticles()); } };
   const savedIdsSet = useMemo(() => new Set(offlineArticles.map((a) => a.id)), [offlineArticles]);
-  const displaySource = useMemo(() => showOfflineOnly || (!isOnline && articles.length === 0) ? offlineArticles : articles, [showOfflineOnly, isOnline, articles, offlineArticles]);
+  const displaySource = useMemo(() => showOfflineOnly || (!isOnline && feedItems.length === 0) ? offlineArticles : feedItems, [showOfflineOnly, isOnline, feedItems, offlineArticles]);
   
-  const filteredArticles = useMemo(() => displaySource.filter((article) => { 
-    if (activeCategory !== 'all' && article.sourceCategory !== activeCategory) return false; 
-    if (searchQuery.trim()) { const q = searchQuery.toLowerCase(); return (article.titlePt || '').toLowerCase().includes(q) || article.title.toLowerCase().includes(q) || (article.summaryPt || article.summary).toLowerCase().includes(q) || article.source.toLowerCase().includes(q); } 
-    return true; 
+  const filteredFeed = useMemo(() => displaySource.filter((item) => { 
+    if ('isOpinion' in item) {
+       // Filtro para Opiniões: Aparecem na aba "Todas" ou se você criar uma categoria "opinion" no futuro
+       if (activeCategory !== 'all') return false; 
+       if (searchQuery.trim()) { const q = searchQuery.toLowerCase(); return item.title.toLowerCase().includes(q) || item.abstract.toLowerCase().includes(q); }
+       return true;
+    } else {
+      // Filtro para Artigos Normais
+      if (activeCategory !== 'all' && item.sourceCategory !== activeCategory) return false; 
+      if (searchQuery.trim()) { const q = searchQuery.toLowerCase(); return (item.titlePt || '').toLowerCase().includes(q) || item.title.toLowerCase().includes(q) || (item.summaryPt || item.summary).toLowerCase().includes(q) || item.source.toLowerCase().includes(q); } 
+      return true; 
+    }
   }), [displaySource, activeCategory, searchQuery]);
 
-  const displayedArticles = useMemo(() => filteredArticles.slice(0, visibleCount), [filteredArticles, visibleCount]);
+  const displayedFeed = useMemo(() => filteredFeed.slice(0, visibleCount), [filteredFeed, visibleCount]);
 
   const randomizedAffiliates = useMemo(() => {
     const shuffled = [...affiliates];
@@ -165,6 +210,16 @@ export default function App() {
     }
     return shuffled;
   }, [affiliates]);
+
+  // [NOVO] SE UMA OPINIÃO ESTIVER SELECIONADA, EXIBE O COMPONENTE ACADÊMICO
+  if (selectedOpinion) {
+    return (
+      <OpinionReader 
+        article={selectedOpinion} 
+        onBack={() => setSelectedOpinion(null)} 
+      />
+    );
+  }
 
   return (
     <div className={`min-h-screen ${isDarkMode ? 'dark ' : ''}bg-[#FBFBFA] dark:bg-[#101010] text-[#1A1A1A] flex flex-col font-sans transition-colors duration-200`}>
@@ -176,7 +231,7 @@ export default function App() {
         {!showOfflineOnly && activeCategory === 'universities' ? ( <UniversitiesView /> ) : (
           <>
             <div className="mb-4 flex items-center justify-between text-xs text-stone-500 border-b pb-2">
-              <span className="uppercase font-semibold text-stone-800 dark:text-stone-200">{activeCategory === 'all' ? 'Todas as Publicações' : 'Filtro Ativo'} • {filteredArticles.length} publicações</span>
+              <span className="uppercase font-semibold text-stone-800 dark:text-stone-200">{activeCategory === 'all' ? 'Todas as Publicações' : 'Filtro Ativo'} • {filteredFeed.length} publicações</span>
             </div>
 
             <div className="flex flex-col lg:flex-row gap-6 items-start">
@@ -189,15 +244,40 @@ export default function App() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  {displayedArticles.map((article) => (
-                    <ArticleCard key={article.id} article={article} autoTranslate={autoTranslate} isSavedOffline={savedIdsSet.has(article.id)} onToggleSaveOffline={handleToggleSaveOffline} onOpenArticle={setSelectedArticle} />
-                  ))}
+                  {displayedFeed.map((item) => {
+                    // [NOVO] Renderiza o Cartão de Opinião Autoral
+                    if ('isOpinion' in item) {
+                      return (
+                        <div key={item.id} onClick={() => setSelectedOpinion(item)} className="group bg-white dark:bg-[#1A1A1A] border-2 border-teal-500/30 hover:border-teal-500/80 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col h-full">
+                          {item.mainImageUrl && (
+                            <div className="w-full h-40 overflow-hidden relative">
+                              <div className="absolute top-2 left-2 bg-teal-600 text-white text-[9px] font-bold uppercase tracking-wider px-2 py-1 rounded z-10 shadow-sm">Análise do RACT</div>
+                              <img src={item.mainImageUrl} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                            </div>
+                          )}
+                          <div className="p-5 flex-1 flex flex-col">
+                            {!item.mainImageUrl && <div className="mb-2"><span className="bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border border-teal-200 dark:border-teal-800">Análise do Autor</span></div>}
+                            <h3 className="font-bold font-serif text-lg leading-snug mb-2 text-stone-900 dark:text-stone-100 group-hover:text-teal-700 dark:group-hover:text-teal-400 transition-colors line-clamp-3">{item.title}</h3>
+                            <p className="text-xs text-stone-600 dark:text-stone-400 mb-4 line-clamp-3 font-serif flex-1">{item.abstract}</p>
+                            <div className="mt-auto pt-3 border-t border-stone-100 dark:border-stone-800 flex items-center justify-between">
+                              <span className="text-[10px] uppercase font-bold text-stone-400">{item.author || 'Leandro Sarno'}</span>
+                              <span className="text-[10px] font-semibold text-teal-600 dark:text-teal-400 group-hover:underline">Ler Artigo Completo →</span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }
+                    // Renderiza o Cartão de Notícia Normal (RSS/Servidor)
+                    return (
+                      <ArticleCard key={item.id} article={item as NewsArticle} autoTranslate={autoTranslate} isSavedOffline={savedIdsSet.has(item.id)} onToggleSaveOffline={handleToggleSaveOffline} onOpenArticle={setSelectedArticle} />
+                    );
+                  })}
                 </div>
                 
-                {filteredArticles.length > visibleCount && (
+                {filteredFeed.length > visibleCount && (
                   <div className="mt-10 flex justify-center pb-6">
                     <button onClick={() => setVisibleCount(prev => prev + 12)} className="px-6 py-3 bg-white dark:bg-stone-900 border border-stone-300 dark:border-stone-700 text-stone-800 dark:text-stone-200 font-bold text-xs uppercase tracking-wider rounded-full shadow-sm hover:bg-stone-100 dark:hover:bg-stone-800 transition-all cursor-pointer flex items-center gap-2">
-                      <PlusCircle className="w-4 h-4" /> Carregar mais publicações ({filteredArticles.length - visibleCount} restantes)
+                      <PlusCircle className="w-4 h-4" /> Carregar mais publicações ({filteredFeed.length - visibleCount} restantes)
                     </button>
                   </div>
                 )}
@@ -327,7 +407,7 @@ export default function App() {
         </div>
       )}
 
-      {/* MODAL: VITRINE DE OFERTAS (AGORA COM IMAGEM) */}
+      {/* MODAL: VITRINE DE OFERTAS */}
       {isMobileVitrineOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setIsMobileVitrineOpen(false)}>
           <div className="bg-white dark:bg-[#121212] w-full max-w-md rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] relative" onClick={e => e.stopPropagation()}>
