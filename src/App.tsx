@@ -11,15 +11,17 @@ import { ArticleDetailModal } from './components/ArticleDetailModal';
 import { UniversitiesView } from './components/UniversitiesView';
 import { NewsArticle, CategoryType, CustomCategory } from './types';
 import { AdminDashboardModal } from './components/AdminDashboardModal';
-import { DEFAULT_BASE_CATEGORIES, getCustomCategories, getAllManagedArticles, fetchServerArticles, fetchServerCategories, fetchRssArticles, getAffiliateLinks, fetchServerAffiliates, AffiliateLink, fetchServerSponsors, SponsorBanner, fetchServerSocialNetworks, SocialNetwork } from './utils/customDataManager';
+import { DEFAULT_BASE_CATEGORIES, getCustomCategories, getAllManagedArticles, fetchServerArticles, fetchServerCategories, fetchRssArticles, getAffiliateLinks, fetchServerAffiliates, AffiliateLink, fetchServerSponsors, SponsorBanner, fetchServerSocialNetworks, SocialNetwork, fetchServerVideos, RactVideo } from './utils/customDataManager';
 import { getOfflineArticles, saveArticleOffline, removeArticleOffline, getAutoTranslatePreference, setAutoTranslatePreference, getDarkModePreference, setDarkModePreference } from './utils/offlineStorage';
-import { Bookmark, ShoppingCart, TrendingUp, ExternalLink, Mail, PlusCircle, Linkedin, Twitter, Github, Instagram, Facebook, Globe, X, Info } from 'lucide-react';
+import { Bookmark, ShoppingCart, TrendingUp, ExternalLink, Mail, PlusCircle, Linkedin, Twitter, Github, Instagram, Facebook, Globe, X, Info, Youtube } from 'lucide-react';
+import VideoCard from './components/VideoCard';
 
 export default function App() {
   const [articles, setArticles] = useState<NewsArticle[]>(() => getAllManagedArticles());
   const [affiliates, setAffiliates] = useState<AffiliateLink[]>(() => getAffiliateLinks());
   const [sponsors, setSponsors] = useState<SponsorBanner[]>([]);
   const [socialNetworks, setSocialNetworks] = useState<SocialNetwork[]>([]);
+  const [videosList, setVideosList] = useState<RactVideo[]>([]);
   const [currentSponsorIndex, setCurrentSponsorIndex] = useState(0);
   const [visibleCount, setVisibleCount] = useState<number>(12);
   const [loading, setLoading] = useState<boolean>(false);
@@ -45,6 +47,7 @@ export default function App() {
     fetchServerAffiliates().then(setAffiliates); 
     fetchServerSponsors().then(setSponsors); 
     fetchServerSocialNetworks().then(setSocialNetworks);
+    fetchServerVideos().then(setVideosList);
   }, []);
 
   useEffect(() => { 
@@ -69,8 +72,8 @@ export default function App() {
   const handleCloseAdmin = () => { setIsAdminOpen(false); if (typeof window !== 'undefined') window.history.replaceState({}, '', window.location.pathname); };
   
   const handleDataUpdated = async () => { 
-    const [arts, cats, affs, spon, soc] = await Promise.all([fetchServerArticles(), fetchServerCategories(), fetchServerAffiliates(), fetchServerSponsors(), fetchServerSocialNetworks()]); 
-    setArticles(arts); setCustomCategories(cats); setAffiliates(affs); setSponsors(spon); setSocialNetworks(soc); setCurrentSponsorIndex(0); loadNewsFeed(true);
+    const [arts, cats, affs, spon, soc, vids] = await Promise.all([fetchServerArticles(), fetchServerCategories(), fetchServerAffiliates(), fetchServerSponsors(), fetchServerSocialNetworks(), fetchServerVideos()]); 
+    setArticles(arts); setCustomCategories(cats); setAffiliates(affs); setSponsors(spon); setSocialNetworks(soc); setVideosList(vids); setCurrentSponsorIndex(0); loadNewsFeed(true);
   };
 
   const allCategoriesList = useMemo(() => customCategories?.length > 0 ? customCategories : DEFAULT_BASE_CATEGORIES, [customCategories]);
@@ -166,6 +169,18 @@ export default function App() {
     return shuffled;
   }, [affiliates]);
 
+  const filteredVideos = useMemo(() => {
+    let vids = videosList;
+    if (activeCategory !== 'all') {
+      vids = vids.filter(v => v.category === activeCategory);
+    }
+    return vids.sort((a, b) => {
+      if (a.featured && !b.featured) return -1;
+      if (!a.featured && b.featured) return 1;
+      return new Date(b.dateAdded).getTime() - new Date(a.dateAdded).getTime();
+    });
+  }, [videosList, activeCategory]);
+
   return (
     <div className={`min-h-screen ${isDarkMode ? 'dark ' : ''}bg-[#FBFBFA] dark:bg-[#101010] text-[#1A1A1A] flex flex-col font-sans transition-colors duration-200`}>
       <div className="print:hidden">
@@ -245,6 +260,24 @@ export default function App() {
                 </aside>
               )}
             </div>
+
+            {/* SEÇÃO DA VIDEOTECA RACT */}
+            {filteredVideos.length > 0 && (
+              <div className="mt-12 pt-8 border-t border-stone-200 dark:border-stone-800">
+                <div className="flex items-center gap-2 mb-6">
+                  <Youtube className="w-6 h-6 text-red-600 dark:text-red-500" />
+                  <h2 className="text-lg font-bold uppercase tracking-wider text-stone-900 dark:text-stone-100">
+                    Videoteca {activeCategory !== 'all' ? '- Filtro Ativo' : ''}
+                  </h2>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {filteredVideos.map(video => (
+                    <VideoCard key={video.id} video={video} />
+                  ))}
+                </div>
+              </div>
+            )}
+            
           </>
         )}
       </main>
@@ -327,7 +360,7 @@ export default function App() {
         </div>
       )}
 
-      {/* MODAL: VITRINE DE OFERTAS (AGORA COM IMAGEM) */}
+      {/* MODAL: VITRINE DE OFERTAS */}
       {isMobileVitrineOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setIsMobileVitrineOpen(false)}>
           <div className="bg-white dark:bg-[#121212] w-full max-w-md rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] relative" onClick={e => e.stopPropagation()}>
