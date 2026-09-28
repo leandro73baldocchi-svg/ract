@@ -1,12 +1,22 @@
 import React, { useState, useEffect } from 'react';
+// Importação do React Quill e seu estilo (Necessário)
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css'; // Estilo do editor
+
 import { CustomCategory, NewsArticle, CategoryType } from '../types';
+// [MODIFICADO] Assumindo que você criou os tipos OpinionArticle e as funções de DataManager
 import {
   DEFAULT_BASE_CATEGORIES, getCustomCategories, saveCustomCategories, getAllManagedArticles, saveAllManagedArticles, saveOrUpdateArticle, deleteManagedArticle, resetToFactoryArticles, getCustomRssFeeds, saveCustomRssFeeds, CustomRssFeed, checkAdminPassword, setAdminPassword, saveCategoryToServer, deleteCategoryFromServer, fetchServerArticles, fetchServerCategories, fetchServerAffiliates, saveAffiliateToServer, deleteAffiliateFromServer, AffiliateLink, fetchServerFeeds, saveFeedToServer, deleteFeedFromServer,
   fetchServerSponsors, saveSponsorToServer, deleteSponsorFromServer, SponsorBanner,
-  fetchServerSocialNetworks, saveSocialNetworkToServer, deleteSocialNetworkFromServer, SocialNetwork
+  fetchServerSocialNetworks, saveSocialNetworkToServer, deleteSocialNetworkFromServer, SocialNetwork,
+  // [NOVO] Adicionar estas funções no seu utils/customDataManager.ts (veja a nota no final)
+  fetchServerOpinions, saveOpinionToServer, deleteOpinionFromServer, OpinionArticle
 } from '../utils/customDataManager';
+
 import {
-  X, Plus, Trash2, Edit, Lock, Database, Layers, FileText, Save, Download, Upload, CheckCircle, ExternalLink, ShieldCheck, AlertCircle, Rss, Search, RotateCcw, TrendingUp, MonitorPlay, Share2, ShoppingCart
+  X, Plus, Trash2, Edit, Lock, Database, Layers, FileText, Save, Download, Upload, CheckCircle, ExternalLink, ShieldCheck, AlertCircle, Rss, Search, RotateCcw, TrendingUp, MonitorPlay, Share2, ShoppingCart,
+  // [NOVO] Ícone para a aba de Opiniões
+  BrainCircuit, Image, Video, Heading
 } from 'lucide-react';
 
 interface AdminDashboardModalProps {
@@ -15,6 +25,26 @@ interface AdminDashboardModalProps {
   onDataUpdated: () => void;
 }
 
+// [NOVO] Configuração dos botões do Editor WYSIWYG
+const quillModules = {
+  toolbar: [
+    [{ 'header': '1'}, {'header': '2'}, { 'font': [] }],
+    [{ 'size': [] }],
+    ['bold', 'italic', 'underline', 'strike', 'blockquote'],
+    [{'list': 'ordered'}, {'list': 'bullet'}, {'indent': '-1'}, {'indent': '+1'}],
+    [{ 'align': [] }], // Alinhamento (Esquerda, Centro, Direita, Justificado)
+    ['link', 'image', 'video'], // Inserir links, imagens e vídeos direto no texto
+    ['clean'] // Botão para limpar a formatação
+  ],
+};
+
+const quillFormats = [
+  'header', 'font', 'size',
+  'bold', 'italic', 'underline', 'strike', 'blockquote',
+  'list', 'bullet', 'indent',
+  'align', 'link', 'image', 'video'
+];
+
 export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   isOpen, onClose, onDataUpdated,
 }) => {
@@ -22,14 +52,25 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   const [passwordInput, setPasswordInput] = useState<string>('');
   const [authError, setAuthError] = useState<string | null>(null);
 
-  // Active subtab
-  const [activeTab, setActiveTab] = useState<'articles' | 'categories' | 'feeds' | 'affiliates' | 'sponsors' | 'social' | 'backup'>('articles');
+  // Active subtab - [MODIFICADO] Adicionado 'opinions'
+  const [activeTab, setActiveTab] = useState<'articles' | 'opinions' | 'categories' | 'feeds' | 'affiliates' | 'sponsors' | 'social' | 'backup'>('articles');
 
   // Articles State
   const [articlesList, setArticlesList] = useState<NewsArticle[]>(() => getAllManagedArticles());
   const [articleSearchQuery, setArticleSearchQuery] = useState<string>('');
   const [articleCategoryFilter, setArticleCategoryFilter] = useState<string>('all');
   const [artSuccessMsg, setArtSuccessMsg] = useState<string | null>(null);
+
+  // [NOVO] Opinions State
+  const [opinionsList, setOpinionsList] = useState<OpinionArticle[]>([]);
+  const [isEditingOpinionId, setIsEditingOpinionId] = useState<string | null>(null);
+  const [opinionForm, setOpinionForm] = useState({
+    title: '',
+    mainImageUrl: '',
+    videoEmbedUrl: '',
+    content: '' // Este campo receberá o HTML do React Quill
+  });
+  const [opinionSuccessMsg, setOpinionSuccessMsg] = useState<string | null>(null);
 
   // Categories State
   const [customCategories, setCustomCategories] = useState<CustomCategory[]>(() => getCustomCategories());
@@ -85,17 +126,15 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      fetchServerArticles().then(setArticlesList);
-      fetchServerCategories().then(setCustomCategories);
-      fetchServerAffiliates().then(setAffiliatesList);
-      fetchServerFeeds().then(setRssFeeds);
-      fetchServerSponsors().then(setSponsorsList);
-      fetchServerSocialNetworks().then(setSocialNetworksList);
+      refreshData();
     }
   }, [isOpen]);
 
-  const refreshArticles = async () => {
+  const refreshData = async () => {
     const list = await fetchServerArticles(); setArticlesList(list);
+    // [NOVO] Adicionar fetch de opiniões
+    const opin = await fetchServerOpinions(); setOpinionsList(opin);
+    
     const cats = await fetchServerCategories(); setCustomCategories(cats);
     const affs = await fetchServerAffiliates(); setAffiliatesList(affs);
     const fds = await fetchServerFeeds(); setRssFeeds(fds);
@@ -107,7 +146,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (checkAdminPassword(passwordInput)) { setIsAuthenticated(true); setAuthError(null); setPasswordInput(''); refreshArticles(); } 
+    if (checkAdminPassword(passwordInput)) { setIsAuthenticated(true); setAuthError(null); setPasswordInput(''); refreshData(); } 
     else { setAuthError('Senha incorreta. Tente novamente.'); }
   };
 
@@ -128,6 +167,58 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   };
   const handleDeleteArticle = async (articleId: string, title: string) => { if (confirm(`Deseja realmente EXCLUIR do servidor o artigo:\n"${title}"?`)) { const updated = await deleteManagedArticle(articleId); setArticlesList(updated); if (isEditingId === articleId) handleCancelEdit(); onDataUpdated(); } };
   const handleResetFactory = async () => { if (confirm('Tem certeza que deseja restaurar o acervo com os artigos originais no servidor?')) { const defaultArts = await resetToFactoryArticles(); setArticlesList(defaultArts); onDataUpdated(); } };
+
+  // [NOVO] Funções de Minhas Opiniões (WYSIWYG)
+  const handleSaveOpinion = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!opinionForm.title.trim() || !opinionForm.content.trim()) { alert('Preencha pelo menos o Título e o Conteúdo da sua análise!'); return; }
+    
+    const opinionToSave: OpinionArticle = {
+      id: isEditingOpinionId ? isEditingOpinionId : `opin-${Date.now()}`,
+      title: opinionForm.title.trim(),
+      mainImageUrl: opinionForm.mainImageUrl.trim(),
+      videoEmbedUrl: opinionForm.videoEmbedUrl.trim(),
+      content: opinionForm.content, // O HTML do editor já está aqui
+      pubDate: new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }),
+    };
+    
+    try {
+      const updated = await saveOpinionToServer(opinionToSave);
+      setOpinionsList(updated);
+      handleCancelEditOpinion();
+      setOpinionSuccessMsg(isEditingOpinionId ? 'Análise atualizada!' : 'Sua opinião foi publicada!');
+      setTimeout(() => setOpinionSuccessMsg(null), 4000);
+      onDataUpdated();
+    } catch (err: any) { alert('Erro ao salvar sua análise autorais no servidor'); }
+  };
+
+  const handleStartEditOpinion = (opin: OpinionArticle) => {
+    setIsEditingOpinionId(opin.id);
+    setOpinionForm({
+      title: opin.title,
+      mainImageUrl: opin.mainImageUrl || '',
+      videoEmbedUrl: opin.videoEmbedUrl || '',
+      content: opin.content, // Carrega o HTML no editor
+    });
+    document.getElementById('admin-scrollable-content')?.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleCancelEditOpinion = () => {
+    setIsEditingOpinionId(null);
+    setOpinionForm({ title: '', mainImageUrl: '', videoEmbedUrl: '', content: '' });
+  };
+
+  const handleDeleteOpinion = async (id: string, title: string) => {
+    if (confirm(`Deseja realmente EXCLUIR do servidor sua análise:\n"${title}"?`)) {
+      try {
+        const updated = await deleteOpinionFromServer(id);
+        setOpinionsList(updated);
+        if (isEditingOpinionId === id) handleCancelEditOpinion();
+        onDataUpdated();
+      } catch (err) { alert('Erro ao excluir análise'); }
+    }
+  };
+
 
   // Funções de Categoria
   const handleEditCategory = (cat: CustomCategory) => { setNewCatId(cat.id); setNewCatLabel(cat.label); setNewCatOrder((cat.order ?? 99).toString()); setIsEditingCategory(true); document.getElementById('admin-scrollable-content')?.scrollTo({ top: 0, behavior: 'smooth' }); };
@@ -188,8 +279,11 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   const handleDeleteSocial = async (id: string) => { if (confirm('Deseja realmente remover esta rede social?')) { try { const updated = await deleteSocialNetworkFromServer(id); setSocialNetworksList(updated); if (isEditingSocialId === id) handleCancelEditSocial(); onDataUpdated(); } catch (err) { alert('Erro ao excluir rede social'); } } };
 
   // Funções de Backup e Senha
-  const handleExportBackup = () => { const backupData = { version: '2.0', exportedAt: new Date().toISOString(), customCategories, articles: articlesList, rssFeeds, socialNetworks: socialNetworksList }; const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `ract-backup-completo-${new Date().toISOString().slice(0, 10)}.json`; a.click(); URL.revokeObjectURL(url); };
-  const handleImportBackup = (e: React.ChangeEvent<HTMLInputElement>) => { const file = e.target.files?.[0]; if (!file) return; const reader = new FileReader(); reader.onload = (event) => { try { const parsed = JSON.parse(event.target?.result as string); if (parsed.customCategories) { setCustomCategories(parsed.customCategories); saveCustomCategories(parsed.customCategories); } if (parsed.articles) { saveAllManagedArticles(parsed.articles); setArticlesList(parsed.articles); } if (parsed.rssFeeds) { setRssFeeds(parsed.rssFeeds); saveCustomRssFeeds(parsed.rssFeeds); } alert('Backup importado com sucesso!'); onDataUpdated(); } catch (err) { alert('Erro ao importar arquivo JSON.'); } }; reader.readAsText(file); };
+  const handleExportBackup = () => { const backupData = { version: '2.0', exportedAt: new Date().toISOString(), customCategories, articles: articlesList, opinions: opinionsList, rssFeeds, socialNetworks: socialNetworksList }; const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `ract-backup-completo-${new Date().toISOString().slice(0, 10)}.json`; a.click(); URL.revokeObjectURL(url); };
+  const handleImportBackup = (e: React.ChangeEvent<HTMLInputElement>) => { const file = e.target.files?.[0]; if (!file) return; const reader = new FileReader(); reader.onload = (event) => { try { const parsed = JSON.parse(event.target?.result as string); if (parsed.customCategories) { setCustomCategories(parsed.customCategories); saveCustomCategories(parsed.customCategories); } if (parsed.articles) { saveAllManagedArticles(parsed.articles); setArticlesList(parsed.articles); } 
+  // [NOVO] Importar opiniões
+  if (parsed.opinions) { saveOpinionToServer(parsed.opinions); setOpinionsList(parsed.opinions); } // Supondo que você crie saveAllOpinions
+  if (parsed.rssFeeds) { setRssFeeds(parsed.rssFeeds); saveCustomRssFeeds(parsed.rssFeeds); } alert('Backup importado com sucesso!'); onDataUpdated(); } catch (err) { alert('Erro ao importar arquivo JSON.'); } }; reader.readAsText(file); };
   const handleChangePassword = (e: React.FormEvent) => { e.preventDefault(); if (!newPassInput.trim()) return; setAdminPassword(newPassInput.trim()); setNewPassInput(''); setPassSuccessMsg('Senha atualizada com sucesso!'); setTimeout(() => setPassSuccessMsg(null), 4000); };
 
   const allAvailableCategories = customCategories && customCategories.length > 0 ? customCategories : DEFAULT_BASE_CATEGORIES;
@@ -204,7 +298,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
             <div className="w-8 h-8 rounded-lg bg-stone-950 dark:bg-stone-100 text-white dark:text-stone-900 flex items-center justify-center font-bold text-sm"><ShieldCheck className="w-4 h-4" /></div>
             <div>
               <h2 className="font-bold text-base flex items-center gap-2">Painel de Controle Editorial <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 font-semibold">Área Restrita</span></h2>
-              <p className="text-xs text-stone-500 dark:text-stone-400">Gerencie artigos, links e a monetização do portal.</p>
+              <p className="text-xs text-stone-500 dark:text-stone-400">Gerencie artigos, links, suas opiniões e a monetização do portal.</p>
             </div>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg text-stone-500 hover:text-stone-900 dark:hover:text-stone-100 hover:bg-stone-200 dark:hover:bg-stone-800 cursor-pointer"><X className="w-5 h-5" /></button>
@@ -213,7 +307,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
         {!isAuthenticated ? (
           <div className="p-8 flex flex-col items-center justify-center text-center my-auto">
             <div className="w-14 h-14 rounded-full bg-stone-100 dark:bg-stone-800 flex items-center justify-center text-stone-700 dark:text-stone-300 mb-4 border border-stone-200 dark:border-stone-700"><Lock className="w-6 h-6" /></div>
-            <h3 className="text-lg font-bold mb-1">Acesso do Administrador</h3>
+            <h3 className="text-lg font-bold mb-1">Acesso do Administrador RACT</h3>
             <p className="text-xs text-stone-500 dark:text-stone-400 mb-2">Digite a chave para gerenciar o portal.</p>
             <p className="text-[12px] text-rose-600 dark:text-rose-400 font-bold mb-6">(Dica de senha padrão: admin2026)</p>
             <form onSubmit={handleLogin} className="w-full max-w-xs space-y-3">
@@ -226,6 +320,10 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
           <div className="flex-1 flex flex-col min-h-0">
             <div className="flex items-center gap-2 px-5 pt-2.5 border-b border-stone-200 dark:border-stone-800 bg-stone-50/70 dark:bg-stone-900/40 shrink-0 overflow-x-auto">
               <button onClick={() => setActiveTab('articles')} className={`pb-2.5 px-3 text-xs font-semibold flex items-center gap-1.5 border-b-2 cursor-pointer shrink-0 ${activeTab === 'articles' ? 'border-stone-900 text-stone-900 dark:border-stone-100 dark:text-stone-100' : 'border-transparent text-stone-500 hover:text-stone-800 dark:hover:text-stone-300'}`}><FileText className="w-3.5 h-3.5" /><span>Acervo</span></button>
+              
+              {/* [NOVO] Botão para a aba de Minhas Opiniões */}
+              <button onClick={() => setActiveTab('opinions')} className={`pb-2.5 px-3 text-xs font-semibold flex items-center gap-1.5 border-b-2 cursor-pointer shrink-0 ${activeTab === 'opinions' ? 'border-teal-600 text-teal-700 dark:border-teal-400 dark:text-teal-300' : 'border-transparent text-stone-500 hover:text-stone-800 dark:hover:text-stone-300'}`}><BrainCircuit className="w-3.5 h-3.5 text-teal-600 dark:text-teal-500" /><span>Minhas Opiniões</span></button>
+
               <button onClick={() => setActiveTab('feeds')} className={`pb-2.5 px-3 text-xs font-semibold flex items-center gap-1.5 border-b-2 cursor-pointer shrink-0 ${activeTab === 'feeds' ? 'border-stone-900 text-stone-900 dark:border-stone-100 dark:text-stone-100' : 'border-transparent text-stone-500 hover:text-stone-800 dark:hover:text-stone-300'}`}><Rss className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" /><span>Fontes RSS</span></button>
               <button onClick={() => setActiveTab('categories')} className={`pb-2.5 px-3 text-xs font-semibold flex items-center gap-1.5 border-b-2 cursor-pointer shrink-0 ${activeTab === 'categories' ? 'border-stone-900 text-stone-900 dark:border-stone-100 dark:text-stone-100' : 'border-transparent text-stone-500 hover:text-stone-800 dark:hover:text-stone-300'}`}><Layers className="w-3.5 h-3.5" /><span>Áreas</span></button>
               <button onClick={() => setActiveTab('sponsors')} className={`pb-2.5 px-3 text-xs font-semibold flex items-center gap-1.5 border-b-2 cursor-pointer shrink-0 ${activeTab === 'sponsors' ? 'border-blue-600 text-blue-700 dark:text-blue-400' : 'border-transparent text-stone-500 hover:text-stone-800 dark:hover:text-stone-300'}`}><MonitorPlay className="w-3.5 h-3.5 text-blue-600 dark:text-blue-500" /><span>Patrocinadores</span></button>
@@ -261,6 +359,87 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                       {displayedArticles.length === 0 ? (<div className="p-8 text-center text-xs text-stone-500">Nenhum artigo encontrado.</div>) : (displayedArticles.map((art) => (
                         <div key={art.id} className={`p-3 sm:p-3.5 flex items-start justify-between gap-3 hover:bg-stone-50 dark:hover:bg-stone-900/40 transition-colors ${isEditingId === art.id ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}`}><div className="flex-1 min-w-0"><div className="flex items-center gap-2 mb-1 flex-wrap"><span className="px-2 py-0.5 rounded text-[10px] font-semibold uppercase bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300">{art.sourceCategory}</span><span className="text-[11px] font-medium text-stone-600 dark:text-stone-300">{art.source}</span></div><h5 className="text-xs font-bold text-stone-900 dark:text-stone-100 line-clamp-1">{art.titlePt || art.title}</h5></div><div className="flex items-center gap-1.5 shrink-0"><button onClick={() => handleStartEdit(art)} className="p-1.5 rounded text-stone-600 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-stone-800 transition-colors cursor-pointer"><Edit className="w-3.5 h-3.5" /></button>{art.link && <a href={art.link} target="_blank" rel="noreferrer" className="p-1.5 rounded text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 transition-colors"><ExternalLink className="w-3.5 h-3.5" /></a>}<button onClick={() => handleDeleteArticle(art.id, art.titlePt || art.title)} className="p-1.5 rounded text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors cursor-pointer"><Trash2 className="w-3.5 h-3.5" /></button></div></div>
                       )))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* [NOVO] TAB DE MINHAS OPINIÕES - EDITOR WYSIWYG */}
+              {activeTab === 'opinions' && (
+                <div className="space-y-6">
+                  {opinionSuccessMsg && <div className="p-3 bg-emerald-50 border border-emerald-300 text-emerald-800 rounded-lg text-xs flex items-center gap-2"><CheckCircle className="w-4 h-4 shrink-0" /><span>{opinionSuccessMsg}</span></div>}
+                  
+                  <form onSubmit={handleSaveOpinion} className="p-4 sm:p-5 bg-stone-50 dark:bg-stone-900/60 border border-stone-200 dark:border-stone-800 rounded-xl space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-teal-700 dark:text-teal-400 flex items-center gap-1.5">
+                        <PenTool className="w-4 h-4" /> {isEditingOpinionId ? `Editar Sua Análise: ${opinionForm.title}` : 'Publicar Nova Opinião Autoral (RACT-TEN)'}
+                      </h4>
+                      {isEditingOpinionId && <button type="button" onClick={handleCancelEditOpinion} className="text-xs text-stone-500 hover:text-stone-800 underline cursor-pointer">Cancelar Edição</button>}
+                    </div>
+                    
+                    <div className="space-y-3.5">
+                      <div>
+                        <label className="block text-[11px] font-semibold text-stone-700 mb-1">Título da sua Análise *</label>
+                        <input type="text" required value={opinionForm.title} onChange={(e) => setOpinionForm({ ...opinionForm, title: e.target.value })} placeholder="Ex: A Filosofia da Ciência no Século XXI" className="w-full px-3 py-2 text-xs bg-white dark:bg-stone-950 border border-stone-300 dark:border-stone-700 rounded focus:outline-none focus:border-teal-500" />
+                      </div>
+                      
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                        <div>
+                          <label className="block text-[11px] font-semibold text-stone-700 mb-1 flex items-center gap-1.5"><Image className="w-3 h-3 text-stone-400" /> URL da Imagem de Capa (Opcional)</label>
+                          <input type="url" value={opinionForm.mainImageUrl} onChange={(e) => setOpinionForm({ ...opinionForm, mainImageUrl: e.target.value })} placeholder="https://exemplo.com/capa.jpg" className="w-full px-3 py-1.5 text-xs bg-white dark:bg-stone-950 border border-stone-300 dark:border-stone-700 rounded font-mono" />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-semibold text-stone-700 mb-1 flex items-center gap-1.5"><Video className="w-3 h-3 text-stone-400" /> URL de Vídeo (Opcional - Embed ou YouTube)</label>
+                          <input type="url" value={opinionForm.videoEmbedUrl} onChange={(e) => setOpinionForm({ ...opinionForm, videoEmbedUrl: e.target.value })} placeholder="Ex: https://youtube.com/embed/VIDEO_ID" className="w-full px-3 py-1.5 text-xs bg-white dark:bg-stone-950 border border-stone-300 dark:border-stone-700 rounded font-mono" />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-semibold text-stone-700 mb-2 flex items-center gap-1.5"><Heading className="w-3 h-3 text-teal-500" /> Escreva e Formate Sua Opinião * (Use o editor abaixo para total controle visual)</label>
+                        
+                        {/* [NOVO] INCLUSÃO DO EDITOR WYSIWYG (REACT QUILL) */}
+                        <div className="border border-stone-300 dark:border-stone-700 rounded-lg overflow-hidden bg-white dark:bg-stone-950">
+                          <ReactQuill 
+                            theme="snow" 
+                            value={opinionForm.content} 
+                            onChange={(content) => setOpinionForm({ ...opinionForm, content })} 
+                            modules={quillModules}
+                            formats={quillFormats}
+                            placeholder="Começe a escrever sua análise aqui... Você pode usar os botões acima para ajustar tamanho da fonte, cor, alinhamento, inserir imagens e vídeos direto no texto."
+                            className="h-[350px] text-xs" // Ajuste a altura aqui
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="pt-2 flex justify-end gap-2">
+                      {isEditingOpinionId && <button type="button" onClick={handleCancelEditOpinion} className="px-3.5 py-1.5 text-xs text-stone-600 hover:bg-stone-200 rounded cursor-pointer">Cancelar</button>}
+                      <button type="submit" className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1.5">
+                        <Save className="w-3.5 h-3.5" /> {isEditingOpinionId ? 'Salvar Alterações' : 'Publicar Minha Opinião'}
+                      </button>
+                    </div>
+                  </form>
+
+                  <div className="space-y-2">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-stone-800 dark:text-stone-200">Seu Acervo de Opiniões Autorais ({opinionsList.length})</h4>
+                    <div className="border border-stone-200 dark:border-stone-800 rounded-xl overflow-hidden bg-white dark:bg-stone-950 divide-y divide-stone-200 dark:divide-stone-800 max-h-[400px] overflow-y-auto">
+                      {opinionsList.length === 0 ? (
+                        <div className="p-8 text-center text-xs text-stone-500">Nenhuma análise autoral publicada ainda.</div>
+                      ) : (
+                        opinionsList.map((opin) => (
+                          <div key={opin.id} className={`p-3.5 flex items-start justify-between gap-3 ${isEditingOpinionId === opin.id ? 'bg-teal-50 dark:bg-teal-950/20' : ''}`}>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-[10px] text-teal-600 font-semibold uppercase tracking-wider mb-0.5">{opin.pubDate}</p>
+                              <h5 className="text-xs font-bold text-stone-900 dark:text-stone-100 line-clamp-1">{opin.title}</h5>
+                              <p className="text-[11px] text-stone-500 dark:text-stone-400 line-clamp-1 mt-0.5">{opin.mainImageUrl ? 'Com Imagem de Capa' : ''} {opin.videoEmbedUrl ? '• Com Vídeo' : ''} • {opin.content.length} caracteres de HTML</p>
+                            </div>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <button onClick={() => handleStartEditOpinion(opin)} className="p-1.5 rounded text-stone-600 hover:bg-stone-200 cursor-pointer"><Edit className="w-3.5 h-3.5" /></button>
+                              <button onClick={() => handleDeleteOpinion(opin.id, opin.title)} className="p-1.5 rounded text-rose-500 hover:bg-rose-50 cursor-pointer"><Trash2 className="w-3.5 h-3.5" /></button>
+                            </div>
+                          </div>
+                        ))
+                      )}
                     </div>
                   </div>
                 </div>
@@ -358,7 +537,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                   {catSuccessMsg && <div className="p-3 bg-emerald-50 border border-emerald-300 text-emerald-800 rounded-lg text-xs flex items-center gap-2"><CheckCircle className="w-4 h-4 shrink-0" /><span>{catSuccessMsg}</span></div>}
                   <form onSubmit={handleAddCategory} className={`p-4 sm:p-5 border rounded-xl space-y-3 ${isEditingCategory ? 'bg-amber-50/50 border-amber-200' : 'bg-stone-50 border-stone-200'}`}>
                     <div className="flex items-center justify-between"><h4 className="text-xs font-bold uppercase tracking-wider text-stone-800 dark:text-stone-200 flex items-center gap-1.5">{isEditingCategory ? <><Edit className="w-3.5 h-3.5 text-amber-600" /> Editar Área</> : <><Plus className="w-3.5 h-3.5 text-blue-600" /> Criar Área</>}</h4>{isEditingCategory && <button type="button" onClick={handleCancelEditCategory} className="text-xs text-stone-500 hover:text-stone-800 underline cursor-pointer">Cancelar Edição</button>}</div>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3"><div><label className="block text-[11px] font-semibold text-stone-700 mb-1">Nome</label><input type="text" required value={newCatLabel} onChange={(e) => setNewCatLabel(e.target.value)} className="w-full px-3 py-1.5 text-xs bg-white dark:bg-stone-950 border border-stone-300 dark:border-stone-700 rounded" /></div><div><label className="block text-[11px] font-semibold text-stone-700 mb-1">ID</label><input type="text" value={newCatId} onChange={(e) => setNewCatId(e.target.value)} disabled={isEditingCategory} className="w-full px-3 py-1.5 text-xs bg-white dark:bg-stone-950 border border-stone-300 dark:border-stone-700 rounded font-mono disabled:opacity-50" /></div><div><label className="block text-[11px] font-semibold text-stone-700 mb-1 text-blue-700">Posição no Menu</label><input type="number" min="1" value={newCatOrder} onChange={(e) => setNewCatOrder(e.target.value)} className="w-full px-3 py-1.5 text-xs bg-white dark:bg-stone-950 border border-blue-300 rounded font-bold text-center text-blue-700" /></div></div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3"><div><label className="block text-[11px] font-semibold text-stone-700 mb-1">Nome</label><input type="text" required value={newCatLabel} onChange={(e) => setNewCatLabel(e.target.value)} className="w-full px-3 py-1.5 text-xs bg-white dark:bg-stone-950 border border-stone-300 dark:border-stone-700 rounded" /></div><div><label className="block text-[11px] font-semibold text-stone-700 mb-1">ID</label><input type="text" value={newCatId} onChange={(e) => setNewCatId(e.target.value)} disabled={isEditingCategory} className="w-full px-3 py-1.5 text-xs bg-white dark:bg-stone-950 border border-stone-300 dark:border-stone-700 rounded font-mono disabled:opacity-50" /></div><div><label className="block text-[11px] font-semibold text-stone-700 mb-1 text-blue-700">Posição no Menu</label><input type="number" min="1" value={newCatOrder} onChange={(e) => setNewCatOrder(e.target.value)} className="w-full px-3 py-1.5 text-xs bg-white dark:bg-stone-300 border border-blue-300 rounded font-bold text-center text-blue-700" /></div></div>
                     <div className="pt-2 flex justify-end"><button type="submit" className="px-4 py-2 bg-stone-900 text-white rounded-lg text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1.5"><Save className="w-3.5 h-3.5" /> Salvar Área</button></div>
                   </form>
                   <div className="space-y-2"><h4 className="text-xs font-bold uppercase tracking-wider text-stone-800 dark:text-stone-200">Áreas ({allAvailableCategories.length})</h4><div className="grid grid-cols-1 sm:grid-cols-2 gap-2">{allAvailableCategories.map((c) => (<div key={c.id} className={`p-3 bg-white border border-stone-200 rounded-lg flex items-center justify-between ${isEditingCategory && newCatId === c.id ? 'ring-2 ring-amber-300' : ''}`}><div className="flex items-center gap-3"><div className="w-6 h-6 rounded bg-stone-100 flex items-center justify-center font-bold text-[10px] text-stone-500">{c.order ?? 99}</div><div><span className="text-xs font-bold text-stone-900">{c.label}</span><span className="block text-[10px] text-stone-400 font-mono">ID: {c.id}</span></div></div>{c.id !== 'all' ? (<div className="flex items-center gap-1.5 shrink-0"><button onClick={() => handleEditCategory(c)} className="p-1.5 rounded text-stone-600 hover:bg-stone-200 cursor-pointer"><Edit className="w-4 h-4" /></button><button onClick={() => handleDeleteCategory(c.id)} className="p-1.5 rounded text-rose-500 hover:bg-rose-50 cursor-pointer"><Trash2 className="w-4 h-4" /></button></div>) : (<span className="text-[10px] text-stone-400 uppercase tracking-wider font-semibold">Principal</span>)}</div>))}</div></div>
@@ -437,10 +616,10 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                 <div className="space-y-6">
                   <div className="p-4 sm:p-5 bg-stone-50 dark:bg-stone-900/60 border border-stone-200 dark:border-stone-800 rounded-xl space-y-3">
                     <h4 className="text-xs font-bold uppercase tracking-wider text-stone-800 dark:text-stone-200 flex items-center gap-1.5"><Database className="w-3.5 h-3.5 text-emerald-600" /> Backup Completo</h4>
-                    <p className="text-xs text-stone-500 dark:text-stone-400">Baixe um arquivo com todos os dados do portal.</p>
+                    <p className="text-xs text-stone-500 dark:text-stone-400">Baixe um arquivo com todos os dados do portal, incluindo suas opiniões autorais.</p>
                     <div className="flex items-center gap-3 pt-2 flex-wrap"><button onClick={handleExportBackup} className="px-3.5 py-2 bg-stone-900 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer hover:bg-stone-800"><Download className="w-3.5 h-3.5" /> Exportar Backup</button><label className="px-3.5 py-2 bg-white border border-stone-300 rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer hover:bg-stone-100"><Upload className="w-3.5 h-3.5" /> Restaurar Arquivo<input type="file" accept=".json" onChange={handleImportBackup} className="hidden" /></label></div>
                   </div>
-                  <form onSubmit={handleChangePassword} className="p-4 sm:p-5 bg-stone-50 dark:bg-stone-900/60 border border-stone-200 dark:border-stone-800 rounded-xl space-y-3"><h4 className="text-xs font-bold uppercase tracking-wider text-stone-800 flex items-center gap-1.5"><Lock className="w-3.5 h-3.5 text-amber-600" /> Segurança</h4>{passSuccessMsg && <p className="text-xs text-emerald-600 font-medium">{passSuccessMsg}</p>}<div className="max-w-xs space-y-2"><input type="password" value={newPassInput} onChange={(e) => setNewPassInput(e.target.value)} placeholder="Nova senha..." className="w-full px-3 py-1.5 text-xs bg-white border border-stone-300 rounded" /><button type="submit" className="px-3.5 py-1.5 bg-stone-900 text-white rounded text-xs font-semibold cursor-pointer">Trocar Senha de Acesso</button></div></form>
+                  <form onSubmit={handleChangePassword} className="p-4 sm:p-5 bg-stone-50 dark:bg-stone-900/60 border border-stone-200 dark:border-stone-800 rounded-xl space-y-3"><h4 className="text-xs font-bold uppercase tracking-wider text-stone-800 flex items-center gap-1.5"><Lock className="w-3.5 h-3.5 text-amber-600" /> Segurança do Painel</h4>{passSuccessMsg && <p className="text-xs text-emerald-600 font-medium">{passSuccessMsg}</p>}<div className="max-w-xs space-y-2"><input type="password" value={newPassInput} onChange={(e) => setNewPassInput(e.target.value)} placeholder="Nova senha..." className="w-full px-3 py-1.5 text-xs bg-white border border-stone-300 rounded" /><button type="submit" className="px-3.5 py-1.5 bg-stone-900 text-white rounded text-xs font-semibold cursor-pointer">Trocar Senha de Acesso</button></div></form>
                 </div>
               )}
 
