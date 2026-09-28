@@ -40,6 +40,9 @@ export default function App() {
   const [isMobileVitrineOpen, setIsMobileVitrineOpen] = useState<boolean>(false);
   const [isMobileNewsletterOpen, setIsMobileNewsletterOpen] = useState<boolean>(false);
   const [isAboutModalOpen, setIsAboutModalOpen] = useState<boolean>(false);
+  
+  // Controle para exibir a segunda área de vídeos
+  const [showVideoteca, setShowVideoteca] = useState<boolean>(false);
 
   const hasInitializedUrl = useRef(false);
 
@@ -181,10 +184,40 @@ export default function App() {
     });
   }, [videosList, activeCategory]);
 
+  // Função para pegar a imagem automática do YouTube para a miniatura
+  const getYouTubeThumbnail = (url: string) => {
+    if (!url) return null;
+    const ytRegExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    const ytMatch = url.match(ytRegExp);
+    if (ytMatch && ytMatch[2].length === 11) {
+      return `https://img.youtube.com/vi/${ytMatch[2]}/hqdefault.jpg`;
+    }
+    return null;
+  };
+
   return (
     <div className={`min-h-screen ${isDarkMode ? 'dark ' : ''}bg-[#FBFBFA] dark:bg-[#101010] text-[#1A1A1A] flex flex-col font-sans transition-colors duration-200`}>
       <div className="print:hidden">
-        <Header date={new Date().toLocaleDateString('pt-BR')} isOnline={isOnline} isRefreshing={isRefreshing} onRefresh={() => loadNewsFeed(true)} savedCount={offlineArticles.length} showOfflineOnly={showOfflineOnly} onToggleOfflineOnly={() => setShowOfflineOnly(prev => !prev)} autoTranslate={autoTranslate} onToggleAutoTranslate={() => { setAutoTranslate(!autoTranslate); setAutoTranslatePreference(!autoTranslate); }} isDarkMode={isDarkMode} onToggleDarkMode={() => { setIsDarkMode(!isDarkMode); setDarkModePreference(!isDarkMode); }} activeCategory={activeCategory} onSelectCategory={(cat) => { setActiveCategory(cat); setShowOfflineOnly(false); }} searchQuery={searchQuery} onSearchChange={setSearchQuery} categoriesList={allCategoriesList} onOpenMobileVitrine={() => setIsMobileVitrineOpen(true)} onOpenMobileNewsletter={() => setIsMobileNewsletterOpen(true)} />
+        <Header 
+          date={new Date().toLocaleDateString('pt-BR')} 
+          isOnline={isOnline} 
+          isRefreshing={isRefreshing} 
+          onRefresh={() => loadNewsFeed(true)} 
+          savedCount={offlineArticles.length} 
+          showOfflineOnly={showOfflineOnly} 
+          onToggleOfflineOnly={() => setShowOfflineOnly(prev => !prev)} 
+          autoTranslate={autoTranslate} 
+          onToggleAutoTranslate={() => { setAutoTranslate(!autoTranslate); setAutoTranslatePreference(!autoTranslate); }} 
+          isDarkMode={isDarkMode} 
+          onToggleDarkMode={() => { setIsDarkMode(!isDarkMode); setDarkModePreference(!isDarkMode); }} 
+          activeCategory={activeCategory} 
+          onSelectCategory={(cat) => { setActiveCategory(cat); setShowOfflineOnly(false); setShowVideoteca(false); }} 
+          searchQuery={searchQuery} 
+          onSearchChange={setSearchQuery} 
+          categoriesList={allCategoriesList} 
+          onOpenMobileVitrine={() => setIsMobileVitrineOpen(true)} 
+          onOpenMobileNewsletter={() => setIsMobileNewsletterOpen(true)} 
+        />
       </div>
 
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 py-6 print:hidden">
@@ -194,24 +227,9 @@ export default function App() {
               <span className="uppercase font-semibold text-stone-800 dark:text-stone-200">{activeCategory === 'all' ? 'Todas as Publicações' : 'Filtro Ativo'} • {filteredArticles.length} publicações</span>
             </div>
 
-            {/* SEÇÃO DA VIDEOTECA RACT MOVIDA PARA O TOPO */}
-            {filteredVideos.length > 0 && (
-              <div className="mb-10 pb-8 border-b border-stone-200 dark:border-stone-800">
-                <div className="flex items-center gap-2 mb-6">
-                  <Youtube className="w-6 h-6 text-red-600 dark:text-red-500" />
-                  <h2 className="text-lg font-bold uppercase tracking-wider text-stone-900 dark:text-stone-100">
-                    Videoteca {activeCategory !== 'all' ? '- Filtro Ativo' : ''}
-                  </h2>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredVideos.map(video => (
-                    <VideoCard key={video.id} video={video} />
-                  ))}
-                </div>
-              </div>
-            )}
-
             <div className="flex flex-col lg:flex-row gap-6 items-start">
+              
+              {/* COLUNA ESQUERDA: Onde ficam os Vídeos e os Artigos */}
               <div className="flex-1 w-full min-w-0">
                 <div className="block lg:hidden mb-6 bg-[#FDFDFC] dark:bg-[#121212] border border-stone-200 dark:border-stone-800 rounded-xl p-3.5 shadow-sm flex flex-col items-center justify-center text-center">
                   <span className="text-[9px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">Apoio & Patrocínio</span>
@@ -220,21 +238,86 @@ export default function App() {
                   <a href="mailto:leandro73baldocchi@gmail.com?subject=Orçamento%20para%20Anúncio%20no%20RACT" className="mt-3 w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer"><Mail className="w-3.5 h-3.5" /> Anuncie no RACT</a>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  {displayedArticles.map((article) => (
-                    <ArticleCard key={article.id} article={article} autoTranslate={autoTranslate} isSavedOffline={savedIdsSet.has(article.id)} onToggleSaveOffline={handleToggleSaveOffline} onOpenArticle={setSelectedArticle} />
-                  ))}
-                </div>
-                
-                {filteredArticles.length > visibleCount && (
-                  <div className="mt-10 flex justify-center pb-6">
-                    <button onClick={() => setVisibleCount(prev => prev + 12)} className="px-6 py-3 bg-white dark:bg-stone-900 border border-stone-300 dark:border-stone-700 text-stone-800 dark:text-stone-200 font-bold text-xs uppercase tracking-wider rounded-full shadow-sm hover:bg-stone-100 dark:hover:bg-stone-800 transition-all cursor-pointer flex items-center gap-2">
-                      <PlusCircle className="w-4 h-4" /> Carregar mais publicações ({filteredArticles.length - visibleCount} restantes)
-                    </button>
+                {showVideoteca ? (
+                  /* =========================================================================
+                     ÁREA SECUNDÁRIA: VIDEOTECA (Aparece quando o usuário clica nas miniaturas)
+                     ========================================================================= */
+                  <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-stone-200 dark:border-stone-800">
+                      <div className="flex items-center gap-2.5">
+                        <Youtube className="w-7 h-7 text-red-600 dark:text-red-500" />
+                        <div>
+                          <h2 className="text-xl font-bold uppercase tracking-wider text-stone-900 dark:text-stone-100 leading-none">Videoteca RACT</h2>
+                          <p className="text-xs text-stone-500 mt-1">Acervo multimídia de ciências e tecnologia</p>
+                        </div>
+                      </div>
+                      <button onClick={() => setShowVideoteca(false)} className="px-4 py-2 bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 font-bold text-xs uppercase tracking-wider rounded-lg transition-colors cursor-pointer shrink-0">
+                        &larr; Voltar para as Notícias
+                      </button>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {filteredVideos.map(video => (
+                        <VideoCard key={video.id} video={video} />
+                      ))}
+                    </div>
                   </div>
+                ) : (
+                  /* =========================================================================
+                     ÁREA PRINCIPAL: MINIATURAS DOS VÍDEOS + ARTIGOS
+                     ========================================================================= */
+                  <>
+                    {/* MINIATURAS DOS VÍDEOS NO TOPO DA COLUNA ESQUERDA */}
+                    {filteredVideos.length > 0 && (
+                      <div className="mb-8 pb-6 border-b border-stone-200 dark:border-stone-800">
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="font-bold text-stone-900 dark:text-stone-100 flex items-center gap-1.5 uppercase tracking-wider text-sm"><Youtube className="w-5 h-5 text-red-600"/> Destaques em Vídeo</h3>
+                          <button onClick={() => setShowVideoteca(true)} className="text-xs font-bold text-red-600 hover:text-red-700 uppercase tracking-wider cursor-pointer">Acessar Videoteca &rarr;</button>
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                          {filteredVideos.slice(0, 3).map(vid => {
+                            const thumb = getYouTubeThumbnail(vid.url);
+                            return (
+                              <div key={vid.id} onClick={() => setShowVideoteca(true)} className="group cursor-pointer rounded-xl overflow-hidden border border-stone-200 dark:border-stone-800 relative bg-stone-900 aspect-video shadow-sm hover:shadow-md transition-all hover:border-red-400 dark:hover:border-red-500">
+                                {thumb ? (
+                                  <img src={thumb} alt={vid.title} className="w-full h-full object-cover opacity-70 group-hover:opacity-100 transition-opacity duration-300" />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center bg-stone-800 text-stone-400"><Youtube className="w-8 h-8 opacity-30"/></div>
+                                )}
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                  <div className="w-10 h-10 rounded-full bg-red-600/90 flex items-center justify-center text-white backdrop-blur-sm group-hover:scale-110 shadow-lg transition-transform duration-300">
+                                    <svg className="w-4 h-4 ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                                  </div>
+                                </div>
+                                <div className="absolute bottom-0 left-0 right-0 p-2.5 bg-gradient-to-t from-black/90 via-black/60 to-transparent">
+                                  <p className="text-[10px] sm:text-xs text-white font-bold line-clamp-2 leading-snug">{vid.title}</p>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* GRADE DE NOTÍCIAS */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                      {displayedArticles.map((article) => (
+                        <ArticleCard key={article.id} article={article} autoTranslate={autoTranslate} isSavedOffline={savedIdsSet.has(article.id)} onToggleSaveOffline={handleToggleSaveOffline} onOpenArticle={setSelectedArticle} />
+                      ))}
+                    </div>
+                    
+                    {filteredArticles.length > visibleCount && (
+                      <div className="mt-10 flex justify-center pb-6">
+                        <button onClick={() => setVisibleCount(prev => prev + 12)} className="px-6 py-3 bg-white dark:bg-stone-900 border border-stone-300 dark:border-stone-700 text-stone-800 dark:text-stone-200 font-bold text-xs uppercase tracking-wider rounded-full shadow-sm hover:bg-stone-100 dark:hover:bg-stone-800 transition-all cursor-pointer flex items-center gap-2">
+                          <PlusCircle className="w-4 h-4" /> Carregar mais publicações ({filteredArticles.length - visibleCount} restantes)
+                        </button>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
 
+              {/* COLUNA DIREITA (SIDEBAR): Vitrine e Patrocinadores - AGORA INTACTA */}
               {!showOfflineOnly && (
                 <aside className="hidden lg:block w-72 shrink-0 space-y-6">
                   <div className="bg-[#FDFDFC] dark:bg-[#121212] border border-stone-200 dark:border-stone-800 rounded-xl p-4 shadow-sm flex flex-col items-center justify-center text-center transition-colors">
