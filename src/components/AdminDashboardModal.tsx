@@ -1,19 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { CustomCategory, NewsArticle, CategoryType } from '../types';
+import { CustomCategory, NewsArticle, CategoryType, RactVideo } from '../types';
 import {
   DEFAULT_BASE_CATEGORIES, getCustomCategories, saveCustomCategories, getAllManagedArticles, saveAllManagedArticles, saveOrUpdateArticle, deleteManagedArticle, resetToFactoryArticles, getCustomRssFeeds, saveCustomRssFeeds, CustomRssFeed, checkAdminPassword, setAdminPassword, saveCategoryToServer, deleteCategoryFromServer, fetchServerArticles, fetchServerCategories, fetchServerAffiliates, saveAffiliateToServer, deleteAffiliateFromServer, AffiliateLink, fetchServerFeeds, saveFeedToServer, deleteFeedFromServer,
   fetchServerSponsors, saveSponsorToServer, deleteSponsorFromServer, SponsorBanner,
   fetchServerSocialNetworks, saveSocialNetworkToServer, deleteSocialNetworkFromServer, SocialNetwork,
   fetchServerOpinions, saveOpinionToServer, deleteOpinionFromServer, OpinionArticle, saveOpinionsLocal,
-  // [NOVO] Importando as funções e a interface dos Vídeos
-  fetchServerVideos, saveVideoToServer, deleteVideoFromServer, RactVideo
+  fetchServerVideos, saveVideoToServer, deleteVideoFromServer
 } from '../utils/customDataManager';
 
 import {
   X, Plus, Trash2, Edit, Lock, Database, Layers, FileText, Save, Download, Upload, CheckCircle, ExternalLink, ShieldCheck, AlertCircle, Rss, Search, RotateCcw, TrendingUp, MonitorPlay, Share2, ShoppingCart,
-  BrainCircuit, Image, Video, Link, BookOpen,
-  // [NOVO] Ícone do YouTube
-  Youtube
+  BrainCircuit, Image, Video, Link, BookOpen, Youtube
 } from 'lucide-react';
 
 interface AdminDashboardModalProps {
