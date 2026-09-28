@@ -3,10 +3,15 @@ import { CustomCategory, NewsArticle, CategoryType } from '../types';
 import {
   DEFAULT_BASE_CATEGORIES, getCustomCategories, saveCustomCategories, getAllManagedArticles, saveAllManagedArticles, saveOrUpdateArticle, deleteManagedArticle, resetToFactoryArticles, getCustomRssFeeds, saveCustomRssFeeds, CustomRssFeed, checkAdminPassword, setAdminPassword, saveCategoryToServer, deleteCategoryFromServer, fetchServerArticles, fetchServerCategories, fetchServerAffiliates, saveAffiliateToServer, deleteAffiliateFromServer, AffiliateLink, fetchServerFeeds, saveFeedToServer, deleteFeedFromServer,
   fetchServerSponsors, saveSponsorToServer, deleteSponsorFromServer, SponsorBanner,
-  fetchServerSocialNetworks, saveSocialNetworkToServer, deleteSocialNetworkFromServer, SocialNetwork
+  fetchServerSocialNetworks, saveSocialNetworkToServer, deleteSocialNetworkFromServer, SocialNetwork,
+  // [NOVO] Importando as funções e a interface das Opiniões Autorais
+  fetchServerOpinions, saveOpinionToServer, deleteOpinionFromServer, OpinionArticle, saveOpinionsLocal
 } from '../utils/customDataManager';
+
 import {
-  X, Plus, Trash2, Edit, Lock, Database, Layers, FileText, Save, Download, Upload, CheckCircle, ExternalLink, ShieldCheck, AlertCircle, Rss, Search, RotateCcw, TrendingUp, MonitorPlay, Share2, ShoppingCart
+  X, Plus, Trash2, Edit, Lock, Database, Layers, FileText, Save, Download, Upload, CheckCircle, ExternalLink, ShieldCheck, AlertCircle, Rss, Search, RotateCcw, TrendingUp, MonitorPlay, Share2, ShoppingCart,
+  // [NOVO] Ícones para a Aba de Opiniões
+  BrainCircuit, Image, Video, Link, BookOpen
 } from 'lucide-react';
 
 interface AdminDashboardModalProps {
@@ -22,14 +27,24 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   const [passwordInput, setPasswordInput] = useState<string>('');
   const [authError, setAuthError] = useState<string | null>(null);
 
-  // Active subtab
-  const [activeTab, setActiveTab] = useState<'articles' | 'categories' | 'feeds' | 'affiliates' | 'sponsors' | 'social' | 'backup'>('articles');
+  // [MODIFICADO] Adicionada a aba 'opinions'
+  const [activeTab, setActiveTab] = useState<'articles' | 'opinions' | 'categories' | 'feeds' | 'affiliates' | 'sponsors' | 'social' | 'backup'>('articles');
 
   // Articles State
   const [articlesList, setArticlesList] = useState<NewsArticle[]>(() => getAllManagedArticles());
   const [articleSearchQuery, setArticleSearchQuery] = useState<string>('');
   const [articleCategoryFilter, setArticleCategoryFilter] = useState<string>('all');
   const [artSuccessMsg, setArtSuccessMsg] = useState<string | null>(null);
+
+  // [NOVO] Opinions State - Formulário Acadêmico Estruturado
+  const [opinionsList, setOpinionsList] = useState<OpinionArticle[]>([]);
+  const [isEditingOpinionId, setIsEditingOpinionId] = useState<string | null>(null);
+  const [opinionSuccessMsg, setOpinionSuccessMsg] = useState<string | null>(null);
+  const [opinionForm, setOpinionForm] = useState<{
+    title: string; abstract: string; content: string; references: string; externalLinks: string; imageUrl: string; videoUrl: string;
+  }>({
+    title: '', abstract: '', content: '', references: '', externalLinks: '', imageUrl: '', videoUrl: ''
+  });
 
   // Categories State
   const [customCategories, setCustomCategories] = useState<CustomCategory[]>(() => getCustomCategories());
@@ -85,17 +100,13 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      fetchServerArticles().then(setArticlesList);
-      fetchServerCategories().then(setCustomCategories);
-      fetchServerAffiliates().then(setAffiliatesList);
-      fetchServerFeeds().then(setRssFeeds);
-      fetchServerSponsors().then(setSponsorsList);
-      fetchServerSocialNetworks().then(setSocialNetworksList);
+      refreshData();
     }
   }, [isOpen]);
 
-  const refreshArticles = async () => {
+  const refreshData = async () => {
     const list = await fetchServerArticles(); setArticlesList(list);
+    const opin = await fetchServerOpinions(); setOpinionsList(opin); // [NOVO]
     const cats = await fetchServerCategories(); setCustomCategories(cats);
     const affs = await fetchServerAffiliates(); setAffiliatesList(affs);
     const fds = await fetchServerFeeds(); setRssFeeds(fds);
@@ -107,7 +118,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (checkAdminPassword(passwordInput)) { setIsAuthenticated(true); setAuthError(null); setPasswordInput(''); refreshArticles(); } 
+    if (checkAdminPassword(passwordInput)) { setIsAuthenticated(true); setAuthError(null); setPasswordInput(''); refreshData(); } 
     else { setAuthError('Senha incorreta. Tente novamente.'); }
   };
 
@@ -128,6 +139,64 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   };
   const handleDeleteArticle = async (articleId: string, title: string) => { if (confirm(`Deseja realmente EXCLUIR do servidor o artigo:\n"${title}"?`)) { const updated = await deleteManagedArticle(articleId); setArticlesList(updated); if (isEditingId === articleId) handleCancelEdit(); onDataUpdated(); } };
   const handleResetFactory = async () => { if (confirm('Tem certeza que deseja restaurar o acervo com os artigos originais no servidor?')) { const defaultArts = await resetToFactoryArticles(); setArticlesList(defaultArts); onDataUpdated(); } };
+
+  // [NOVO] Funções de Minhas Opiniões Autorais
+  const handleSaveOpinion = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!opinionForm.title.trim() || !opinionForm.content.trim()) { alert('Preencha pelo menos o Título e o Texto Principal!'); return; }
+    
+    const opinionToSave: OpinionArticle = {
+      id: isEditingOpinionId ? isEditingOpinionId : `opin-${Date.now()}`,
+      title: opinionForm.title.trim(),
+      abstract: opinionForm.abstract.trim(),
+      content: opinionForm.content.trim(),
+      references: opinionForm.references.trim(),
+      externalLinks: opinionForm.externalLinks.trim(),
+      imageUrl: opinionForm.imageUrl.trim(),
+      videoUrl: opinionForm.videoUrl.trim(),
+      pubDate: new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }),
+      author: 'Leandro Sarno'
+    };
+    
+    try {
+      const updated = await saveOpinionToServer(opinionToSave);
+      setOpinionsList(updated);
+      handleCancelEditOpinion();
+      setOpinionSuccessMsg(isEditingOpinionId ? 'Artigo atualizado com sucesso!' : 'Artigo Acadêmico publicado!');
+      setTimeout(() => setOpinionSuccessMsg(null), 4000);
+      onDataUpdated();
+    } catch (err: any) { alert('Erro ao salvar sua análise no servidor'); }
+  };
+
+  const handleStartEditOpinion = (opin: OpinionArticle) => {
+    setIsEditingOpinionId(opin.id);
+    setOpinionForm({
+      title: opin.title,
+      abstract: opin.abstract || '',
+      content: opin.content || '',
+      references: opin.references || '',
+      externalLinks: opin.externalLinks || '',
+      imageUrl: opin.imageUrl || '',
+      videoUrl: opin.videoUrl || ''
+    });
+    document.getElementById('admin-scrollable-content')?.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleCancelEditOpinion = () => {
+    setIsEditingOpinionId(null);
+    setOpinionForm({ title: '', abstract: '', content: '', references: '', externalLinks: '', imageUrl: '', videoUrl: '' });
+  };
+
+  const handleDeleteOpinion = async (id: string, title: string) => {
+    if (confirm(`Deseja realmente EXCLUIR do servidor este artigo acadêmico:\n"${title}"?`)) {
+      try {
+        const updated = await deleteOpinionFromServer(id);
+        setOpinionsList(updated);
+        if (isEditingOpinionId === id) handleCancelEditOpinion();
+        onDataUpdated();
+      } catch (err) { alert('Erro ao excluir artigo'); }
+    }
+  };
 
   // Funções de Categoria
   const handleEditCategory = (cat: CustomCategory) => { setNewCatId(cat.id); setNewCatLabel(cat.label); setNewCatOrder((cat.order ?? 99).toString()); setIsEditingCategory(true); document.getElementById('admin-scrollable-content')?.scrollTo({ top: 0, behavior: 'smooth' }); };
@@ -188,8 +257,24 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   const handleDeleteSocial = async (id: string) => { if (confirm('Deseja realmente remover esta rede social?')) { try { const updated = await deleteSocialNetworkFromServer(id); setSocialNetworksList(updated); if (isEditingSocialId === id) handleCancelEditSocial(); onDataUpdated(); } catch (err) { alert('Erro ao excluir rede social'); } } };
 
   // Funções de Backup e Senha
-  const handleExportBackup = () => { const backupData = { version: '2.0', exportedAt: new Date().toISOString(), customCategories, articles: articlesList, rssFeeds, socialNetworks: socialNetworksList }; const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `ract-backup-completo-${new Date().toISOString().slice(0, 10)}.json`; a.click(); URL.revokeObjectURL(url); };
-  const handleImportBackup = (e: React.ChangeEvent<HTMLInputElement>) => { const file = e.target.files?.[0]; if (!file) return; const reader = new FileReader(); reader.onload = (event) => { try { const parsed = JSON.parse(event.target?.result as string); if (parsed.customCategories) { setCustomCategories(parsed.customCategories); saveCustomCategories(parsed.customCategories); } if (parsed.articles) { saveAllManagedArticles(parsed.articles); setArticlesList(parsed.articles); } if (parsed.rssFeeds) { setRssFeeds(parsed.rssFeeds); saveCustomRssFeeds(parsed.rssFeeds); } alert('Backup importado com sucesso!'); onDataUpdated(); } catch (err) { alert('Erro ao importar arquivo JSON.'); } }; reader.readAsText(file); };
+  const handleExportBackup = () => { const backupData = { version: '2.0', exportedAt: new Date().toISOString(), customCategories, articles: articlesList, opinions: opinionsList, rssFeeds, socialNetworks: socialNetworksList }; const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `ract-backup-completo-${new Date().toISOString().slice(0, 10)}.json`; a.click(); URL.revokeObjectURL(url); };
+  const handleImportBackup = (e: React.ChangeEvent<HTMLInputElement>) => { 
+    const file = e.target.files?.[0]; 
+    if (!file) return; 
+    const reader = new FileReader(); 
+    reader.onload = (event) => { 
+      try { 
+        const parsed = JSON.parse(event.target?.result as string); 
+        if (parsed.customCategories) { setCustomCategories(parsed.customCategories); saveCustomCategories(parsed.customCategories); } 
+        if (parsed.articles) { saveAllManagedArticles(parsed.articles); setArticlesList(parsed.articles); } 
+        if (parsed.opinions) { saveOpinionsLocal(parsed.opinions); setOpinionsList(parsed.opinions); } // [NOVO] Importando opiniões do backup
+        if (parsed.rssFeeds) { setRssFeeds(parsed.rssFeeds); saveCustomRssFeeds(parsed.rssFeeds); } 
+        alert('Backup importado com sucesso!'); 
+        onDataUpdated(); 
+      } catch (err) { alert('Erro ao importar arquivo JSON.'); } 
+    }; 
+    reader.readAsText(file); 
+  };
   const handleChangePassword = (e: React.FormEvent) => { e.preventDefault(); if (!newPassInput.trim()) return; setAdminPassword(newPassInput.trim()); setNewPassInput(''); setPassSuccessMsg('Senha atualizada com sucesso!'); setTimeout(() => setPassSuccessMsg(null), 4000); };
 
   const allAvailableCategories = customCategories && customCategories.length > 0 ? customCategories : DEFAULT_BASE_CATEGORIES;
@@ -225,7 +310,11 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
         ) : (
           <div className="flex-1 flex flex-col min-h-0">
             <div className="flex items-center gap-2 px-5 pt-2.5 border-b border-stone-200 dark:border-stone-800 bg-stone-50/70 dark:bg-stone-900/40 shrink-0 overflow-x-auto">
-              <button onClick={() => setActiveTab('articles')} className={`pb-2.5 px-3 text-xs font-semibold flex items-center gap-1.5 border-b-2 cursor-pointer shrink-0 ${activeTab === 'articles' ? 'border-stone-900 text-stone-900 dark:border-stone-100 dark:text-stone-100' : 'border-transparent text-stone-500 hover:text-stone-800 dark:hover:text-stone-300'}`}><FileText className="w-3.5 h-3.5" /><span>Acervo</span></button>
+              <button onClick={() => setActiveTab('articles')} className={`pb-2.5 px-3 text-xs font-semibold flex items-center gap-1.5 border-b-2 cursor-pointer shrink-0 ${activeTab === 'articles' ? 'border-stone-900 text-stone-900 dark:border-stone-100 dark:text-stone-100' : 'border-transparent text-stone-500 hover:text-stone-800 dark:hover:text-stone-300'}`}><FileText className="w-3.5 h-3.5" /><span>Acervo Global</span></button>
+              
+              {/* [NOVO] Aba Minhas Análises */}
+              <button onClick={() => setActiveTab('opinions')} className={`pb-2.5 px-3 text-xs font-semibold flex items-center gap-1.5 border-b-2 cursor-pointer shrink-0 ${activeTab === 'opinions' ? 'border-teal-600 text-teal-700 dark:text-teal-400 dark:border-teal-400' : 'border-transparent text-stone-500 hover:text-stone-800 dark:hover:text-stone-300'}`}><BookOpen className="w-3.5 h-3.5 text-teal-600 dark:text-teal-500" /><span>Minhas Análises (Opiniões)</span></button>
+
               <button onClick={() => setActiveTab('feeds')} className={`pb-2.5 px-3 text-xs font-semibold flex items-center gap-1.5 border-b-2 cursor-pointer shrink-0 ${activeTab === 'feeds' ? 'border-stone-900 text-stone-900 dark:border-stone-100 dark:text-stone-100' : 'border-transparent text-stone-500 hover:text-stone-800 dark:hover:text-stone-300'}`}><Rss className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" /><span>Fontes RSS</span></button>
               <button onClick={() => setActiveTab('categories')} className={`pb-2.5 px-3 text-xs font-semibold flex items-center gap-1.5 border-b-2 cursor-pointer shrink-0 ${activeTab === 'categories' ? 'border-stone-900 text-stone-900 dark:border-stone-100 dark:text-stone-100' : 'border-transparent text-stone-500 hover:text-stone-800 dark:hover:text-stone-300'}`}><Layers className="w-3.5 h-3.5" /><span>Áreas</span></button>
               <button onClick={() => setActiveTab('sponsors')} className={`pb-2.5 px-3 text-xs font-semibold flex items-center gap-1.5 border-b-2 cursor-pointer shrink-0 ${activeTab === 'sponsors' ? 'border-blue-600 text-blue-700 dark:text-blue-400' : 'border-transparent text-stone-500 hover:text-stone-800 dark:hover:text-stone-300'}`}><MonitorPlay className="w-3.5 h-3.5 text-blue-600 dark:text-blue-500" /><span>Patrocinadores</span></button>
@@ -261,6 +350,101 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                       {displayedArticles.length === 0 ? (<div className="p-8 text-center text-xs text-stone-500">Nenhum artigo encontrado.</div>) : (displayedArticles.map((art) => (
                         <div key={art.id} className={`p-3 sm:p-3.5 flex items-start justify-between gap-3 hover:bg-stone-50 dark:hover:bg-stone-900/40 transition-colors ${isEditingId === art.id ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}`}><div className="flex-1 min-w-0"><div className="flex items-center gap-2 mb-1 flex-wrap"><span className="px-2 py-0.5 rounded text-[10px] font-semibold uppercase bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300">{art.sourceCategory}</span><span className="text-[11px] font-medium text-stone-600 dark:text-stone-300">{art.source}</span></div><h5 className="text-xs font-bold text-stone-900 dark:text-stone-100 line-clamp-1">{art.titlePt || art.title}</h5></div><div className="flex items-center gap-1.5 shrink-0"><button onClick={() => handleStartEdit(art)} className="p-1.5 rounded text-stone-600 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-stone-800 transition-colors cursor-pointer"><Edit className="w-3.5 h-3.5" /></button>{art.link && <a href={art.link} target="_blank" rel="noreferrer" className="p-1.5 rounded text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 transition-colors"><ExternalLink className="w-3.5 h-3.5" /></a>}<button onClick={() => handleDeleteArticle(art.id, art.titlePt || art.title)} className="p-1.5 rounded text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors cursor-pointer"><Trash2 className="w-3.5 h-3.5" /></button></div></div>
                       )))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* [NOVO] TAB DE MINHAS OPINIÕES AUTORAIS */}
+              {activeTab === 'opinions' && (
+                <div className="space-y-6">
+                  {opinionSuccessMsg && <div className="p-3 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 rounded-lg text-xs flex items-center gap-2"><CheckCircle className="w-4 h-4 shrink-0" /><span>{opinionSuccessMsg}</span></div>}
+                  
+                  <form onSubmit={handleSaveOpinion} className="p-5 bg-teal-50/50 dark:bg-teal-950/10 border border-teal-200 dark:border-teal-900/50 rounded-xl space-y-5">
+                    <div className="flex items-center justify-between border-b border-teal-100 dark:border-teal-900/50 pb-3">
+                      <div>
+                        <h4 className="text-sm font-bold tracking-wide text-teal-800 dark:text-teal-400 flex items-center gap-1.5">
+                          <BrainCircuit className="w-4 h-4" /> 
+                          {isEditingOpinionId ? 'Editar Análise Acadêmica' : 'Publicar Nova Análise (Formato Acadêmico)'}
+                        </h4>
+                        <p className="text-[11px] text-teal-600/70 mt-1 font-medium">As quebras de linha (Enter) dadas nestas caixas serão respeitadas no artigo final.</p>
+                      </div>
+                      {isEditingOpinionId && <button type="button" onClick={handleCancelEditOpinion} className="text-xs text-stone-500 hover:text-stone-800 underline cursor-pointer">Cancelar Edição</button>}
+                    </div>
+                    
+                    <div className="space-y-4">
+                      {/* Título */}
+                      <div>
+                        <label className="block text-[11px] font-bold text-stone-700 dark:text-stone-300 mb-1.5">Título da Análise / Artigo *</label>
+                        <input type="text" required value={opinionForm.title} onChange={(e) => setOpinionForm({ ...opinionForm, title: e.target.value })} placeholder="Ex: O Impacto da Inteligência Artificial Generativa na Sala de Aula Moderna..." className="w-full px-3 py-2 text-sm font-serif bg-white dark:bg-stone-950 border border-stone-300 dark:border-stone-700 rounded focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent" />
+                      </div>
+
+                      {/* Resumo (Abstract) */}
+                      <div>
+                        <label className="block text-[11px] font-bold text-stone-700 dark:text-stone-300 mb-1.5 flex items-center gap-1.5">Resumo (Abstract) * <span className="text-[9px] font-normal text-stone-400 uppercase">Aparecerá em destaque no topo</span></label>
+                        <textarea required rows={4} value={opinionForm.abstract} onChange={(e) => setOpinionForm({ ...opinionForm, abstract: e.target.value })} placeholder="Resumo executivo da sua tese ou análise..." className="w-full px-3 py-2 text-xs bg-white dark:bg-stone-950 border border-stone-300 dark:border-stone-700 rounded resize-y focus:outline-none focus:ring-1 focus:ring-teal-500" />
+                      </div>
+
+                      {/* Texto Principal */}
+                      <div>
+                        <label className="block text-[11px] font-bold text-stone-700 dark:text-stone-300 mb-1.5">Texto Principal (Desenvolvimento) *</label>
+                        <textarea required rows={12} value={opinionForm.content} onChange={(e) => setOpinionForm({ ...opinionForm, content: e.target.value })} placeholder="Desenvolva sua análise aqui. Aperte Enter para separar os parágrafos." className="w-full px-3 py-3 text-sm font-serif leading-relaxed bg-white dark:bg-stone-950 border border-stone-300 dark:border-stone-700 rounded resize-y focus:outline-none focus:ring-1 focus:ring-teal-500" />
+                      </div>
+
+                      {/* Referências Bibliográficas */}
+                      <div>
+                        <label className="block text-[11px] font-bold text-stone-700 dark:text-stone-300 mb-1.5 flex items-center gap-1.5">Referências Bibliográficas <span className="text-[9px] font-normal text-stone-400 uppercase">Formato ABNT recomendado</span></label>
+                        <textarea rows={4} value={opinionForm.references} onChange={(e) => setOpinionForm({ ...opinionForm, references: e.target.value })} placeholder="Ex: SILVA, João. A Filosofia no Século XXI. São Paulo: Editora X, 2026." className="w-full px-3 py-2 text-xs font-mono bg-stone-50 dark:bg-stone-900 border border-stone-300 dark:border-stone-700 rounded resize-y focus:outline-none focus:ring-1 focus:ring-teal-500" />
+                      </div>
+
+                      {/* Links e Multimídia (Em Grid) */}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                        <div>
+                          <label className="block text-[10px] font-bold text-stone-700 dark:text-stone-300 mb-1 flex items-center gap-1"><Image className="w-3 h-3 text-stone-400" /> Link de Imagem de Capa</label>
+                          <input type="url" value={opinionForm.imageUrl} onChange={(e) => setOpinionForm({ ...opinionForm, imageUrl: e.target.value })} placeholder="https://..." className="w-full px-2 py-1.5 text-xs bg-white dark:bg-stone-950 border border-stone-300 dark:border-stone-700 rounded font-mono" />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-stone-700 dark:text-stone-300 mb-1 flex items-center gap-1"><Video className="w-3 h-3 text-stone-400" /> Link de Vídeo Complementar</label>
+                          <input type="url" value={opinionForm.videoUrl} onChange={(e) => setOpinionForm({ ...opinionForm, videoUrl: e.target.value })} placeholder="YouTube URL..." className="w-full px-2 py-1.5 text-xs bg-white dark:bg-stone-950 border border-stone-300 dark:border-stone-700 rounded font-mono" />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-stone-700 dark:text-stone-300 mb-1 flex items-center gap-1"><Link className="w-3 h-3 text-stone-400" /> URL Externo (Saiba Mais)</label>
+                          <input type="url" value={opinionForm.externalLinks} onChange={(e) => setOpinionForm({ ...opinionForm, externalLinks: e.target.value })} placeholder="https://..." className="w-full px-2 py-1.5 text-xs bg-white dark:bg-stone-950 border border-stone-300 dark:border-stone-700 rounded font-mono" />
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="pt-4 flex justify-end gap-2 border-t border-stone-200 dark:border-stone-800">
+                      {isEditingOpinionId && <button type="button" onClick={handleCancelEditOpinion} className="px-4 py-2 text-xs font-semibold text-stone-600 hover:bg-stone-200 rounded-lg cursor-pointer">Cancelar</button>}
+                      <button type="submit" className="px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5">
+                        <Save className="w-4 h-4" /> {isEditingOpinionId ? 'Salvar Edição do Artigo' : 'Publicar Artigo Acadêmico'}
+                      </button>
+                    </div>
+                  </form>
+
+                  <div className="space-y-3">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-stone-800 dark:text-stone-200 border-b border-stone-200 pb-2">Suas Análises Publicadas ({opinionsList.length})</h4>
+                    <div className="border border-stone-200 dark:border-stone-800 rounded-xl overflow-hidden bg-white dark:bg-stone-950 divide-y divide-stone-200 dark:divide-stone-800 max-h-[400px] overflow-y-auto">
+                      {opinionsList.length === 0 ? (
+                        <div className="p-8 text-center text-xs text-stone-500">Você ainda não publicou nenhuma análise autoral.</div>
+                      ) : (
+                        opinionsList.map((opin) => (
+                          <div key={opin.id} className={`p-4 flex items-start justify-between gap-4 transition-colors ${isEditingOpinionId === opin.id ? 'bg-teal-50 dark:bg-teal-900/20' : 'hover:bg-stone-50 dark:hover:bg-stone-900/40'}`}>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1.5">
+                                <span className="px-2 py-0.5 rounded text-[9px] font-bold uppercase bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200 border border-teal-200 dark:border-teal-800">Opinião Autoral</span>
+                                <span className="text-[10px] text-stone-500 font-medium font-mono">{opin.pubDate}</span>
+                              </div>
+                              <h5 className="text-sm font-bold font-serif text-stone-900 dark:text-stone-100 line-clamp-1 mb-1">{opin.title}</h5>
+                              <p className="text-xs text-stone-600 dark:text-stone-400 line-clamp-2">{opin.abstract}</p>
+                            </div>
+                            <div className="flex flex-col items-center gap-2 shrink-0">
+                              <button onClick={() => handleStartEditOpinion(opin)} className="p-2 rounded text-stone-600 hover:bg-stone-200 hover:text-teal-700 transition-colors cursor-pointer" title="Editar Artigo"><Edit className="w-4 h-4" /></button>
+                              <button onClick={() => handleDeleteOpinion(opin.id, opin.title)} className="p-2 rounded text-stone-400 hover:bg-rose-50 hover:text-rose-600 transition-colors cursor-pointer" title="Excluir Artigo"><Trash2 className="w-4 h-4" /></button>
+                            </div>
+                          </div>
+                        ))
+                      )}
                     </div>
                   </div>
                 </div>
@@ -321,7 +505,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                 </div>
               )}
 
-              {/* TAB 3: AFFILIATES (COM NOVA IMAGEM) */}
+              {/* TAB 3: AFFILIATES */}
               {activeTab === 'affiliates' && (
                 <div className="space-y-6">
                   {affSuccessMsg && <div className="p-3 bg-emerald-50 border border-emerald-300 text-emerald-800 rounded-lg text-xs flex items-center gap-2"><CheckCircle className="w-4 h-4 shrink-0" /> <span>{affSuccessMsg}</span></div>}
@@ -331,7 +515,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                       <div className="sm:col-span-2"><label className="block text-[11px] font-semibold text-stone-700 mb-1">Área do Artigo Sugerida *</label><select value={affCatId} onChange={(e) => setAffCatId(e.target.value)} className="w-full px-3 py-2 text-xs bg-white dark:bg-stone-950 border border-stone-300 dark:border-stone-700 rounded focus:outline-none"><option value="default">📘 Padrão Geral (Exibe na vitrine de todas as áreas)</option>{allAvailableCategories.filter(c => c.id !== 'all').map((c) => (<option key={c.id} value={c.id}>🔸 Área: {c.label}</option>))}</select></div>
                       <div><label className="block text-[11px] font-semibold text-stone-700 mb-1">Título do Produto / Livro *</label><input type="text" required value={affTitle} onChange={(e) => setAffTitle(e.target.value)} placeholder="Ex: Cosmos (Carl Sagan)" className="w-full px-3 py-1.5 text-xs bg-white dark:bg-stone-950 border border-stone-300 dark:border-stone-700 rounded" /></div>
                       <div><label className="block text-[11px] font-semibold text-stone-700 mb-1">Link URL de Compra *</label><input type="url" required value={affUrl} onChange={(e) => setAffUrl(e.target.value)} placeholder="https://..." className="w-full px-3 py-1.5 text-xs bg-white dark:bg-stone-950 border border-stone-300 dark:border-stone-700 rounded font-mono" /></div>
-                      <div className="sm:col-span-2"><label className="block text-[11px] font-semibold text-stone-700 mb-1">Link da Imagem do Produto (Opcional - mas recomendado)</label><input type="url" value={affImageUrl} onChange={(e) => setAffImageUrl(e.target.value)} placeholder="https://site.com/imagem-do-livro.jpg" className="w-full px-3 py-1.5 text-xs bg-white dark:bg-stone-950 border border-stone-300 dark:border-stone-700 rounded font-mono" /></div>
+                      <div className="sm:col-span-2"><label className="block text-[11px] font-semibold text-stone-700 mb-1">Link da Imagem do Produto (Opcional)</label><input type="url" value={affImageUrl} onChange={(e) => setAffImageUrl(e.target.value)} placeholder="https://site.com/imagem-do-livro.jpg" className="w-full px-3 py-1.5 text-xs bg-white dark:bg-stone-950 border border-stone-300 dark:border-stone-700 rounded font-mono" /></div>
                     </div>
                     <div className="pt-2 flex justify-end"><button type="submit" className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1.5"><Save className="w-3.5 h-3.5" /> Salvar Link</button></div>
                   </form>
@@ -358,7 +542,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                   {catSuccessMsg && <div className="p-3 bg-emerald-50 border border-emerald-300 text-emerald-800 rounded-lg text-xs flex items-center gap-2"><CheckCircle className="w-4 h-4 shrink-0" /><span>{catSuccessMsg}</span></div>}
                   <form onSubmit={handleAddCategory} className={`p-4 sm:p-5 border rounded-xl space-y-3 ${isEditingCategory ? 'bg-amber-50/50 border-amber-200' : 'bg-stone-50 border-stone-200'}`}>
                     <div className="flex items-center justify-between"><h4 className="text-xs font-bold uppercase tracking-wider text-stone-800 dark:text-stone-200 flex items-center gap-1.5">{isEditingCategory ? <><Edit className="w-3.5 h-3.5 text-amber-600" /> Editar Área</> : <><Plus className="w-3.5 h-3.5 text-blue-600" /> Criar Área</>}</h4>{isEditingCategory && <button type="button" onClick={handleCancelEditCategory} className="text-xs text-stone-500 hover:text-stone-800 underline cursor-pointer">Cancelar Edição</button>}</div>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3"><div><label className="block text-[11px] font-semibold text-stone-700 mb-1">Nome</label><input type="text" required value={newCatLabel} onChange={(e) => setNewCatLabel(e.target.value)} className="w-full px-3 py-1.5 text-xs bg-white dark:bg-stone-950 border border-stone-300 dark:border-stone-700 rounded" /></div><div><label className="block text-[11px] font-semibold text-stone-700 mb-1">ID</label><input type="text" value={newCatId} onChange={(e) => setNewCatId(e.target.value)} disabled={isEditingCategory} className="w-full px-3 py-1.5 text-xs bg-white dark:bg-stone-950 border border-stone-300 dark:border-stone-700 rounded font-mono disabled:opacity-50" /></div><div><label className="block text-[11px] font-semibold text-stone-700 mb-1 text-blue-700">Posição no Menu</label><input type="number" min="1" value={newCatOrder} onChange={(e) => setNewCatOrder(e.target.value)} className="w-full px-3 py-1.5 text-xs bg-white dark:bg-stone-950 border border-blue-300 rounded font-bold text-center text-blue-700" /></div></div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3"><div><label className="block text-[11px] font-semibold text-stone-700 mb-1">Nome</label><input type="text" required value={newCatLabel} onChange={(e) => setNewCatLabel(e.target.value)} className="w-full px-3 py-1.5 text-xs bg-white dark:bg-stone-950 border border-stone-300 dark:border-stone-700 rounded" /></div><div><label className="block text-[11px] font-semibold text-stone-700 mb-1">ID</label><input type="text" value={newCatId} onChange={(e) => setNewCatId(e.target.value)} disabled={isEditingCategory} className="w-full px-3 py-1.5 text-xs bg-white dark:bg-stone-950 border border-stone-300 dark:border-stone-700 font-mono disabled:opacity-50" /></div><div><label className="block text-[11px] font-semibold text-stone-700 mb-1 text-blue-700">Posição no Menu</label><input type="number" min="1" value={newCatOrder} onChange={(e) => setNewCatOrder(e.target.value)} className="w-full px-3 py-1.5 text-xs bg-white dark:bg-stone-300 border border-blue-300 rounded font-bold text-center text-blue-700" /></div></div>
                     <div className="pt-2 flex justify-end"><button type="submit" className="px-4 py-2 bg-stone-900 text-white rounded-lg text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1.5"><Save className="w-3.5 h-3.5" /> Salvar Área</button></div>
                   </form>
                   <div className="space-y-2"><h4 className="text-xs font-bold uppercase tracking-wider text-stone-800 dark:text-stone-200">Áreas ({allAvailableCategories.length})</h4><div className="grid grid-cols-1 sm:grid-cols-2 gap-2">{allAvailableCategories.map((c) => (<div key={c.id} className={`p-3 bg-white border border-stone-200 rounded-lg flex items-center justify-between ${isEditingCategory && newCatId === c.id ? 'ring-2 ring-amber-300' : ''}`}><div className="flex items-center gap-3"><div className="w-6 h-6 rounded bg-stone-100 flex items-center justify-center font-bold text-[10px] text-stone-500">{c.order ?? 99}</div><div><span className="text-xs font-bold text-stone-900">{c.label}</span><span className="block text-[10px] text-stone-400 font-mono">ID: {c.id}</span></div></div>{c.id !== 'all' ? (<div className="flex items-center gap-1.5 shrink-0"><button onClick={() => handleEditCategory(c)} className="p-1.5 rounded text-stone-600 hover:bg-stone-200 cursor-pointer"><Edit className="w-4 h-4" /></button><button onClick={() => handleDeleteCategory(c.id)} className="p-1.5 rounded text-rose-500 hover:bg-rose-50 cursor-pointer"><Trash2 className="w-4 h-4" /></button></div>) : (<span className="text-[10px] text-stone-400 uppercase tracking-wider font-semibold">Principal</span>)}</div>))}</div></div>
@@ -437,7 +621,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                 <div className="space-y-6">
                   <div className="p-4 sm:p-5 bg-stone-50 dark:bg-stone-900/60 border border-stone-200 dark:border-stone-800 rounded-xl space-y-3">
                     <h4 className="text-xs font-bold uppercase tracking-wider text-stone-800 dark:text-stone-200 flex items-center gap-1.5"><Database className="w-3.5 h-3.5 text-emerald-600" /> Backup Completo</h4>
-                    <p className="text-xs text-stone-500 dark:text-stone-400">Baixe um arquivo com todos os dados do portal.</p>
+                    <p className="text-xs text-stone-500 dark:text-stone-400">Baixe um arquivo com todos os dados do portal, incluindo suas opiniões.</p>
                     <div className="flex items-center gap-3 pt-2 flex-wrap"><button onClick={handleExportBackup} className="px-3.5 py-2 bg-stone-900 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer hover:bg-stone-800"><Download className="w-3.5 h-3.5" /> Exportar Backup</button><label className="px-3.5 py-2 bg-white border border-stone-300 rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer hover:bg-stone-100"><Upload className="w-3.5 h-3.5" /> Restaurar Arquivo<input type="file" accept=".json" onChange={handleImportBackup} className="hidden" /></label></div>
                   </div>
                   <form onSubmit={handleChangePassword} className="p-4 sm:p-5 bg-stone-50 dark:bg-stone-900/60 border border-stone-200 dark:border-stone-800 rounded-xl space-y-3"><h4 className="text-xs font-bold uppercase tracking-wider text-stone-800 flex items-center gap-1.5"><Lock className="w-3.5 h-3.5 text-amber-600" /> Segurança</h4>{passSuccessMsg && <p className="text-xs text-emerald-600 font-medium">{passSuccessMsg}</p>}<div className="max-w-xs space-y-2"><input type="password" value={newPassInput} onChange={(e) => setNewPassInput(e.target.value)} placeholder="Nova senha..." className="w-full px-3 py-1.5 text-xs bg-white border border-stone-300 rounded" /><button type="submit" className="px-3.5 py-1.5 bg-stone-900 text-white rounded text-xs font-semibold cursor-pointer">Trocar Senha de Acesso</button></div></form>
