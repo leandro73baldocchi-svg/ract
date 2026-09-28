@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 // Importação do React Quill e seu estilo (Necessário)
 import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css'; // Estilo do editor
+import 'react-quill/dist/quill.snow.css'; // Estilo do editor...
 
 import { CustomCategory, NewsArticle, CategoryType } from '../types';
 // [MODIFICADO] Assumindo que você criou os tipos OpinionArticle e as funções de DataManager
