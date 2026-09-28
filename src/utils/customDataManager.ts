@@ -47,10 +47,7 @@ export interface OpinionArticle {
 //  { id: 'universities', label: 'Universidades (Brasil & Mundo)', order: 99 },
 // ];
 
-export const DEFAULT_RSS_FEEDS: CustomRssFeed[] = [
-  { id: 'f-nature', name: 'Nature Journal', url: 'https://www.nature.com/nature.rss', category: 'biotech', enabled: true },
-  { id: 'f-science', name: 'Science Magazine', url: 'https://www.science.org/rss/news_current.xml', category: 'health', enabled: true }
-];
+export const DEFAULT_RSS_FEEDS: CustomRssFeed[] = [];
 
 export async function fetchServerArticles(): Promise<NewsArticle[]> {
   try {
