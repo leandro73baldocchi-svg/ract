@@ -26,7 +26,6 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   const [passwordInput, setPasswordInput] = useState<string>('');
   const [authError, setAuthError] = useState<string | null>(null);
 
-  // [MODIFICADO] Adicionada a aba 'videos'
   const [activeTab, setActiveTab] = useState<'articles' | 'opinions' | 'videos' | 'categories' | 'feeds' | 'affiliates' | 'sponsors' | 'social' | 'backup'>('articles');
 
   // Articles State
@@ -45,7 +44,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     title: '', abstract: '', content: '', references: '', externalLinks: '', imageUrl: '', videoUrl: ''
   });
 
-  // [NOVO] Videos State
+  // Videos State
   const [videosList, setVideosList] = useState<RactVideo[]>([]);
   const [isEditingVideoId, setIsEditingVideoId] = useState<string | null>(null);
   const [videoSuccessMsg, setVideoSuccessMsg] = useState<string | null>(null);
@@ -116,7 +115,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
   const refreshData = async () => {
     const list = await fetchServerArticles(); setArticlesList(list);
     const opin = await fetchServerOpinions(); setOpinionsList(opin);
-    const vids = await fetchServerVideos(); setVideosList(vids); // [NOVO]
+    const vids = await fetchServerVideos(); setVideosList(vids);
     const cats = await fetchServerCategories(); setCustomCategories(cats);
     const affs = await fetchServerAffiliates(); setAffiliatesList(affs);
     const fds = await fetchServerFeeds(); setRssFeeds(fds);
@@ -208,7 +207,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
     }
   };
 
-  // [NOVO] Funções de Vídeos
+  // Funções de Vídeos
   const handleSaveVideo = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!videoForm.title.trim() || !videoForm.url.trim()) { alert('Preencha pelo menos o Título e a URL do vídeo!'); return; }
@@ -377,13 +376,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
           <div className="flex-1 flex flex-col min-h-0">
             <div className="flex items-center gap-2 px-5 pt-2.5 border-b border-stone-200 dark:border-stone-800 bg-stone-50/70 dark:bg-stone-900/40 shrink-0 overflow-x-auto">
               <button onClick={() => setActiveTab('articles')} className={`pb-2.5 px-3 text-xs font-semibold flex items-center gap-1.5 border-b-2 cursor-pointer shrink-0 ${activeTab === 'articles' ? 'border-stone-900 text-stone-900 dark:border-stone-100 dark:text-stone-100' : 'border-transparent text-stone-500 hover:text-stone-800 dark:hover:text-stone-300'}`}><FileText className="w-3.5 h-3.5" /><span>Acervo Global</span></button>
-              
-              {/* Aba Minhas Análises */}
               <button onClick={() => setActiveTab('opinions')} className={`pb-2.5 px-3 text-xs font-semibold flex items-center gap-1.5 border-b-2 cursor-pointer shrink-0 ${activeTab === 'opinions' ? 'border-teal-600 text-teal-700 dark:text-teal-400 dark:border-teal-400' : 'border-transparent text-stone-500 hover:text-stone-800 dark:hover:text-stone-300'}`}><BookOpen className="w-3.5 h-3.5 text-teal-600 dark:text-teal-500" /><span>Minhas Análises (Opiniões)</span></button>
-              
-              {/* [NOVO] Aba Vitrine de Vídeos */}
               <button onClick={() => setActiveTab('videos')} className={`pb-2.5 px-3 text-xs font-semibold flex items-center gap-1.5 border-b-2 cursor-pointer shrink-0 ${activeTab === 'videos' ? 'border-red-600 text-red-700 dark:text-red-400 dark:border-red-400' : 'border-transparent text-stone-500 hover:text-stone-800 dark:hover:text-stone-300'}`}><Youtube className="w-4 h-4 text-red-600 dark:text-red-500" /><span>Vitrine de Vídeos</span></button>
-
               <button onClick={() => setActiveTab('feeds')} className={`pb-2.5 px-3 text-xs font-semibold flex items-center gap-1.5 border-b-2 cursor-pointer shrink-0 ${activeTab === 'feeds' ? 'border-stone-900 text-stone-900 dark:border-stone-100 dark:text-stone-100' : 'border-transparent text-stone-500 hover:text-stone-800 dark:hover:text-stone-300'}`}><Rss className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" /><span>Fontes RSS</span></button>
               <button onClick={() => setActiveTab('categories')} className={`pb-2.5 px-3 text-xs font-semibold flex items-center gap-1.5 border-b-2 cursor-pointer shrink-0 ${activeTab === 'categories' ? 'border-stone-900 text-stone-900 dark:border-stone-100 dark:text-stone-100' : 'border-transparent text-stone-500 hover:text-stone-800 dark:hover:text-stone-300'}`}><Layers className="w-3.5 h-3.5" /><span>Áreas</span></button>
               <button onClick={() => setActiveTab('sponsors')} className={`pb-2.5 px-3 text-xs font-semibold flex items-center gap-1.5 border-b-2 cursor-pointer shrink-0 ${activeTab === 'sponsors' ? 'border-blue-600 text-blue-700 dark:text-blue-400' : 'border-transparent text-stone-500 hover:text-stone-800 dark:hover:text-stone-300'}`}><MonitorPlay className="w-3.5 h-3.5 text-blue-600 dark:text-blue-500" /><span>Patrocinadores</span></button>
@@ -442,31 +436,22 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                     </div>
                     
                     <div className="space-y-4">
-                      {/* Título */}
                       <div>
                         <label className="block text-[11px] font-bold text-stone-700 dark:text-stone-300 mb-1.5">Título da Análise / Artigo *</label>
                         <input type="text" required value={opinionForm.title} onChange={(e) => setOpinionForm({ ...opinionForm, title: e.target.value })} placeholder="Ex: O Impacto da Inteligência Artificial Generativa na Sala de Aula Moderna..." className="w-full px-3 py-2 text-sm font-serif bg-white dark:bg-stone-950 border border-stone-300 dark:border-stone-700 rounded focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent" />
                       </div>
-
-                      {/* Resumo (Abstract) */}
                       <div>
                         <label className="block text-[11px] font-bold text-stone-700 dark:text-stone-300 mb-1.5 flex items-center gap-1.5">Resumo (Abstract) * <span className="text-[9px] font-normal text-stone-400 uppercase">Aparecerá em destaque no topo</span></label>
                         <textarea required rows={4} value={opinionForm.abstract} onChange={(e) => setOpinionForm({ ...opinionForm, abstract: e.target.value })} placeholder="Resumo executivo da sua tese ou análise..." className="w-full px-3 py-2 text-xs bg-white dark:bg-stone-950 border border-stone-300 dark:border-stone-700 rounded resize-y focus:outline-none focus:ring-1 focus:ring-teal-500" />
                       </div>
-
-                      {/* Texto Principal */}
                       <div>
                         <label className="block text-[11px] font-bold text-stone-700 dark:text-stone-300 mb-1.5">Texto Principal (Desenvolvimento) *</label>
                         <textarea required rows={12} value={opinionForm.content} onChange={(e) => setOpinionForm({ ...opinionForm, content: e.target.value })} placeholder="Desenvolva sua análise aqui. Aperte Enter para separar os parágrafos." className="w-full px-3 py-3 text-sm font-serif leading-relaxed bg-white dark:bg-stone-950 border border-stone-300 dark:border-stone-700 rounded resize-y focus:outline-none focus:ring-1 focus:ring-teal-500" />
                       </div>
-
-                      {/* Referências Bibliográficas */}
                       <div>
                         <label className="block text-[11px] font-bold text-stone-700 dark:text-stone-300 mb-1.5 flex items-center gap-1.5">Referências Bibliográficas <span className="text-[9px] font-normal text-stone-400 uppercase">Formato ABNT recomendado</span></label>
                         <textarea rows={4} value={opinionForm.references} onChange={(e) => setOpinionForm({ ...opinionForm, references: e.target.value })} placeholder="Ex: SILVA, João. A Filosofia no Século XXI. São Paulo: Editora X, 2026." className="w-full px-3 py-2 text-xs font-mono bg-stone-50 dark:bg-stone-900 border border-stone-300 dark:border-stone-700 rounded resize-y focus:outline-none focus:ring-1 focus:ring-teal-500" />
                       </div>
-
-                      {/* Links e Multimídia (Em Grid) */}
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
                         <div>
                           <label className="block text-[10px] font-bold text-stone-700 dark:text-stone-300 mb-1 flex items-center gap-1"><Image className="w-3 h-3 text-stone-400" /> Link de Imagem de Capa</label>
@@ -519,7 +504,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardModalProps> = ({
                 </div>
               )}
 
-              {/* [NOVO] TAB DE VÍDEOS */}
+              {/* TAB DE VÍDEOS */}
               {activeTab === 'videos' && (
                 <div className="space-y-6">
                   {videoSuccessMsg && <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 rounded-lg text-xs flex items-center gap-2"><CheckCircle className="w-4 h-4 shrink-0" /> <span>{videoSuccessMsg}</span></div>}
